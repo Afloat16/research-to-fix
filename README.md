@@ -102,4 +102,6 @@ Concept and workflow design: **Afloat16**. License: [MIT](LICENSE).
 
 ## 相关开源项目
 
-按用途浏览 [Afloat16 项目导航](https://github.com/Afloat16/research-to-fix/blob/main/docs/PROJECTS.md)，选择需求论证、调研修复、任务验收、接口诊断、通知、MCP 建议或本地重建工具。
+按用途浏览 [Afloat16 项目导航](https://github.com/Afloat16/research-to-fix/blob/main/docs/PROJECTS.md)，选择需求论证、调研修复、任务验收、接口诊断、通知、MCP建议、机器人排障和三维重建工具。
+
+本轮新增六个领域工具，选题与边界见 [29线程/336评论调研](docs/DEMAND_REVIEW.md)，实际目录申请和相关问题回复见 [推广记录](docs/OUTREACH.md)。

@@ -1,41 +1,55 @@
-# Afloat16 开源项目导航
+# Afloat16 Project Guide
 
-按问题选择工具，再查看对应仓库的安装说明、验证记录和限制。这里收录 Afloat16 原创维护的公开项目；每个项目独立发布，不要求一起安装。
+[English](PROJECTS.md) · [简体中文](PROJECTS.zh-CN.md)
 
-| 你的需求 | 推荐项目 | 主要产物 | 使用前了解 |
-| --- | --- | --- | --- |
-| 需求含糊、方案有争议，需要可审查方向 | [Debate Direction](https://github.com/Afloat16/debate-direction) | 两个参与方的独立论证、修订、问题台账与下一步验证 | 讨论共识不证明方案正确；原生 Skill 需要支持子任务的宿主，CLI 使用所选模型服务 |
-| 本地问题难解决，想先查已有修复与可行路线 | [Research to Fix](https://github.com/Afloat16/research-to-fix) | 原始来源、适用性映射、最小修复与前后验证 | 联网与编码工具由宿主提供；工具的记录检查不证明修复效果 |
-| 编码改动需要范围约束、产物治理和可追溯检查 | [AI Dev Steward / StewardCheck](https://github.com/Afloat16/ai-dev-steward) | 原始 Skill 的审阅记录，以及 StewardCheck 的 Git 基线和任务验收记录 | 本地工具和 Skill 可独立使用；验收记录不替代人工标准；MIT 仅覆盖 tools/stewardcheck 子目录 |
-| OpenAI 兼容接口接上了，但 streaming/tools/usage 表现不一致 | [LLM Handshake](https://github.com/Afloat16/llm-handshake) | 有预算上限的接口探测、报告和差异比较 | 默认模型列表 GET；推理需明确启用，不是完整协议认证，也不自动认定供应商质量 |
-| 长时间运行的 agent 需要你输入或审阅，想收到提醒 | [Agent Action Notifier](https://github.com/Afloat16/agent-action-notifier) | 邮件/本地桌面通知、请求跟踪、重试与待审阅回复 | 通知不等于批准；SMTP 是显式选择，导入回复不自动获得可信身份 |
-| MCP 工作流需要受限的概率建议作为第二意见 | [Jev MCP](https://github.com/Afloat16/jev-mcp) | 四个只读建议工具：选项决策、路由、风险信号、yes/no gate | 非官方 TypeSafe Jev 集成；state 会发给外部服务，建议不拥有审批权；需要服务访问条件 |
-| 想在本地 CPU 上检查照片、恢复稀疏几何或处理标定双目 | [ReconTrail](https://github.com/Afloat16/recontrail) | 影像质量检查、相机位姿、稀疏重建、双目可见表面和离线报告 | 重建受输入、视差和标定影响；不承诺通用稠密或封闭网格重建 |
+Independent public tools and skills maintained by [Afloat16](https://github.com/Afloat16). Choose by the problem you are solving, then follow the project's installation guide, examples and validation notes.
 
+## Geometry and reconstruction
 
-| 检查ROS 2录包时间异常、重复和跨topic偏差 | [Bag Timeline Audit](https://github.com/Afloat16/bag-timeline-audit) | SQLite/MCAP/JSONL的离线时间诊断 | 间隙不能证明丢包；跨topic必须明确同一时钟；不推断分段包顺序 |
-| 检查TF/URDF坐标链、缺失frame和时间覆盖 | [TF Route Audit](https://github.com/Afloat16/tf-route-audit) | 拓扑与已观察时间范围报告 | 不模拟实时tf2缓存、插值或publisher authority |
-| 流式工具调用参数丢失、缺名或组装异常 | [SSE Toolcall Audit](https://github.com/Afloat16/sse-toolcall-audit) | 保存的Chat Completions/Responses SSE诊断与非流式对比 | 不访问服务器或修复生成；跨次随机输出差异不自动算回归 |
-| 排查长工具重复执行、缺少结果与重试重叠 | [Tooltrace Audit](https://github.com/Afloat16/tooltrace-audit) | 执行事件与对话配对审计、可选参数摘要记录 | 调用方提供稳定ID/时钟；不实现幂等、取消或调度修复 |
-| 检查COLMAP模型合并前的track和图像重叠 | [COLMAP Model Audit](https://github.com/Afloat16/colmap-model-audit) | 传统文本模型一致性、连通性与同名候选 | 不验证新版rig/frame；重投影仅支持两种pinhole；名称重叠不保证可合并 |
-| 接入相机轨迹时混淆w2c/c2w、OpenCV/OpenGL与尺度 | [Pose Convention Bridge](https://github.com/Afloat16/pose-convention-bridge) | 显式刚性位姿转换、COLMAP/TUM/JSON与Nerfstudio导出 | 不猜外参、内参或尺度；点云需另用同一世界变换 |
+| Project | What it helps you do | Scope |
+|---|---|---|
+| [ReconTrail](https://github.com/Afloat16/recontrail) | Inspect photo quality, recover sparse geometry and camera poses, reconstruct calibrated stereo, and share offline interactive reports. | CPU/local workflow; results depend on input, parallax and calibration. No general dense or watertight-mesh guarantee. |
+| [COLMAP Model Audit](https://github.com/Afloat16/colmap-model-audit) | Check reciprocal tracks, view connectivity and exact-name overlap candidates in legacy COLMAP text models. | No newer rig/frame validation; reprojection supports PINHOLE/SIMPLE_PINHOLE. Name overlap does not guarantee alignment or database compatibility. |
+| [Pose Convention Bridge](https://github.com/Afloat16/pose-convention-bridge) | Convert explicit w2c/c2w, OpenCV/OpenGL and COLMAP/TUM/JSON pose conventions; export Nerfstudio cameras. | Does not infer extrinsics, intrinsics or scale. Apply the same world mapping to scene geometry separately. |
 
-## 从哪个开始
+## Robotics diagnostics
 
-- **日常项目诊断**：从 Research to Fix 开始；接口兼容性症状使用 LLM Handshake 的针对性探测。
-- **需求与设计讨论**：用 Debate Direction 把分歧转成可验证条件，再进入代码工作。
-- **任务交付与等待输入**：用 StewardCheck 记录改动与检查；需要提醒时单独配置 Agent Action Notifier。
-- **机器人排障**：录包时序用 Bag Timeline Audit，导出坐标链用 TF Route Audit。
-- **大模型集成**：接口探测用 LLM Handshake，保存的流式响应用 SSE Toolcall Audit，真实工具尝试记录用 Tooltrace Audit。
-- **影像几何**：重建用 ReconTrail，传统 COLMAP 模型预检用 COLMAP Model Audit，明确位姿约定后使用 Pose Convention Bridge。
-- **MCP 概率建议**：查看 Jev MCP 的服务条件和权限边界。
+| Project | What it helps you do | Scope |
+|---|---|---|
+| [Bag Timeline Audit](https://github.com/Afloat16/bag-timeline-audit) | Inspect ROS 2 SQLite/MCAP or JSONL timestamps for gaps, regressions, duplicates and declared same-clock topic offsets. | A gap is not proof of loss; does not infer split-bag ordering or decode SQLite payload headers. |
+| [TF Route Audit](https://github.com/Afloat16/tf-route-audit) | Inspect exported TF or native URDF topology, required frames, conflicts and observed time windows. | Does not simulate live tf2 cache/interpolation or discover publisher authority; movable URDF joints provide no temporal evidence. |
 
-这些是按当前代码与文档做的用途推荐。各项目的真实测试环境、发布日期、兼容性和验证缺口，以仓库中的记录和实际 CI 为准；目录提交不等于维护者已经收录，也不代表上游平台背书。
+## Model interfaces and tool execution
 
-## 调研与推广记录
+| Project | What it helps you do | Scope |
+|---|---|---|
+| [LLM Handshake](https://github.com/Afloat16/llm-handshake) | Preview and run bounded OpenAI-compatible Chat Completions endpoint probes; compare reports after changes. | Defaults to a model-list GET; inference must be enabled. Not full protocol certification or a model-quality benchmark. |
+| [SSE Toolcall Audit](https://github.com/Afloat16/sse-toolcall-audit) | Audit saved Chat Completions/Responses SSE tool-call assembly and compare semantic calls with saved non-stream responses. | Offline; does not repair generation. Different stochastic completions do not automatically imply a regression. |
+| [Tooltrace Audit](https://github.com/Afloat16/tooltrace-audit) | Inspect execution attempts or conversations for duplicates, overlaps, missing results and identity conflicts; optionally record argument digests. | Caller supplies stable IDs and meaningful clocks. Does not implement idempotency, cancellation or scheduler fixes. |
+| [Jev MCP](https://github.com/Afloat16/jev-mcp) | Ask four read-only advisory tools for bounded decisions, routing, risk signals and yes/no gates. | Unofficial TypeSafe Jev integration; requires service access. State is sent to the external API; advice has no approval authority. |
 
-六个新工具的选题来自 [29个线程、336条评论的调研](DEMAND_REVIEW.md)。采样不是全领域需求统计排名；六项目为MIT实验性工具，合计67项测试，最新六仓库的36个OS/Python CI组合通过。另见 [实际推广记录](OUTREACH.md)，收录申请仍需由目录维护者审查。
+## Research and engineering workflow
 
-## English
+| Project | What it helps you do | Scope |
+|---|---|---|
+| [Research to Fix](https://github.com/Afloat16/research-to-fix) | Find prior fixes and viable approaches, map evidence to local code, apply a small repair and compare the original symptom before/after. | Search and coding tools come from the host; record validation does not prove a repair worked. |
+| [Debate Direction](https://github.com/Afloat16/debate-direction) | Turn ambiguous requirements into independent proposals, challenges, revisions, an issue ledger and testable next steps. | Consensus is not proof. Native skill needs a host with child tasks; the CLI uses the selected model service. |
+| [AI Dev Steward / StewardCheck](https://github.com/Afloat16/ai-dev-steward) | Track task-scoped Git changes, explicit checks and review evidence; use the complementary artifact/review skill when appropriate. | CLI and skill are independent. Evidence does not replace human acceptance criteria; MIT applies only to tools/stewardcheck. |
+| [Agent Action Notifier](https://github.com/Afloat16/agent-action-notifier) | Receive email/local desktop notifications, track waiting requests and retry failed sends. | Notifications are not approvals; SMTP is opt-in and imported replies do not establish trusted identity. |
 
-Independent tools and skills maintained by [Afloat16](https://github.com/Afloat16): requirements debate, evidence-driven debugging, task-scoped Git checks, endpoint diagnostics, human-input notifications, a conservative MCP advisory integration, local CPU photogrammetry, ROS timing/TF diagnostics, saved SSE and tool-trace audits, COLMAP text-model preflight, and explicit pose-convention conversion. Choose a project by the task above, then follow its own installation and validation guide. License scope and external-service requirements remain project-specific.
+## Suggested starting points
+
+- **Unfamiliar bug:** Research to Fix; add LLM Handshake for endpoint integration symptoms.
+- **Ambiguous design:** Debate Direction, then validate the selected assumptions in code.
+- **Robot data:** Bag Timeline Audit for timing; TF Route Audit for exported frame graphs.
+- **Model tool calls:** SSE Toolcall Audit for saved responses; Tooltrace Audit for actual attempt records.
+- **3D workflow:** ReconTrail for reconstruction, COLMAP Model Audit for text-model preflight, Pose Convention Bridge after establishing the camera conventions.
+
+## Evidence and community work
+
+The six newer domain utilities were selected from [29 public issue threads and 336 comments](DEMAND_REVIEW.md), a purposive sample rather than a field-wide urgency ranking. They are experimental MIT projects with **67 local tests and 36 passing OS/Python CI combinations** at the recorded release. See the linked runs and limitations in the report.
+
+[Outreach and directory submissions](OUTREACH.md) record actual PRs and issue replies. A submitted recommendation is not a listing, adoption claim or upstream endorsement.
+
+For selected merged upstream contributions, visit [Afloat16's profile](https://github.com/Afloat16).
+

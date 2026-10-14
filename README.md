@@ -1,62 +1,67 @@
 # Research to Fix
 
-**查到相似问题，核验已有方案，再把它变成可验证的本地修复。**
+**English** | [简体中文](README.zh-CN.md)
 
-Research to Fix 是一个遵循 [Agent Skills 格式](https://agentskills.io/specification)的调研与修复工作流。它让模型在陌生报错、难复现 bug、训练异常或性能退化时，先查别人是否已经解决或给出可行路线，再对照当前项目的代码、版本和运行条件实施修复。
+**Find similar problems, verify prior solutions, and turn them into a testable local repair.**
 
-创意与工作流设计：**[Afloat16](https://github.com/Afloat16)**。维护者：**Afloat16**。
+Research to Fix is a research and repair workflow that follows the [Agent Skills format](https://agentskills.io/specification). For unfamiliar errors, hard-to-reproduce bugs, training instability, or performance regressions, it guides an agent to investigate whether others have solved a similar problem or found a viable approach, then check that approach against the current project's code, versions, and runtime conditions before applying a fix.
 
-## 从哪里开始
+Concept and workflow design: **[Afloat16](https://github.com/Afloat16)**. Maintainer: **Afloat16**.
 
-- 想让模型实际调研并修复项目：安装后使用 [示例请求](#使用)。
-- 想了解来源与核验方法：阅读 [来源检索指南](skills/research-to-fix/references/source-playbook.md)和 [证据判定](skills/research-to-fix/references/evidence-rules.md)。
-- 想先检查一个可复现的小案例：查看 [流式统计案例](examples/streaming-metrics/README.md)。
-- 想记录多轮调研或交接证据：使用 [辅助工具](#辅助工具)和 [记录模板](skills/research-to-fix/references/case-template.md)。
+## Where to start
 
-## 它做什么
+- To research and repair a project: install the skill, then use the [example requests](#usage).
+- To understand source selection and verification: read the [source playbook](skills/research-to-fix/references/source-playbook.md) and [evidence rules](skills/research-to-fix/references/evidence-rules.md).
+- To inspect a small reproducible case first: see the [streaming metrics example](examples/streaming-metrics/README.md).
+- To record multiple research rounds or hand off evidence: use the [helper tools](#helper-tools) and [case template](skills/research-to-fix/references/case-template.md).
 
-| 环节 | 产物 |
+## What it does
+
+| Stage | Output |
 | --- | --- |
-| 问题指纹 | 去敏错误、环境/版本、调用链、最小复现、成功标准 |
-| 跨来源调研 | GitHub、Hugging Face、知乎、小红书、正式论文、学者与实验室的可核验证据 |
-| 适用性分析 | 来源条件与本地文件/符号的映射、差异、候选方案、可证伪假设 |
-| 修复与实验 | 小范围代码改动、原症状前后对比、相关回归、成本与限制 |
-| 可复核交付 | 原始链接、实际命令、退出码、观测和 solved / partial / blocked 状态 |
+| Problem fingerprint | Redacted error, environment and versions, call path, minimal reproduction, and success criteria |
+| Research across sources | Verifiable evidence from GitHub, Hugging Face, Zhihu, Xiaohongshu, original papers, researchers, and labs |
+| Applicability analysis | Source conditions mapped to local files and symbols, differences, candidate approaches, and falsifiable hypotheses |
+| Repair and experiments | Small code changes, before/after checks of the original symptom, relevant regressions, costs, and limitations |
+| Reviewable delivery | Original links, actual commands, exit codes, observations, and a solved / partial / blocked status |
 
-不同平台按相关性选择；请求完整覆盖时逐类检索并说明不可用项。知乎与小红书帮助发现经验线索，技术判断继续追溯原始资料或本地实验。知名作者、顶会标签、stars 与点赞不会替代证据。
+Choose sources by relevance. When full coverage is requested, search each category and explain any unavailable sources. Zhihu and Xiaohongshu can help uncover experience and terminology; technical conclusions still require original materials or local experiments. Famous authors, conference labels, stars, and likes do not replace evidence.
 
-## 安装
+## Installation
 
-需要支持 `SKILL.md` 的宿主。联网由宿主提供搜索/浏览工具，本项目不捆绑搜索服务、登录凭据或爬虫。辅助脚本只需 Python 3.10+。
+Use a host that supports `SKILL.md`. The host provides search and browsing tools; this project does not bundle a search service, login credentials, or a crawler. The helper script requires Python 3.10+.
 
-安装到支持的宿主（执行前核对你使用的安装工具）：
+Install in a supported host after checking the installation tool you use:
 
 ```bash
 npx skills add Afloat16/research-to-fix --skill research-to-fix
 ```
 
-也可克隆仓库后，将 `skills/research-to-fix` 整个目录复制到宿主的 skills 目录。宿主是否支持自动触发、Python 或 UI 元数据，取决于其自身配置。
+Alternatively, clone the repository and copy the complete `skills/research-to-fix` directory into your host's skills directory. Automatic triggering, Python execution, and UI metadata support depend on the host's configuration.
 
-## 使用
+## Usage
 
 ```text
-使用 $research-to-fix：这个项目在多卡训练时偶尔卡住。
-请先复现并记录版本，联网查同类问题与修复 PR，
-核验方案与当前调用链的差异，再修改代码并验证。
+Use $research-to-fix: this project occasionally hangs during multi-GPU training.
+First reproduce it and record the versions, then research similar issues and
+fix PRs online. Verify the differences from the current call path before
+changing the code and validating the repair.
 ```
 
 ```text
-使用 $research-to-fix：论文复现的结果明显低于报告值。
-调研作者代码、Hugging Face 配置、正式论文与社区复现，
-列出可行路线，以相同数据切分、种子和预算做对比实验。
+Use $research-to-fix: our reproduction of a paper performs far below its
+reported results. Research the authors' code, Hugging Face configuration,
+the published paper, and community reproductions. Identify viable approaches
+and compare them with the same data splits, seeds, and resource budget.
 ```
 
 ```text
-使用 $research-to-fix：完整覆盖 GitHub、Hugging Face、知乎、
-小红书、相关顶刊顶会、学者与实验室。无法访问的来源请如实记录。
+Use $research-to-fix: cover GitHub, Hugging Face, Zhihu, Xiaohongshu,
+relevant leading journals and conferences, researchers, and labs.
+Record any sources you cannot access truthfully.
 ```
 
-## 辅助工具
+## Helper tools
 
 ```bash
 python skills/research-to-fix/scripts/research_case.py queries \
@@ -71,37 +76,36 @@ python skills/research-to-fix/scripts/research_case.py validate \
   /tmp/research-case.json
 ```
 
-检索计划需在发送前人工检查；检测器无法识别全部秘密。省略 `--source` 会列出全部候选，按相关性选 4–8 条；论文/学者/实验室检索使用机制词。`init` 不覆盖已有文件。`validate` 检查记录结构与证据引用，不联网、不执行测试，也不独立证明修复成功。空模板的 blocked 状态合法；solved 需要原症状每项失败检查的同命令、同标准前后记录。本地推断可明确记录，无须虚构外部来源。
+Review the search plan before sending any queries; the detector cannot identify every secret. Omitting `--source` lists all candidates: select 4–8 by relevance. Searches for papers, researchers, and labs use mechanism keywords.
 
-## 项目结构
+`init` does not overwrite existing files. `validate` checks record structure and evidence references. The standard-library Python helper does not access the network, upload code, execute tests, or independently prove that a repair worked. An empty template with a blocked status is structurally valid. A solved record requires before/after entries with matching commands and success criteria for every failed check of the original symptom. Local inference can be recorded explicitly without inventing external sources.
 
-- `skills/research-to-fix/SKILL.md`：核心指令。
-- `skills/research-to-fix/references/`：来源检索、证据判定、修复流程和记录模板。
-- `skills/research-to-fix/scripts/research_case.py`：检索计划与记录检查工具。
-- `tests/`：辅助工具的行为验证。
-- `examples/`：独立可复现的小案例与练习输入。
+## Project structure
 
-## 验证与贡献
+- `skills/research-to-fix/SKILL.md`: core instructions.
+- `skills/research-to-fix/references/`: source selection, evidence rules, repair workflow, and case template.
+- `skills/research-to-fix/scripts/research_case.py`: query planning and record validation.
+- `tests/`: behavior checks for the helper tool.
+- `examples/`: small independently reproducible cases and practice inputs.
+
+## Validation and contributions
 
 ```bash
 python -m unittest discover -s tests -v
 python -m unittest discover -s examples/streaming-metrics -v
 ```
 
-欢迎提交真实问题中的改进：触发请求、环境、脱敏复现、实际调研与本地验证、哪里浪费了搜索或误判了适用性。不要上传私有代码、密钥或客户数据。新增来源应说明如何核验原始内容与访问失败；新增脚本应附实际运行结果。
+Contributions based on real problems are welcome. Include the triggering request, environment, redacted reproduction, actual research and local validation, and where the workflow wasted searches or misjudged applicability. Do not upload private code, secrets, or customer data. New sources should explain how to verify original content and record access failures; new scripts should include actual execution results.
 
-独立试用的 [流式统计案例](examples/streaming-metrics/README.md)包含原始证据、失败基线、兼容修复与可复现检查。这是小型合成案例，尚不代表大型工程或科研问题上的效果。当前版本不能保证所有平台可访问、每个问题都有外部答案或每项修复一定成功；访问受限与验证缺口应进入记录。
+The independently tried [streaming metrics case](examples/streaming-metrics/README.md) includes original evidence, a failing baseline, a compatible fix, and reproducible checks. It is a small synthetic case and does not establish effectiveness on large engineering or research problems. The current version cannot guarantee access to every platform, an external answer for every problem, or success for every repair. Record access restrictions and validation gaps.
 
-## English
+## License
 
-Research to Fix turns prior solutions into testable local hypotheses. Search relevant GitHub issues and patches, Hugging Face resources, Chinese community experience, official papers, and researcher or lab pages; verify conditions and versions; map evidence to local code; apply a minimal change; compare the original symptom before and after, then run relevant regressions.
+[MIT](LICENSE).
 
-The skill uses its host's search and coding tools. The standard-library Python helper generates reviewable queries and checks evidence-record consistency; it does not crawl, upload code, execute tests, or certify a repair. Missing access or validation is reported explicitly.
+## Related projects
 
-Concept and workflow design: **Afloat16**. License: [MIT](LICENSE).
+Browse the [Afloat16 project guide](https://github.com/Afloat16/research-to-fix/blob/main/docs/PROJECTS.md) by task: requirements debate, research and repair, task checks, endpoint diagnostics, notifications, MCP advice, robotics troubleshooting, and 3D reconstruction.
 
-## 相关开源项目
+Six domain-specific tools were added in this round. See the [review of 29 threads and 336 comments](docs/DEMAND_REVIEW.md) for their selection and boundaries, and the [outreach record](docs/OUTREACH.md) for actual directory submissions and replies to relevant issues.
 
-按用途浏览 [Afloat16 项目导航](https://github.com/Afloat16/research-to-fix/blob/main/docs/PROJECTS.md)，选择需求论证、调研修复、任务验收、接口诊断、通知、MCP建议、机器人排障和三维重建工具。
-
-本轮新增六个领域工具，选题与边界见 [29线程/336评论调研](docs/DEMAND_REVIEW.md)，实际目录申请和相关问题回复见 [推广记录](docs/OUTREACH.md)。

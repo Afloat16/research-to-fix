@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research to Fix"
+  short_description: "查找同类问题的可验证方案，结合本地代码完成修复与验证"
+  default_prompt: "使用 $research-to-fix 调研这个问题的已有解决方案，核验其适用性，再分析本地代码并修复验证。"

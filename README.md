@@ -6,6 +6,13 @@ Research to Fix 是一个遵循 [Agent Skills 格式](https://agentskills.io/spe
 
 创意与工作流设计：**[Afloat16](https://github.com/Afloat16)**。维护者：**Afloat16**。
 
+## 从哪里开始
+
+- 想让模型实际调研并修复项目：安装后使用 [示例请求](#使用)。
+- 想了解来源与核验方法：阅读 [来源检索指南](skills/research-to-fix/references/source-playbook.md)和 [证据判定](skills/research-to-fix/references/evidence-rules.md)。
+- 想先检查一个可复现的小案例：查看 [流式统计案例](examples/streaming-metrics/README.md)。
+- 想记录多轮调研或交接证据：使用 [辅助工具](#辅助工具)和 [记录模板](skills/research-to-fix/references/case-template.md)。
+
 ## 它做什么
 
 | 环节 | 产物 |
@@ -92,3 +99,7 @@ Research to Fix turns prior solutions into testable local hypotheses. Search rel
 The skill uses its host's search and coding tools. The standard-library Python helper generates reviewable queries and checks evidence-record consistency; it does not crawl, upload code, execute tests, or certify a repair. Missing access or validation is reported explicitly.
 
 Concept and workflow design: **Afloat16**. License: [MIT](LICENSE).
+
+## 相关开源项目
+
+按用途浏览 [Afloat16 项目导航](https://github.com/Afloat16/research-to-fix/blob/main/docs/PROJECTS.md)，选择需求论证、调研修复、任务验收、接口诊断、通知、MCP 建议或本地重建工具。

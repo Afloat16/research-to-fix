@@ -2,9 +2,9 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Find similar problems, verify prior solutions, and turn them into a testable local repair.**
+**Find similar problems, adapt or combine prior solutions, and verify a local repair.**
 
-Research to Fix is a research and repair workflow that follows the [Agent Skills format](https://agentskills.io/specification). For unfamiliar errors, hard-to-reproduce bugs, training instability, or performance regressions, it guides an agent to investigate whether others have solved a similar problem or found a viable approach, then check that approach against the current project's code, versions, and runtime conditions before applying a fix.
+Research to Fix is a research and repair workflow that follows the [Agent Skills format](https://agentskills.io/specification). For unfamiliar errors, hard-to-reproduce bugs, training instability, or performance regressions, it guides an agent to investigate whether others have solved a similar problem or found a viable approach, then check that approach against the current project's code, versions, and runtime conditions before applying a fix. Compatible parts of different solutions can be combined, with their contributions, adaptations, and joint validation recorded explicitly.
 
 Concept and workflow design: **[Afloat16](https://github.com/Afloat16)**. Maintainer: **Afloat16**.
 
@@ -21,7 +21,7 @@ Concept and workflow design: **[Afloat16](https://github.com/Afloat16)**. Mainta
 | --- | --- |
 | Problem fingerprint | Redacted error, environment and versions, call path, minimal reproduction, and success criteria |
 | Research across sources | Verifiable evidence from GitHub, Hugging Face, Zhihu, Xiaohongshu, original papers, researchers, and labs |
-| Applicability analysis | Source conditions mapped to local files and symbols, differences, candidate approaches, and falsifiable hypotheses |
+| Applicability analysis | Source conditions mapped to local files and symbols, candidate approaches, compatible components, tradeoffs, and falsifiable hypotheses |
 | Repair and experiments | Small code changes, before/after checks of the original symptom, relevant regressions, costs, and limitations |
 | Reviewable delivery | Original links, actual commands, exit codes, observations, and a solved / partial / blocked status |
 
@@ -44,8 +44,8 @@ Alternatively, clone the repository and copy the complete `skills/research-to-fi
 ```text
 Use $research-to-fix: this project occasionally hangs during multi-GPU training.
 First reproduce it and record the versions, then research similar issues and
-fix PRs online. Verify the differences from the current call path before
-changing the code and validating the repair.
+fix PRs online. Adapt or combine compatible solutions, explain the differences
+from the current call path, and validate the complete repair.
 ```
 
 ```text
@@ -67,18 +67,32 @@ Record any sources you cannot access truthfully.
 python skills/research-to-fix/scripts/research_case.py queries \
   --error 'RuntimeError: dtype mismatch' --component pytorch \
   --version 2.5 --concept 'mixed precision' \
-  --source github_issues --source huggingface_forum
+  --source github_issues --source huggingface_forum \
+  --repo pytorch/pytorch --language en --limit 4
 
 python skills/research-to-fix/scripts/research_case.py init \
   --output /tmp/research-case.json
 
 python skills/research-to-fix/scripts/research_case.py validate \
-  /tmp/research-case.json
+  /tmp/research-case.json --format json
 ```
 
-Review the search plan before sending any queries; the detector cannot identify every secret. Omitting `--source` lists all candidates: select 4–8 by relevance. Searches for papers, researchers, and labs use mechanism keywords.
+`queries` generates an offline plan. With no source or language filters or limit, it keeps the default 26 English and Chinese candidates; select 4–8 by relevance before searching. Searches for papers, researchers, and labs use mechanism keywords.
 
-`init` does not overwrite existing files. `validate` checks record structure and evidence references. The standard-library Python helper does not access the network, upload code, execute tests, or independently prove that a repair worked. An empty template with a blocked status is structurally valid. A solved record requires before/after entries with matching commands and success criteria for every failed check of the original symptom. Local inference can be recorded explicitly without inventing external sources.
+| Query option | Effect |
+| --- | --- |
+| `--source` | Select source categories; repeat to include several. |
+| `--language en` / `--language zh` | Select query languages; repeat to include both. |
+| `--limit N` | Cap the number of generated candidates with a positive integer. This does not set or execute an online search budget. |
+| `--repo owner/name` | Scope GitHub issue and pull-request candidates to one repository; other sources remain unchanged. |
+
+Review every query before sending it. Input checks reject common credential patterns, detected private addresses, and recognized non-HTTP(S) URI forms, but secret detection is heuristic and cannot guarantee safe disclosure.
+
+`init` does not overwrite existing files. `validate` checks record structure and declared references; `--format json` provides machine-readable results. Its exit codes are **0** for a structurally valid record, **1** for record errors, and **2** for file or JSON input errors. The standard-library helper does not access the network, authenticate to services, upload code, or execute recorded commands. Passing validation establishes neither the truth of the record nor a repair's effectiveness or cause.
+
+Schema version remains **1**. The comparison context, repair attempt, and adopted solution fields are optional, and the existing single-attempt format remains usable without them. Stricter checks intentionally reject incomplete or inconsistent records, including missing regression after checks, completed searches without dates, and malformed criteria.
+
+A solved record needs an after pass for **every recorded before check**, including regressions, plus at least one failure-to-pass comparison for the original symptom. Matching checks keep their command, criteria, expected exit code, and any declared comparison context consistent. Multiple attempts retain historical failures and explicitly identify the final attempt; a combined solution needs a supporting experiment that covers the whole combination. The [case template](skills/research-to-fix/references/case-template.md) describes these rules and optional fields. An empty blocked template remains valid, and local inference needs no invented external sources.
 
 ## Project structure
 

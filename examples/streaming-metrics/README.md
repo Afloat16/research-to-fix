@@ -47,3 +47,19 @@ python examples/streaming-metrics/check_memory.py
 内存阈值是峰值 ≤16 KiB，各规模最大差异 ≤4 KiB；数值会因 Python 与环境不同而改变。tracemalloc 是此 float 输入和解释器下的辅助测量，不是所有数值类型的完整内存证明。代码使用固定数量的状态且不缓存元素。
 
 最终状态为 solved，仅针对案例约定的行为与输入。原测试预期没有改写，新增测试检查了简单修复可能遗漏的兼容行为。
+
+## 生成可复用的实际运行记录
+
+从仓库根目录运行，输出目录必须不存在，且其父目录已存在：
+
+```bash
+python examples/streaming-metrics/record_case.py --output /tmp/streaming-metrics-case
+python skills/research-to-fix/scripts/research_case.py validate /tmp/streaming-metrics-case/case.json --format json
+python skills/research-to-fix/scripts/research_case.py recall --cases-dir /tmp/streaming-metrics-case --error 'single-use iterator count mean' --format markdown
+```
+
+独立的记录脚本在两个临时工作目录中运行本文的原始错误实现和当前 `metrics.py`。两边使用完全相同的测试、runner 和解释器；生成的 `case.json` 保留逐测试结果、实际退出码、实现差异、Python 版本和测试文件哈希。原始输出与可重放的源文件快照保存在 `runs/before/` 和 `runs/after/`。可将任一运行目录复制到新工作目录，执行其中记录的 `python -I _record_tests.py` 复查；before 的非零退出码是预期的错误基线。
+
+逐测试结果按稳定的方法 ID 汇总子测试，错误或失败不会被后续成功覆盖。因此，原始日志中的 failure/error 事件数可能大于方法级的失败数量。已有输出目录一律拒绝；中途出错时保留已产生的日志，换用新目录重试。
+
+这份新记录只验证行为测试，没有重新测量内存或执行新的外部调研。`recall` 和 `validate` 仍只读取案例数据，不执行案例中的命令。使用历史案例时重新核对当前问题的条件，不复用旧的 solved 结论。

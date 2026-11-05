@@ -13,6 +13,7 @@ Research to Fix 是一个遵循 [Agent Skills 格式](https://agentskills.io/spe
 - 想让模型实际调研并修复项目：安装后使用 [示例请求](#使用)。
 - 想了解来源与核验方法：阅读 [来源检索指南](skills/research-to-fix/references/source-playbook.md)和 [证据判定](skills/research-to-fix/references/evidence-rules.md)。
 - 想先检查一个可复现的小案例：查看 [流式统计案例](examples/streaming-metrics/README.md)。
+- 想复用已有修复经验：先 [记录案例并检索复用](#记录案例并检索复用)，目录由你明确指定。
 - 想记录多轮调研或交接证据：使用 [辅助工具](#辅助工具)和 [记录模板](skills/research-to-fix/references/case-template.md)。
 
 ## 它做什么
@@ -20,6 +21,7 @@ Research to Fix 是一个遵循 [Agent Skills 格式](https://agentskills.io/spe
 | 环节 | 产物 |
 | --- | --- |
 | 问题指纹 | 去敏错误、环境/版本、调用链、最小复现、成功标准 |
+| 本地案例复用 | 相关已有方案、命中词、版本事实、来源引用及需要重新核验的限制 |
 | 跨来源调研 | GitHub、Hugging Face、知乎、小红书、正式论文、学者与实验室的可核验证据 |
 | 适用性分析 | 来源条件与本地文件/符号的映射、候选方案、兼容部件、取舍及可证伪假设 |
 | 修复与实验 | 小范围代码改动、原症状前后对比、相关回归、成本与限制 |
@@ -58,6 +60,36 @@ npx skills add Afloat16/research-to-fix --skill research-to-fix
 小红书、相关顶刊顶会、学者与实验室。无法访问的来源请如实记录。
 ```
 
+## 记录案例并检索复用
+
+从仓库根目录运行，先用实际本地测试生成案例，再校验并查询相关案例：
+
+```bash
+python examples/streaming-metrics/record_case.py \
+  --output /tmp/research-to-fix-example
+
+python skills/research-to-fix/scripts/research_case.py validate \
+  /tmp/research-to-fix-example/case.json --format json
+
+python skills/research-to-fix/scripts/research_case.py recall \
+  --cases-dir /tmp/research-to-fix-example \
+  --error 'single-use iterator count mean' --limit 3 --format markdown
+```
+
+选择一个**尚不存在的输出目录**；`/tmp/research-to-fix-example` 只是示例位置。独立的 `record_case.py` 示例会在隔离的临时目录中，以相同测试和命令运行已记录的错误实现与当前修复实现，生成 `case.json`，并将实际日志及逐测试结果保存在 `runs/` 下。这个示例执行固定的本地测试；主辅助工具不执行案例文件中的命令。
+
+使用自己的案例时，将 `recall` 指向对应目录。它只读取该目录顶层的 JSON 文件，仅纳入结构校验通过且声明为 `solved` 的记录。案例目录本身及其 JSON 条目不得为符号链接；显式路径的祖先目录按系统规则正常解析。输出有界摘要与命中理由，不输出整段命令日志。排序使用本地 BM25 关键词匹配，并支持中文相邻字二元组，无需联网、模型、嵌入服务或第三方依赖。没有命中词时返回空结果，也不为凑满数量而加入弱相关案例。
+
+| 召回选项 | 作用 |
+| --- | --- |
+| `--cases-dir DIR`、`--error TEXT` | 明确指定案例目录及仅供本地词项匹配的问题描述。 |
+| `--component TEXT` | 可选组件筛选；去除首尾空白、忽略大小写后精确匹配。 |
+| `--version TEXT` | 仅报告字面比较结果 same / different / unknown，不改变排名，也不证明版本兼容。 |
+| `--limit N` | 最多返回 N 个候选，默认 5、最大 20。 |
+| `--format json` / `--format markdown` | 机器可读输出或便于阅读的候选列表。 |
+
+召回结果是新一轮修复的线索。采用旧方案前，仍需核对当前代码、条件、原始证据与测试。相关性分数不证明方案正确，记录中的 `solved` 也未经独立认证。recall 不自动脱敏，对外分享摘要前须复核内容。资源上限、选择规则与参考项目见 [本地案例复用](skills/research-to-fix/references/case-reuse.md)。
+
 ## 辅助工具
 
 ```bash
@@ -87,15 +119,17 @@ python skills/research-to-fix/scripts/research_case.py validate \
 
 `init` 不覆盖已有文件。`validate` 检查记录结构与已声明的引用，`--format json` 提供机器可读结果。退出码 **0** 表示结构通过，**1** 表示记录错误，**2** 表示文件或 JSON 输入错误。纯标准库辅助工具不联网、不登录服务、不上传代码，也不执行记录中的命令。通过校验不能证明记录真实、修复有效或因果判断成立。
 
-格式仍为 **schema_version: 1**。新增的比较上下文、修复轮次和采用方案字段均可选，原单轮格式可继续使用，无须补填这些字段。校验有意收紧：遗漏回归 after 检查、completed 搜索缺少日期、criteria 类型错误等不完整或矛盾的记录现在会被拒绝。
+格式仍为 **schema_version: 1**。比较上下文、修复轮次、采用方案和逐测试结果字段均可选，原单轮格式可继续使用，无须补填这些字段。校验有意收紧：遗漏回归 after 检查、completed 搜索缺少日期、criteria 类型错误等不完整或矛盾的记录现在会被拒绝。
 
 `solved` 要求**每项已记录的 before 检查**都有 after pass，包括回归测试，并且至少有一项原症状从失败变通过。前后配对检查保持命令、标准、预期退出码及已声明的比较上下文一致。多轮记录保留历史失败并明确最终验收轮次；组合方案需要覆盖整个组合的支持实验。详细规则见 [案例模板](skills/research-to-fix/references/case-template.md)。空的 blocked 模板仍合法；本地推断无需虚构外部来源。
+
+测试套件可用 `test_results` 记录稳定的测试 ID 与结果。pass 记录不能零通过，也不能包含失败、错误或未执行项。前后比较提供明细时，最终结果必须保留全部基线测试 ID；原先通过、失败或错误的测试都须最终通过，原本已跳过的测试可继续跳过。不提供明细的旧记录仍兼容，但校验器无法仅凭套件的总退出码识别内部删测或跳过。
 
 ## 项目结构
 
 - `skills/research-to-fix/SKILL.md`：核心指令。
-- `skills/research-to-fix/references/`：来源检索、证据判定、修复流程和记录模板。
-- `skills/research-to-fix/scripts/research_case.py`：检索计划与记录检查工具。
+- `skills/research-to-fix/references/`：来源检索、案例复用、证据判定、修复流程和记录模板。
+- `skills/research-to-fix/scripts/research_case.py`：检索计划、本地案例召回与记录检查工具。
 - `tests/`：辅助工具的行为验证。
 - `examples/`：独立可复现的小案例与练习输入。
 
@@ -105,6 +139,8 @@ python skills/research-to-fix/scripts/research_case.py validate \
 python -m unittest discover -s tests -v
 python -m unittest discover -s examples/streaming-metrics -v
 ```
+
+CI 在 Python 3.10 和 3.13 上运行这些检查，再记录、校验并召回流式示例。成功任务将案例、源码快照、原始测试日志、逐测试报告及检索结果保存为 `repair-case-python-<版本>` 产物，保留 7 天。这些是可复查的小案例结果，不代表通用修复成功率。
 
 欢迎提交真实问题中的改进：触发请求、环境、脱敏复现、实际调研与本地验证、哪里浪费了搜索或误判了适用性。不要上传私有代码、密钥或客户数据。新增来源应说明如何核验原始内容与访问失败；新增脚本应附实际运行结果。
 

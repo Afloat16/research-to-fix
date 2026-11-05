@@ -22,3 +22,17 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m unittest discover -s tests -v
       - run: python -m unittest discover -s examples/streaming-metrics -v
+      - name: Record and retrieve a reproducible repair case
+        run: |
+          python examples/streaming-metrics/record_case.py --output "$RUNNER_TEMP/research-to-fix-case"
+          python skills/research-to-fix/scripts/research_case.py validate "$RUNNER_TEMP/research-to-fix-case/case.json" --format json
+          python skills/research-to-fix/scripts/research_case.py recall --cases-dir "$RUNNER_TEMP/research-to-fix-case" --error 'single-use iterator count mean' --format json > "$RUNNER_TEMP/research-to-fix-recall.json"
+      - name: Save example run artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repair-case-python-${{ matrix.python }}
+          path: |
+            ${{ runner.temp }}/research-to-fix-case/
+            ${{ runner.temp }}/research-to-fix-recall.json
+          retention-days: 7
+          if-no-files-found: error

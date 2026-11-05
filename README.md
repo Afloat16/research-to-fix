@@ -13,6 +13,7 @@ Concept and workflow design: **[Afloat16](https://github.com/Afloat16)**. Mainta
 - To research and repair a project: install the skill, then use the [example requests](#usage).
 - To understand source selection and verification: read the [source playbook](skills/research-to-fix/references/source-playbook.md) and [evidence rules](skills/research-to-fix/references/evidence-rules.md).
 - To inspect a small reproducible case first: see the [streaming metrics example](examples/streaming-metrics/README.md).
+- To reuse a previous repair: [record a case and recall related cases](#record-and-reuse-a-case) from a directory you choose.
 - To record multiple research rounds or hand off evidence: use the [helper tools](#helper-tools) and [case template](skills/research-to-fix/references/case-template.md).
 
 ## What it does
@@ -20,6 +21,7 @@ Concept and workflow design: **[Afloat16](https://github.com/Afloat16)**. Mainta
 | Stage | Output |
 | --- | --- |
 | Problem fingerprint | Redacted error, environment and versions, call path, minimal reproduction, and success criteria |
+| Local case reuse | Related recorded solutions, matching terms, version facts, source references, and limitations to recheck |
 | Research across sources | Verifiable evidence from GitHub, Hugging Face, Zhihu, Xiaohongshu, original papers, researchers, and labs |
 | Applicability analysis | Source conditions mapped to local files and symbols, candidate approaches, compatible components, tradeoffs, and falsifiable hypotheses |
 | Repair and experiments | Small code changes, before/after checks of the original symptom, relevant regressions, costs, and limitations |
@@ -61,6 +63,36 @@ relevant leading journals and conferences, researchers, and labs.
 Record any sources you cannot access truthfully.
 ```
 
+## Record and reuse a case
+
+From the repository root, generate a case from actual local test runs, check it, then recall it for a related problem:
+
+```bash
+python examples/streaming-metrics/record_case.py \
+  --output /tmp/research-to-fix-example
+
+python skills/research-to-fix/scripts/research_case.py validate \
+  /tmp/research-to-fix-example/case.json --format json
+
+python skills/research-to-fix/scripts/research_case.py recall \
+  --cases-dir /tmp/research-to-fix-example \
+  --error 'single-use iterator count mean' --limit 3 --format markdown
+```
+
+Choose a **new output directory**; `/tmp/research-to-fix-example` is an example location. The separate `record_case.py` example runs the documented broken implementation and the current fixed implementation in an isolated temporary directory, using the same tests and command. It writes `case.json` and the actual logs and per-test outcomes under `runs/`. This example executes its fixed local tests; the main helper never executes commands from a case file.
+
+For your own cases, point `recall` at their directory. It reads only that directory's top-level JSON files and considers only structurally valid records declaring `solved`. The case directory itself and its JSON entries cannot be symbolic links; ancestors in the explicitly supplied path resolve normally. It returns bounded summaries and matching reasons rather than complete command logs. Ranking uses local BM25 keyword matching, including Chinese character pairs; it requires no network, model, embedding service, or additional package. No matching terms means no result, and weak matches are not added merely to fill the limit.
+
+| Recall option | Effect |
+| --- | --- |
+| `--cases-dir DIR`, `--error TEXT` | Explicit case directory and a local problem description for keyword matching. |
+| `--component TEXT` | Optional trimmed, case-insensitive exact component filter. |
+| `--version TEXT` | Report a literal `same` / `different` / `unknown` comparison; it does not change ranking or establish compatibility. |
+| `--limit N` | Return at most N candidates; default 5, maximum 20. |
+| `--format json` / `--format markdown` | Machine-readable output or a readable candidate list. |
+
+Recall results are leads for a new repair. Recheck the current code, conditions, original evidence, and tests before adapting a prior solution. A relevance score is not proof of correctness, and a recorded `solved` status is not independently authenticated. Recall does not automatically redact local content; review excerpts before sharing them. See [case reuse](skills/research-to-fix/references/case-reuse.md) for resource limits, selection rules, and the upstream implementations that informed this design.
+
 ## Helper tools
 
 ```bash
@@ -90,15 +122,17 @@ Review every query before sending it. Input checks reject common credential patt
 
 `init` does not overwrite existing files. `validate` checks record structure and declared references; `--format json` provides machine-readable results. Its exit codes are **0** for a structurally valid record, **1** for record errors, and **2** for file or JSON input errors. The standard-library helper does not access the network, authenticate to services, upload code, or execute recorded commands. Passing validation establishes neither the truth of the record nor a repair's effectiveness or cause.
 
-Schema version remains **1**. The comparison context, repair attempt, and adopted solution fields are optional, and the existing single-attempt format remains usable without them. Stricter checks intentionally reject incomplete or inconsistent records, including missing regression after checks, completed searches without dates, and malformed criteria.
+Schema version remains **1**. Comparison context, repair attempt, adopted solution, and per-test result fields are optional, and the existing single-attempt format remains usable without them. Stricter checks intentionally reject incomplete or inconsistent records, including missing regression after checks, completed searches without dates, and malformed criteria.
 
 A solved record needs an after pass for **every recorded before check**, including regressions, plus at least one failure-to-pass comparison for the original symptom. Matching checks keep their command, criteria, expected exit code, and any declared comparison context consistent. Multiple attempts retain historical failures and explicitly identify the final attempt; a combined solution needs a supporting experiment that covers the whole combination. The [case template](skills/research-to-fix/references/case-template.md) describes these rules and optional fields. An empty blocked template remains valid, and local inference needs no invented external sources.
+
+For test suites, record optional `test_results` with stable test IDs and outcomes. A pass cannot contain zero passing tests, failures, errors, or unexecuted tests. When details are supplied for a before/after comparison, final results must retain every baseline test ID and pass every test that previously passed, failed, or errored; previously skipped tests may remain skipped. Legacy records without these details remain supported, but the validator cannot detect deleted or skipped tests inside their suite from an aggregate exit code alone.
 
 ## Project structure
 
 - `skills/research-to-fix/SKILL.md`: core instructions.
-- `skills/research-to-fix/references/`: source selection, evidence rules, repair workflow, and case template.
-- `skills/research-to-fix/scripts/research_case.py`: query planning and record validation.
+- `skills/research-to-fix/references/`: source selection, case reuse, evidence rules, repair workflow, and case template.
+- `skills/research-to-fix/scripts/research_case.py`: query planning, local case recall, and record validation.
 - `tests/`: behavior checks for the helper tool.
 - `examples/`: small independently reproducible cases and practice inputs.
 
@@ -108,6 +142,8 @@ A solved record needs an after pass for **every recorded before check**, includi
 python -m unittest discover -s tests -v
 python -m unittest discover -s examples/streaming-metrics -v
 ```
+
+CI runs these checks on Python 3.10 and 3.13, then records, validates, and retrieves the streaming example. Successful jobs retain the case, source snapshots, raw test logs, per-test reports, and retrieval result as `repair-case-python-<version>` artifacts for 7 days. These are reviewable results for this small example, not a general repair-success benchmark.
 
 Contributions based on real problems are welcome. Include the triggering request, environment, redacted reproduction, actual research and local validation, and where the workflow wasted searches or misjudged applicability. Do not upload private code, secrets, or customer data. New sources should explain how to verify original content and record access failures; new scripts should include actual execution results.
 

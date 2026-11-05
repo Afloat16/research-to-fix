@@ -2,7 +2,7 @@
 
 按问题规模选择简短 Markdown 或结构化 JSON。默认本地保存，公开前去掉私有路径、数据、账户、内部地址和研究细节。
 
-导航：[简短模板](#简短交付模板) · [JSON 工具](#json-工具) · [字段与来源状态](#字段与来源状态) · [可比检查](#可比检查与-solved) · [多轮与组合](#多轮修复与方案组合) · [示例片段](#组合与轮次示例片段)
+导航：[简短模板](#简短交付模板) · [JSON 工具](#json-工具) · [字段与来源状态](#字段与来源状态) · [可比检查](#可比检查与-solved) · [逐测试明细](#逐测试明细) · [多轮与组合](#多轮修复与方案组合) · [示例片段](#组合与轮次示例片段)
 
 ## 简短交付模板
 
@@ -37,6 +37,7 @@
 | --- | --- | --- | --- | --- | --- |
 
 - 最终验收轮次与历史失败：
+- 套件内稳定测试 ID、逐测试结果及跳过项：
 - 相关回归、兼容性与资源成本：
 - 状态：solved / partial / blocked
 - 未解决项与下一步：
@@ -53,6 +54,8 @@ python scripts/research_case.py queries \
   --repo pytorch/pytorch --language en --limit 4
 python scripts/research_case.py init --output /tmp/research-case.json
 python scripts/research_case.py validate /tmp/research-case.json --format json
+python scripts/research_case.py recall --cases-dir /tmp/research-to-fix-example \
+  --error 'single-use iterator count mean' --limit 3 --format markdown
 ```
 
 `queries` 只产生候选查询，不搜索、抓取、登录或上传。默认生成 26 条中英文候选，按相关性选 4–8 条发送。`--source` 和 `--language en` / `--language zh` 均可重复；`--limit` 必须为正整数，仅限制生成数量，不是实际联网预算。`--repo owner/name` 只缩小 GitHub issue/PR 的仓库范围，其他来源不变。论文、学者和实验室查询使用 `--concept` 机制词，缺机制词时须先人工改写。
@@ -61,9 +64,11 @@ python scripts/research_case.py validate /tmp/research-case.json --format json
 
 `validate` 默认输出文本，`--format json` 输出机器可读结果。退出码 0 表示结构通过，1 表示案例记录错误，2 表示文件读取或 JSON 输入错误。通过检查只说明声明与引用符合规则，不证明问题已解决。
 
+`recall` 只从明确指定目录的顶层 JSON 中筛选结构有效、声明 solved 的已有案例。组件筛选、版本事实、匹配规则与资源上限见 [本地案例复用](case-reuse.md)。目录不存在或没有匹配案例时，不编造可复用经验；它不执行案例命令，也不替代当前问题的调研与验证。
+
 ## 字段与来源状态
 
-`schema_version` 仍为 1，新增的比较上下文、轮次与方案字段均可选。原单轮格式可继续使用，无须补填新字段或升级格式版本。校验有意收紧：遗漏回归 after 检查、completed 缺少日期、criteria 类型错误等此前通过的记录现在可能被拒绝，须补齐或纠正真实记录。
+`schema_version` 仍为 1，比较上下文、轮次、方案与逐测试明细字段均可选。原单轮格式可继续使用，无须补填新字段或升级格式版本。校验有意收紧：遗漏回归 after 检查、completed 缺少日期、criteria 类型错误等此前通过的记录现在可能被拒绝，须补齐或纠正真实记录。
 
 | 顶层字段 | 填写内容 |
 | --- | --- |
@@ -91,6 +96,7 @@ python scripts/research_case.py validate /tmp/research-case.json --format json
 | `criteria` | 已执行 reproduction / benchmark 必填；其他检查可选。任何已提供的标准都须为非空字符串，验收前后保持一致。 |
 | `expected_exit_code`（可选） | 整数，省略为 0；pass 的实际退出码须等于它，验收前后预期值不变。预期拒绝非法输入等场景可明确填写非零码。 |
 | `comparison_context`（可选） | 非空对象，键和值均为非空字符串；solved 验收时前后任一侧提供，两侧就须有相同内容。可记录 input、data_split、seed_set、check_revision、protocol 等需要固定的条件。 |
+| `test_results`（可选） | 稳定测试 ID 到 pass / fail / error / skipped / not_run 的对象；各 kind 的执行记录均可提供，按下文核对逐测试覆盖与结果。 |
 
 本轮计划修改的依赖版本、配置或算法应写入实验 change，不放进不可变 comparison_context。性能检查即使退出码符合预期，未达阈值仍须标 fail；校验器不会读取指标或判断实际是否达标。
 
@@ -98,11 +104,30 @@ python scripts/research_case.py validate /tmp/research-case.json --format json
 
 1. 有问题描述、本地映射和支持假设的实验；使用轮次时，支持实验属于指定最终轮。
 2. 至少一项原症状 reproduction / benchmark 有 before fail → after pass，单独的回归测试不能替代它。
-3. **每项已记录的 before 检查**，包括原先通过、失败或未执行的回归，都有最终验收轮的 after pass。按 check_id、kind、command 配对，并保持上述比较字段一致。
-4. `problem.reproduction` 若已填写 fail 命令，它必须对应同命令的 before 原症状失败记录；可选 check_id 进一步明确关联。若摘要明确填写 criteria、expected_exit_code 或 comparison_context，这些字段也须与关联的 before 记录一致。未填写旧摘要时，可由 validation.runs 提供完整事实。
+3. **每项已记录的 before 检查**，包括原先通过、失败或未执行的回归，都有最终验收轮的 after pass。按 check_id、kind、command 配对，保持标准、预期退出码和比较上下文一致；提供逐测试明细时，还须满足下节的覆盖规则。
+4. `problem.reproduction` 若已填写 fail 命令，它必须对应同命令的 before 原症状失败记录；可选 check_id 进一步明确关联。若摘要明确填写 criteria、expected_exit_code、comparison_context 或 test_results，这些字段也须与关联的 before 记录完整一致。未填写旧摘要时，可由 validation.runs 提供完整事实。
 5. 最终验收轮没有 fail / not_run 项；若填写 solution，还须满足下节的整体支持与冲突规则。
 
 因此，不必删除历史失败来获得 solved；用明确轮次区分历史与最终验收。缺少验证时保留 partial 或 blocked。
+
+### 逐测试明细
+
+仅有“测试命令退出 0”不能说明套件内每个测试仍然执行。新案例中的测试套件应尽量记录 `test_results`，键为非空的稳定测试 ID，值必须为 pass / fail / error / skipped / not_run。以下仅展示尚未执行的字段形状，不是运行结果：
+
+```json
+{
+  "test_results": {
+    "tests.test_index.TestIndex.test_boundary": "not_run",
+    "tests.test_index.TestIndex.test_existing_behavior": "not_run"
+  }
+}
+```
+
+- 整条执行记录声明 pass 时，明细中至少有一个 pass，且不得有 fail、error 或 not_run。空对象、全部 skipped 均不能支持 pass。
+- 整条记录声明 not_run 时，明细只能为空或全部 not_run，不能填造已执行或已跳过的结果。
+- 标为 solved 的同一检查，before 或最终 after 任一侧提供明细，所有配对记录都必须提供。最终每次 after 必须保留所有 before 中的测试 ID；原先 pass、fail 或 error 的测试都须最终 pass，不能删除或改为 skipped。原本 skipped 的测试可以保持 skipped，允许增加新的通过测试。
+
+测试 ID 按完整字符串精确比较。历史轮次中的通过结果不能替代最终轮的结果。全部省略明细的旧案例仍可校验，但工具无法从总退出码识别其套件内部删测或 skip；即使明细齐全，校验也只检查自报记录，不能认证日志真实或测试足够全面。
 
 ## 多轮修复与方案组合
 

@@ -1,0 +1,42 @@
+name: External transfer
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'next/exact-recall-evaluation'
+    paths:
+      - 'benchmarks/transfer_v12.py'
+      - 'benchmarks/independent_data.py'
+      - '.github/workflows/external-transfer.yml'
+permissions:
+  contents: read
+concurrency:
+  group: external-transfer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - name: Install benchmark-only comparators
+        run: python -m pip install -r benchmarks/requirements-bm25s.txt rank-bm25==0.2.2
+      - name: Fetch fixed external corpus
+        run: python benchmarks/independent_data.py --dataset mathematica --output "$RUNNER_TEMP/mathematica"
+      - name: Evaluate all frozen methods and exact recall parity
+        run: python benchmarks/transfer_v12.py --data "$RUNNER_TEMP/mathematica" --output "$RUNNER_TEMP/transfer.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mathematica-transfer
+          path: |
+            ${{ runner.temp }}/transfer.json
+            ${{ runner.temp }}/mathematica/manifest.json
+          retention-days: 30
+          if-no-files-found: error

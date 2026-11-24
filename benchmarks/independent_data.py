@@ -16,6 +16,7 @@ SQ = "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b0988
 DATASETS = {
     "programmers": (CQA + "programmers/", CQ + "programmers/", 32176, 876),
     "stats": (CQA + "stats/", CQ + "stats/", 42269, 652),
+    "mathematica": (CQA + "mathematica/", CQ + "mathematica/", 16705, 804),
     "scifact": (SCI, SQ, 5183, 300),
 }
 LIMITS = {"corpus.parquet": 64 * 1024 * 1024, "queries.parquet": 4 * 1024 * 1024, "test.tsv": 1024 * 1024}
@@ -60,6 +61,9 @@ def fetch(dataset, output):
 TEV_CORPUS = "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/"
 TEV_QUERIES = "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/"
 TEV = {
+    # Exact source revisions are pinned above. First transfer download records
+    # digests; a fresh benchmark report never rewrites past source manifests.
+    "mathematica": ("cqadupstack-mathematica", None, None),
     "programmers": ("cqadupstack-programmers",
                     "2779027fdaaa5f578d9b8fe6488937bc3a042e387e927f20dbd0135ac1edf90d",
                     "fcecbac2e3f7d86be8cc463f1bb49fa35d276f35e3a294bbec84c79c1f7a3065"),

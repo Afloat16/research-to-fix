@@ -1,0 +1,9 @@
+# Independent retrieval evaluation protocol (frozen before results)
+
+- Release v1.0.0 baseline: `b641383a2bfe8711347386e6c4cac5768608ab65`. Existing tokenizers and ranking modes are unchanged.
+- Development: BEIR CQADupStack Programmers full 32,176-document corpus and fixed SHA-256 20% query bucket (seed `r2f-independent-v1:2026-11-24:`, first 32 bits modulo 5 equals zero). Only this bucket may be used to diagnose and select new ranking methods.
+- Final: remaining Programmers queries; complete Stats and SciFact test queries, all official corpora. No final metrics before algorithm selection and parameter freeze. The datasets are public, not a secret blind test, but the holdout is not used for this iteration's tuning.
+- All methods use the same corpus, title/body character budgets and top-10, exclude self IDs, evaluate official positive qrels, and report mean nDCG@10, recall@10, MRR@10, hit@10, build and query latency, paired query-level bootstrap interval. Do not compare modified preprocessing numbers directly to published BEIR leaderboards. Label all additional methods and dependencies.
+- Primary quality metric nDCG@10. We report ties, losses and uncertain intervals; superiority requires positive paired interval on the stated dataset against the stated competitor, not a universal claim. No post-hoc selection on the held-out metrics.
+- Baselines: existing R2F modes and native SQLite FTS5 Unicode/Porter with its BM25 implementation; later benchmark-only open-source implementations may be added before holdout. End-to-end model-controlled agent evaluation is a distinct problem, not measured by retrieval.
+- Public dataset revisions pinned, downloaded file SHA-256 recorded, license CC BY-SA 4.0. Do not commit corpus text. Citation: Thakur et al., BEIR, NeurIPS 2021, https://openreview.net/forum?id=wCu6T5xFjeJ.

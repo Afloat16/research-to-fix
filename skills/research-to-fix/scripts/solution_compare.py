@@ -126,10 +126,16 @@ def evidence_records(value):
         access = row.get("access")
         if access not in w.ACCESS:
             w.fail("invalid_access")
-        evidence[key] = {"url": w.canonical_url(row.get("url")), "access": access,
+        kind = row.get("source_kind", "unspecified")
+        if kind not in ("paper", "repository", "issue", "documentation", "dataset", "other", "unspecified"):
+            w.fail("invalid_evidence_kind")
+        evidence[key] = {"url": w.canonical_url(row.get("url")), "original_url": row["url"], "access": access,
                          "claim": w.text(row.get("claim"), 600),
                          "conditions": w.text(row.get("conditions"), 500),
-                         "limitations": w.text(row.get("limitations"), 500)}
+                         "limitations": w.text(row.get("limitations"), 500),
+                         "source_kind": kind,
+                         "locator": w.text(row.get("locator", ""), 300, False),
+                         "revision": w.text(row.get("revision", ""), 120, False)}
     return evidence
 
 
@@ -272,7 +278,60 @@ def paired_delta(base, other, spec):
     return result
 
 
-def compare(value, protocol_lock=None):
+def design_definition(value):
+    """Canonical pre-measurement design (protocol + candidates + cited evidence)."""
+    value = w.object_(value)
+    if type(value.get("schema_version")) is not int or value["schema_version"] != 1:
+        w.fail("invalid_comparison_schema")
+    spec = protocol(value.get("protocol"))
+    evidence = evidence_records(value.get("evidence", []))
+    definitions = {}
+    for row in rows(value.get("candidates"), MAX_CANDIDATES, 2):
+        result, _ = candidate(row, spec, evidence)
+        key = result["id"]
+        if key in definitions:
+            w.fail("duplicate_candidate")
+        if result["basis"] in ("external", "mixed"):
+            if row.get("compatibility_review") != "compatible":
+                w.fail("design_compatibility_review_required")
+            for ref in result["supporting_evidence_ids"]:
+                source = evidence[ref]
+                if source["access"] != "read" or not source["locator"] or source["source_kind"] == "unspecified":
+                    w.fail("design_support_locator_required")
+                if source["source_kind"] == "repository" and not source["revision"]:
+                    w.fail("design_code_revision_required")
+        if row.get("reuse_external_code", False) and row.get("license_review") != "permitted":
+            w.fail("design_code_license_required")
+        static = {field: result[field] for field in ("id", "title", "basis", "evidence_ids", "supporting_evidence_ids")}
+        if result["basis"] != "baseline":
+            static.update({field: w.text(row[field], 600) for field in ("mechanism", "local_target", "hypothesis", "change")})
+        static.update(compatibility_review=row.get("compatibility_review"),
+                      reuse_external_code=row.get("reuse_external_code", False), license_review=row.get("license_review"))
+        definitions[key] = static
+    if sum(row["basis"] == "baseline" for row in definitions.values()) != 1:
+        w.fail("one_baseline_required")
+    return {"protocol": spec, "evidence": evidence, "candidates": definitions}
+
+
+def freeze_design(value):
+    design = design_definition(value)
+    if any(row.get("state") != "planned" or row.get("runs", []) for row in value["candidates"]):
+        w.fail("design_must_be_frozen_before_measurements")
+    return {"schema_version": 1, "scope": "experiment_design_lock", "design_sha256": w.plan_digest(design),
+            "design": design, "notice": "Store before measurement; hashes detect drift relative to the retained lock, not chronology or authenticity."}
+
+
+def check_design_lock(value, comparison):
+    value = w.object_(value)
+    design = design_definition(comparison)
+    digest = w.plan_digest(design)
+    if (value.get("schema_version") != 1 or value.get("scope") != "experiment_design_lock"
+            or value.get("design") != design or value.get("design_sha256") != digest):
+        w.fail("design_lock_mismatch")
+    return digest
+
+
+def compare(value, protocol_lock=None, design_lock=None):
     value = w.object_(value)
     if type(value.get("schema_version")) is not int or value["schema_version"] != 1:
         w.fail("invalid_comparison_schema")
@@ -281,6 +340,9 @@ def compare(value, protocol_lock=None):
         check_lock(protocol_lock, spec)
     if "protocol_sha256" in value and value["protocol_sha256"] != w.plan_digest(spec):
         w.fail("protocol_digest_mismatch")
+    design_digest = check_design_lock(design_lock, value) if design_lock is not None else None
+    if "design_sha256" in value and (design_digest is None or value["design_sha256"] != design_digest):
+        w.fail("design_digest_requires_matching_lock")
     evidence = evidence_records(value.get("evidence", []))
     candidates, runs = [], {}
     for row in rows(value.get("candidates"), MAX_CANDIDATES, 2):
@@ -335,7 +397,8 @@ def compare(value, protocol_lock=None):
         warnings.append("protocol_not_checked_against_independent_lock")
     return {"schema_version": 1, "scope": "conditional_measured_comparison", "notice": NOTICE,
             "protocol_id": spec["id"], "protocol_sha256": w.plan_digest(spec),
-            "protocol_lock_checked": protocol_lock is not None, "decision_policy": spec["decision_policy"],
+            "protocol_lock_checked": protocol_lock is not None, "design_lock_checked": design_lock is not None,
+            "design_sha256": design_digest, "decision_policy": spec["decision_policy"],
             "replicates": len(spec["replicates"]),
             "objectives": spec["objectives"], "declared_priority": spec["priority"],
             "baseline": baseline["id"], "decision": decision, "selected_candidate": selected,
@@ -351,17 +414,21 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--comparison", type=Path)
     mode.add_argument("--freeze-protocol", type=Path, help="Input is a standalone experiment protocol JSON")
+    mode.add_argument("--freeze-design", type=Path, help="Freeze a complete planned comparison, including candidate definitions and sources")
     parser.add_argument("--protocol-lock", type=Path, help="Independently retained lock from before measurements")
+    parser.add_argument("--design-lock", type=Path, help="Independently retained design lock from before measurements")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
-        if args.freeze_protocol:
-            if args.protocol_lock or not args.output:
+        if args.freeze_protocol or args.freeze_design:
+            if args.protocol_lock or args.design_lock or not args.output:
                 w.fail("freeze_requires_new_output_without_lock")
-            result = freeze_protocol(w.read_json(args.freeze_protocol))
+            result = (freeze_protocol(w.read_json(args.freeze_protocol)) if args.freeze_protocol
+                      else freeze_design(w.read_json(args.freeze_design)))
         else:
             result = compare(w.read_json(args.comparison),
-                             w.read_json(args.protocol_lock) if args.protocol_lock else None)
+                             w.read_json(args.protocol_lock) if args.protocol_lock else None,
+                             w.read_json(args.design_lock) if args.design_lock else None)
         w.write_json(result, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

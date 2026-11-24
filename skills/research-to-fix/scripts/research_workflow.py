@@ -359,6 +359,9 @@ def normalize_result(row, queries):
     access = row.get("access", "metadata")
     if access not in ACCESS:
         fail("invalid_access")
+    publication_flag = row.get("publication_flag", "unknown")
+    if publication_flag not in ("unknown", "not_flagged", "retracted_or_withdrawn"):
+        fail("invalid_publication_flag")
     url = canonical_url(row.get("url"))
     original_url = row["url"]
     title = _safe_excerpt(row.get("title"), 300)
@@ -404,7 +407,7 @@ def normalize_result(row, queries):
     # The original locator (including revision/anchor) remains in provenance.
     return {"query_id": qid, "source": q["source"], "family": KIND_FAMILY[kind], "kind": kind,
             "url": url, "original_url": original_url, "title": title, "snippet": snippet,
-            "access": access, "origin": origin, "keys": keys, "links": links,
+            "access": access, "origin": origin, "keys": keys, "links": links, "publication_flag": publication_flag,
             "revision": _safe_excerpt(row.get("revision"), 100),
             "publication_hint": _safe_excerpt(row.get("publication_hint"), 120),
             "license_hint": _safe_excerpt(row.get("license_hint"), 120),
@@ -620,6 +623,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                        "license_hint": winner["license_hint"], "maintenance_hint": winner["maintenance_hint"], "identities": ids,
                        "observations": len(group), "provenance": sources,
                        "provenance_truncated": len(provenance) > len(sources),
+                       "publication_warning": any(row["publication_flag"] == "retracted_or_withdrawn" for row in group),
                        "read_observations": sum(row["access"] == "read" for row in group),
                        "review_required": True}
         all_nodes[stable_id] = node
@@ -678,7 +682,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     eligible = [row for row in ranked if (ranking != "facet" or row["relevance"] >= max(.08, .30 * best))
                 and (ranking not in ("bm25", "paired") or row["bm25_score"] > 0)
                 and (ranking != "fusion" or row["fusion_score"] > 0)
-                and row["access"] not in ("unavailable", "access_blocked")]
+                and row["access"] not in ("unavailable", "access_blocked") and not row["publication_warning"]]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
     chosen = eligible[:limit]
     # Match only explicit links to known URL identities. Do not infer
@@ -735,9 +739,9 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         for pair in pairs:
             left, right = nodes[pair["paper_id"]], nodes[pair["code_id"]]
             for seed, partner in ((left, right), (right, left)):
-                if seed["id"] not in relevant_ids or seed["access"] in ("unavailable", "access_blocked"):
+                if seed["id"] not in relevant_ids or seed["access"] in ("unavailable", "access_blocked") or seed["publication_warning"]:
                     continue
-                if partner["access"] in ("unavailable", "access_blocked"):
+                if partner["access"] in ("unavailable", "access_blocked") or partner["publication_warning"]:
                     continue
                 weight = .35 if pair["basis"] == "read" else .25
                 boosts[partner["id"]] = max(boosts[partner["id"]], weight * seed["bm25_score"])
@@ -749,7 +753,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         paired_ranked = [row for row in nodes.values() if row["id"] in relevant_ids or row["linked_only"]]
         paired_ranked.sort(key=ordering)
         ranked = paired_ranked
-        chosen = [row for row in ranked if row["pair_score"] > 0 and
+        chosen = [row for row in ranked if row["pair_score"] > 0 and not row["publication_warning"] and
                   row["access"] not in ("unavailable", "access_blocked")][:limit]
     # Make follow-up priorities explicit, without copying untrusted source text
     # into outbound queries. The host must extract a redacted new fingerprint.
@@ -803,6 +807,8 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                                "notice": "Links are source assertions, not authenticated official relationships."},
             "omitted_sources": plan["omitted_sources"], "family_gaps": family_gaps,
             "linked_followups": followup_rows,
+            "publication_review": [{k: row[k] for k in ("id", "url", "title", "publication_hint", "access")}
+                                   for row in ranked if row["publication_warning"]][:12],
             "unrecorded_queries": [qid for qid in queries if not searches[qid]],
             "needs_original_review": [row["id"] for row in chosen if row["access"] != "read"],
             "next_steps": ["Read original papers, code, tests and version/venue/license details.",

@@ -169,6 +169,29 @@ class CompareTests(unittest.TestCase):
         candidate["compatibility_review"] = "compatible"
         self.assertEqual(s.compare(value)["pareto_frontier"], ["accurate", "fast"])
 
+    def test_design_lock_binds_hypothesis_and_source_locators(self):
+        value = fixture()
+        value["evidence"][0].update(source_kind="paper", locator="Section 3")
+        value["candidates"][2]["compatibility_review"] = "compatible"
+        planned = copy.deepcopy(value)
+        for row in planned["candidates"]:
+            row.update(state="planned", runs=[])
+        lock = s.freeze_design(planned)
+        self.assertTrue(s.compare(value, design_lock=lock)["design_lock_checked"])
+        altered = copy.deepcopy(value)
+        altered["candidates"][1]["hypothesis"] = "post hoc explanation"
+        with self.assertRaises(w.WorkflowError):
+            s.compare(altered, design_lock=lock)
+        altered = copy.deepcopy(value)
+        altered["evidence"][0]["locator"] = "Section 4"
+        with self.assertRaises(w.WorkflowError):
+            s.compare(altered, design_lock=lock)
+        with self.assertRaises(w.WorkflowError):
+            s.freeze_design(value)
+        planned["evidence"][0]["locator"] = ""
+        with self.assertRaises(w.WorkflowError):
+            s.freeze_design(planned)
+
     def test_unmeasured_options_never_selected(self):
         value = fixture()
         value["candidates"][1].update(state="planned", runs=[])

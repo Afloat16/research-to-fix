@@ -51,9 +51,6 @@ jobs:
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
       - name: Measure provider scheduler with mock transport
         run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
-      - name: Explicit release-candidate public known-item probe
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/v1-research-session-and-release'
-        run: python benchmarks/live_probe.py --approve-public --output "$RUNNER_TEMP/live-probe.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -67,7 +64,6 @@ jobs:
             ${{ runner.temp }}/discovery-transfer.json
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
-            ${{ runner.temp }}/live-probe.json
             ${{ runner.temp }}/discovery-schedule.json
           retention-days: 14
           if-no-files-found: warn

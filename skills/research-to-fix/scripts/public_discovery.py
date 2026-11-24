@@ -341,7 +341,9 @@ def parse_openalex(query, payload, limit):
         # Retraction metadata is a review flag, not an authoritative decision.
         kind = "RETRACTED flag; verify original" if item.get("is_retracted") is True else excerpt(item.get("type"), 40)
         row = base_row(query, url, item.get("title"), "", doi=doi,
-                       publication_hint=paper_hint("OpenAlex", kind, venue, item.get("publication_year")))
+                       publication_hint=paper_hint("OpenAlex", kind, venue, item.get("publication_year")),
+                       publication_flag="retracted_or_withdrawn" if item.get("is_retracted") is True else
+                                        "not_flagged" if item.get("is_retracted") is False else "unknown")
         if row:
             rows.append(row)
     return rows, False
@@ -378,6 +380,11 @@ def parse_response(query, raw, limit):
     if not isinstance(raw, bytes) or not raw or len(raw) > MAX_RESPONSE_BYTES:
         raise ProviderError("invalid_response")
     provider = query["provider"]
+    # Some providers return HTML access challenges with HTTP 200. Never
+    # treat them as empty successful searches or attempt to bypass them.
+    prefix = raw[:1024].lstrip().lower()
+    if prefix.startswith((b"<!doctype html", b"<html")):
+        raise ProviderError("access_blocked")
     if provider == "arxiv":
         return parse_arxiv(query, raw, limit)
     try:

@@ -218,10 +218,16 @@ def experiment(output):
     candidates = {}
     for name, (title, mechanism, refs) in descriptions.items():
         candidates[name] = {"id": name, "title": title, "basis": "baseline" if name == "materialized" else "local",
-                            "state": "measured", "mechanism": mechanism, "local_target": "attention forward",
+                            "state": "planned", "mechanism": mechanism, "local_target": "attention forward",
                             "hypothesis": "preserve stable exact forward results with less score workspace",
                             "change": mechanism, "evidence_ids": refs, "protocol_id": protocol["id"],
                             "context": dict(context), "runs": []}
+    design = {"schema_version": 1, "protocol": protocol, "evidence": EVIDENCE, "candidates": list(candidates.values())}
+    design_lock = sc.freeze_design(design)
+    w.write_json(design, output / "design.json")
+    w.write_json(design_lock, output / "design-lock.json")
+    for candidate in candidates.values():
+        candidate["state"] = "measured"
     names = list(METHODS)
     for i, seed in enumerate(SEEDS):
         q, k, v = sample(seed)
@@ -231,8 +237,9 @@ def experiment(output):
             candidates[name]["runs"].append({"replicate": str(seed), "command": protocol["command"],
                                            "metrics": metrics, "checks": checks, "observed": observed})
     record = {"schema_version": 1, "protocol": protocol, "protocol_sha256": lock["protocol_sha256"],
+              "design_sha256": design_lock["design_sha256"],
               "evidence": EVIDENCE, "candidates": list(candidates.values())}
-    report = sc.compare(record, lock)
+    report = sc.compare(record, lock, design_lock)
     by_id = {row["id"]: row for row in report["candidates"]}
     if not all(row["eligible"] for row in by_id.values()):
         raise RuntimeError("exactness or regression check failed")
@@ -245,7 +252,7 @@ def experiment(output):
     return {"protocol": report["protocol_id"], "replicates": report["replicates"],
             "decision": report["decision"], "frontier": report["pareto_frontier"],
             "median_frontier": report["median_frontier"], "all_pairs_frontier": report["all_pairs_frontier"],
-            "lock_checked": report["protocol_lock_checked"],
+            "lock_checked": report["protocol_lock_checked"], "design_lock_checked": report["design_lock_checked"],
             "candidates": {name: {"eligible": row["eligible"], "metrics": row["metrics"]} for name, row in by_id.items()}}
 
 

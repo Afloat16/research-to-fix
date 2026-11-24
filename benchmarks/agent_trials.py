@@ -117,9 +117,18 @@ def freeze(value):
             "protocol": protocol, "protocol_sha256": sha256(canonical(protocol))}
 
 
-def validate_lock(lock):
+def check_expected_digest(lock, expected):
+    """Optionally compare against a digest retained independently before generation."""
+    if expected is not None and (not isinstance(expected, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected)
+            or expected != lock["protocol_sha256"]):
+        fail("Independent protocol digest mismatch")
+
+
+def validate_lock(lock, expected_protocol_sha256=None):
     if not isinstance(lock, dict) or lock != freeze(lock.get("protocol")):
         fail("Protocol lock mismatch")
+    check_expected_digest(lock, expected_protocol_sha256)
     return lock["protocol"]
 
 
@@ -186,7 +195,14 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
             usage_record(measurement, p)
         for task in sorted(expected):
             patch = predictions.get(task)
-            record = {"instance_id": task, "seed": seed, "resolved": False}
+            record = {"instance_id": task, "seed": seed, "resolved": False,
+                      "prediction_status": ("missing" if patch is None else
+                                            "empty" if not patch.strip() else "nonempty"),
+                      "evaluation_status": "not_applicable",
+                      "budget_status": ("usage_missing" if task not in usage else
+                                        "within_budget" if usage_record(usage[task], p) else "budget_exceeded")}
+            if patch is not None:
+                record["prediction_sha256"] = sha256(patch)
             if patch is None:
                 record["status"] = "not_submitted"
             elif not patch.strip():
@@ -194,7 +210,6 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
             else:
                 location = directory / "reports" / task
                 report_path = location / "report.json"
-                record["prediction_sha256"] = sha256(patch)
                 if report_path.exists() or report_path.is_symlink():
                     if read(location / "patch.diff") != patch:
                         fail("Evaluator patch differs from prediction")
@@ -207,6 +222,7 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
                     record["resolved"] = report[task]["resolved"]
                 else:
                     record["status"] = "evaluation_missing_or_error"
+                record["evaluation_status"] = record["status"]
             if patch is not None:
                 if task not in usage:
                     record.update(status="usage_missing", resolved=False)
@@ -218,8 +234,17 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
     return ids, rows
 
 
-def summarize(lock, baseline_root, skill_root):
-    p = validate_lock(lock)
+def outcome_breakdown(rows):
+    """Orthogonal counts retain evaluator outcomes even when budget gates override them."""
+    return {axis: {state: sum(row[axis] == state for row in rows.values()) for state in states}
+            for axis, states in (
+                ("prediction_status", ("missing", "empty", "nonempty")),
+                ("evaluation_status", ("not_applicable", "resolved", "unresolved", "evaluation_missing_or_error")),
+                ("budget_status", ("usage_missing", "within_budget", "budget_exceeded")))}
+
+
+def summarize(lock, baseline_root, skill_root, *, expected_protocol_sha256=None):
+    p = validate_lock(lock, expected_protocol_sha256)
     base_ids, base = collect(lock, baseline_root, "baseline")
     skill_ids, skill = collect(lock, skill_root, "skill")
     if base_ids & skill_ids:
@@ -236,10 +261,13 @@ def summarize(lock, baseline_root, skill_root):
                           for key in ("tokens", "tool_calls", "seconds")}
     return {"scope": "matched_external_agent_evaluation",
             "protocol_sha256": lock["protocol_sha256"], "tasks": len(tasks), "seeds": len(p["seeds"]),
-            "trials_per_arm": len(expected), "baseline": {"resolved_rate": statistics.mean(base_values),
-                "statuses": status(base), "recorded_usage_sum": usage(base)},
+            "trials_per_arm": len(expected), "expected_protocol_digest_checked": expected_protocol_sha256 is not None,
+            "baseline": {"resolved_rate": statistics.mean(base_values),
+                "statuses": status(base), "recorded_usage_sum": usage(base), "outcome_breakdown": outcome_breakdown(base),
+                "usage_coverage": sum("usage" in row for row in base.values()) / len(expected)},
             "skill": {"resolved_rate": statistics.mean(skill_values),
-                "statuses": status(skill), "recorded_usage_sum": usage(skill)},
+                "statuses": status(skill), "recorded_usage_sum": usage(skill), "outcome_breakdown": outcome_breakdown(skill),
+                "usage_coverage": sum("usage" in row for row in skill.values()) / len(expected)},
             "paired_task_interval": paired_interval(skill_values, base_values),
             "pairs": [{"instance_id": task, "seed": seed, "baseline": base[(task, seed)],
                        "skill": skill[(task, seed)]} for task, seed in expected],
@@ -256,11 +284,15 @@ def main():
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--skill", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--expected-protocol-sha256", help="Independently retained pre-generation protocol digest")
     args = parser.parse_args()
     if args.freeze:
+        if args.expected_protocol_sha256 is not None:
+            parser.error("Expected protocol digest applies only when importing")
         result = freeze(read_json(args.freeze))
     elif args.baseline and args.skill:
-        result = summarize(read_json(args.lock), args.baseline, args.skill)
+        result = summarize(read_json(args.lock), args.baseline, args.skill,
+                           expected_protocol_sha256=args.expected_protocol_sha256)
     else:
         parser.error("Both actual evaluation artifact roots are required")
     with args.output.open("x", encoding="utf-8") as handle:

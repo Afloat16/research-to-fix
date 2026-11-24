@@ -36,7 +36,14 @@ class ComparisonTests(unittest.TestCase):
             root = Path(temp).resolve()
             for spec in lock["protocol"]["arms"]:
                 fixture(root, lock, spec, spec["id"] == "skill")
-            result = c.summarize(lock, root)
+            result = c.summarize(lock, root, expected_protocol_sha256=lock["protocol_sha256"])
+            self.assertTrue(result["expected_protocol_digest_checked"])
+            self.assertEqual(result["arms"]["skill"]["outcome_breakdown"]["evaluation_status"]["resolved"], 2)
+            self.assertEqual(result["arms"]["skill"]["outcome_breakdown"]["budget_status"]["usage_missing"], 2)
+            changed = design()
+            changed["base_protocol"]["max_seconds"] = 99
+            with self.assertRaisesRegex(ValueError, "Independent protocol digest mismatch"):
+                c.summarize(c.freeze(changed), root, expected_protocol_sha256=lock["protocol_sha256"])
             self.assertEqual(result["trials_per_arm"], 4)
             self.assertEqual(result["arms"]["skill"]["resolved_rate"], .5)
             self.assertEqual(result["arms"]["skill"]["usage_coverage"], .5)

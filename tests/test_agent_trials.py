@@ -68,6 +68,50 @@ class AgentTrialTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 a.summarize(lock, base, skill)
 
+    def test_independent_protocol_digest_and_orthogonal_outcomes(self):
+        lock = a.freeze(protocol())
+        changed = protocol()
+        changed["max_tokens"] = 999
+        rewritten = a.freeze(changed)
+        # Self-consistency is insufficient when the entire lock is replaced.
+        self.assertEqual(a.validate_lock(rewritten), rewritten["protocol"])
+        with self.assertRaisesRegex(ValueError, "Independent protocol digest mismatch"):
+            a.validate_lock(rewritten, lock["protocol_sha256"])
+        with self.assertRaisesRegex(ValueError, "Independent protocol digest mismatch"):
+            a.validate_lock(lock, "")
+        with tempfile.TemporaryDirectory() as temp:
+            base, skill = Path(temp).resolve() / "baseline", Path(temp).resolve() / "skill"
+            arm(base, lock, "baseline", False)
+            arm(skill, lock, "skill", True)
+            # Seed 1: evaluator success over budget; absent patch with recorded cost.
+            write(skill / "seed-1" / "usage.json", {
+                "repo__a-1": {"tokens": 1001, "tool_calls": 2, "seconds": 3},
+                "repo__b-2": {"tokens": 1001, "tool_calls": 0, "seconds": 1}})
+            # Seed 2: evaluator success with missing usage; empty patch within budget.
+            write(skill / "seed-2" / "predictions.json", [
+                {"instance_id": "repo__a-1", "model_patch": "synthetic fixture diff", "model_name_or_path": "skill"},
+                {"instance_id": "repo__b-2", "model_patch": "", "model_name_or_path": "skill"}])
+            write(skill / "seed-2" / "usage.json", {
+                "repo__b-2": {"tokens": 10, "tool_calls": 0, "seconds": 1}})
+            result = a.summarize(lock, base, skill, expected_protocol_sha256=lock["protocol_sha256"])
+            self.assertTrue(result["expected_protocol_digest_checked"])
+            self.assertEqual(result["skill"]["resolved_rate"], 0.)
+            self.assertEqual(result["skill"]["usage_coverage"], .75)
+            self.assertEqual(result["skill"]["statuses"]["not_submitted"], 1)
+            self.assertEqual(result["skill"]["statuses"]["empty_patch"], 1)
+            self.assertEqual(result["skill"]["statuses"]["usage_missing"], 1)
+            self.assertEqual(result["skill"]["statuses"]["budget_exceeded"], 1)
+            self.assertEqual(result["skill"]["outcome_breakdown"], {
+                "prediction_status": {"missing": 1, "empty": 1, "nonempty": 2},
+                "evaluation_status": {"not_applicable": 2, "resolved": 2, "unresolved": 0,
+                                      "evaluation_missing_or_error": 0},
+                "budget_status": {"usage_missing": 1, "within_budget": 1, "budget_exceeded": 2}})
+            for pair in result["pairs"]:
+                self.assertFalse(pair["skill"]["resolved"])
+            self.assertEqual(result["pairs"][-1]["skill"]["prediction_sha256"], a.sha256(b""))
+            with self.assertRaisesRegex(ValueError, "Independent protocol digest mismatch"):
+                a.summarize(rewritten, base, skill, expected_protocol_sha256=lock["protocol_sha256"])
+
     def test_protocol_tamper(self):
         lock = a.freeze(protocol())
         lock["protocol"]["max_tokens"] = 999

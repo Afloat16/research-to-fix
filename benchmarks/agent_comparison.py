@@ -10,8 +10,8 @@ from pathlib import Path
 import re
 import statistics
 
-from agent_trials import (canonical, collect_arm, commit, fail, normalize_protocol,
-                          paired_interval, read_json, sha256)
+from agent_trials import (canonical, check_expected_digest, collect_arm, commit, fail, normalize_protocol,
+                          outcome_breakdown, paired_interval, read_json, sha256)
 
 
 def normalize(value):
@@ -64,9 +64,10 @@ def freeze(value):
             "protocol": protocol, "protocol_sha256": sha256(canonical(protocol))}
 
 
-def validate_lock(lock):
+def validate_lock(lock, expected_protocol_sha256=None):
     if not isinstance(lock, dict) or lock != freeze(lock.get("protocol")):
         fail("Protocol lock mismatch")
+    check_expected_digest(lock, expected_protocol_sha256)
     return lock["protocol"]
 
 
@@ -86,8 +87,8 @@ def holm(values):
     return adjusted
 
 
-def summarize(lock, root):
-    protocol = validate_lock(lock)
+def summarize(lock, root, *, expected_protocol_sha256=None):
+    protocol = validate_lock(lock, expected_protocol_sha256)
     shared = protocol["base_protocol"]
     tasks = [r["instance_id"] for r in shared["instances"]]
     seeds = shared["seeds"]
@@ -110,6 +111,7 @@ def summarize(lock, root):
                                 "evaluation_missing_or_error", "usage_missing", "budget_exceeded")}
         measured = [row["usage"] for row in rows.values() if "usage" in row]
         summaries[name] = {"resolved_rate": statistics.mean(values), "statuses": statuses,
+                           "outcome_breakdown": outcome_breakdown(rows),
                            "usage_records": len(measured), "usage_coverage": len(measured) / len(expected),
                            "recorded_usage_sum": {key: sum(row[key] for row in measured)
                                                   for key in ("tokens", "tool_calls", "seconds")}}
@@ -125,6 +127,7 @@ def summarize(lock, root):
             row["win"] > row["loss"] and adjusted[name] <= .05 and row["ci95_low"] > 0)
     return {"scope": "matched_multi_arm_external_agent_evaluation",
             "protocol_sha256": lock["protocol_sha256"], "tasks": len(tasks),
+            "expected_protocol_digest_checked": expected_protocol_sha256 is not None,
             "seeds": len(seeds), "trials_per_arm": len(expected), "arms": summaries,
             "skill_vs_predeclared_arms": comparisons,
             "pairs": [{"instance_id": task, "seed": seed,
@@ -144,11 +147,15 @@ def main():
     group.add_argument("--lock", type=Path)
     parser.add_argument("--arms-root", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--expected-protocol-sha256", help="Independently retained pre-generation protocol digest")
     args = parser.parse_args()
     if args.freeze:
+        if args.expected_protocol_sha256 is not None:
+            parser.error("Expected protocol digest applies only when importing")
         result = freeze(read_json(args.freeze))
     elif args.arms_root:
-        result = summarize(read_json(args.lock), args.arms_root)
+        result = summarize(read_json(args.lock), args.arms_root,
+                           expected_protocol_sha256=args.expected_protocol_sha256)
     else:
         parser.error("Supply all predeclared arm artifacts")
     with args.output.open("x", encoding="utf-8") as handle:

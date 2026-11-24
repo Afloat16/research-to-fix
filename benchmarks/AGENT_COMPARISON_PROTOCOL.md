@@ -26,6 +26,12 @@ For every arm, use the same official evaluator artifact layout as the paired pro
 python benchmarks/agent_comparison.py --lock comparison-lock.json --arms-root arms --output comparison-results.json
 ```
 
+## Independent lock and diagnostic outcomes
+
+Keep the frozen `protocol_sha256` in an independently controlled record before generation; pass it as `--expected-protocol-sha256 DIGEST` when importing either paired or multi-arm results. A rewritten protocol and matching manifests can otherwise be self-consistent. The output records whether an independent digest was supplied and matched; this is not authentication of model execution. Existing commands remain compatible.
+
+The importer reports separate prediction, evaluator and budget statuses for every replicate, plus counts per arm. These are diagnostic axes, not extra successes: the budget-gated resolved rate and existing primary status retain their original meanings. For example, a reported evaluator success with missing usage is not a valid success, and a missing prediction can still have measured over-budget cost. Empty predictions receive a digest. The paired importer also exposes usage coverage.
+
 ## Interpretation
 
 Report all arm rates, status counts, usage coverage and paired task-level deltas with pointwise bootstrap 95% intervals. Multiple seeds are clustered by task. The exact two-sided sign test ignores task-level ties; Holm-adjusted p-values cover all predeclared target-vs-arm tests (including baseline). The mean interval and sign test address different quantities. Incomplete usage sums are lower bounds, not evidence of lower cost. Report losses, inconclusive outcomes and blocked cases, not only wins.

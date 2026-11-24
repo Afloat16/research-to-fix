@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 import random
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -43,7 +44,11 @@ class IndexTests(unittest.TestCase):
             index = rc.PostingIndex(docs)
             for _ in range(30):
                 terms = rng.choices(vocabulary + ["missing"], k=rng.randrange(1, 10))
-                self.assertEqual(index.rank(terms), scan_reference(docs, terms))
+                expected = scan_reference(docs, terms)
+                self.assertEqual(index.rank(terms), expected)
+                self.assertEqual(rc.scan_rank(docs, terms), expected)
+                self.assertEqual(index.rank(terms, limit=3, explain=False),
+                                 [(score, identifier, []) for score, identifier, _ in expected[:3]])
 
     def test_batch_reads_each_case_once_and_matches_single(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -64,6 +69,40 @@ class IndexTests(unittest.TestCase):
                     with self.assertRaises(rc.RecallInputError):
                         rc.recall_batch("unused", errors)
                     load.assert_not_called()
+
+    def test_technical_aliases_and_chinese(self):
+        self.assertIn("runtime", rc.technical_tokens("RuntimeError"))
+        self.assertIn("dataloader", rc.technical_tokens("data_loader"))
+        self.assertIn("缓存", rc.technical_tokens("缓存泄漏"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            (path / "case.json").write_text(json.dumps(recall_case("data_loader exhausted")), encoding="utf-8")
+            self.assertEqual(rc.recall_cases(path, "DataLoader")["matches"], [])
+            self.assertEqual(rc.recall_cases(path, "DataLoader", ranking="technical")["matches"][0]["file"], "case.json")
+            self.assertEqual(rc.recall_batch(path, ["DataLoader"], ranking="technical")["results"][0],
+                             rc.recall_cases(path, "DataLoader", ranking="technical"))
+
+    def test_cli_batch_file_and_no_query_echo(self):
+        script = Path(rc.__file__)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            (path / "case.json").write_text(json.dumps(recall_case("Tensor mismatch")), encoding="utf-8")
+            queries = path / "queries.data"
+            def invoke():
+                return subprocess.run([sys.executable, str(script), "recall-batch",
+                                       "--cases-dir", str(path), "--queries-file", str(queries)],
+                                      capture_output=True, text=True, encoding="utf-8", timeout=10)
+            queries.write_text(json.dumps(["Tensor", "private-unique-unmatched-query"]), encoding="utf-8")
+            result = invoke()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(len(json.loads(result.stdout)["results"]), 2)
+            # Matched terms may appear; original unmatched queries are not echoed.
+            self.assertNotIn("private-unique-unmatched-query", result.stdout)
+            queries.write_text('["private-unique-unmatched-query", 3]', encoding="utf-8")
+            result = invoke()
+            self.assertEqual(result.returncode, 2)
+            self.assertTrue(json.loads(result.stdout)["input_error"])
+            self.assertNotIn("private-unique-unmatched-query", result.stdout)
 
     def test_snapshot_results_are_independent_and_source_changes_require_rebuild(self):
         with tempfile.TemporaryDirectory() as directory:

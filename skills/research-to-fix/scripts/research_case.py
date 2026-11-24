@@ -4,6 +4,7 @@
 import argparse
 import copy
 import hashlib
+import heapq
 import ipaddress
 import json
 import math
@@ -738,6 +739,43 @@ def recall_tokens(text):
     return tokens
 
 
+RANKING_MODES = ("bm25", "technical")
+
+
+def technical_tokens(text):
+    """Preserve exact technical tokens; add identifier pieces and collapsed
+    identifier aliases for camelCase, PascalCase, and snake_case.
+    Han bigrams remain the same as legacy recall.
+    """
+    tokens = recall_tokens(text)
+    for word in re.findall(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*",
+                           unicodedata.normalize("NFKC", text)):
+        spaced = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", word)
+        spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", spaced)
+        pieces = [part.casefold() for part in spaced.replace("_", " ").split()]
+        if len(pieces) > 1:
+            original = word.casefold()
+            aliases = set(pieces)
+            aliases.add("".join(pieces))
+            tokens.extend(sorted(part for part in aliases
+                                 if len(part) > 1 and not part.isdecimal()
+                                 and part != original and part not in RECALL_STOPWORDS))
+    return tokens
+
+
+def technical_counts(primary, text):
+    """Weighted lexical evidence; primary symptoms receive one extra vote."""
+    counts = Counter(technical_tokens(text))
+    counts.update(technical_tokens(primary))
+    return counts
+
+
+def _rank_terms(error, mode):
+    if not isinstance(mode, str) or mode not in RANKING_MODES:
+        raise RecallInputError("ranking")
+    return set((technical_tokens if mode == "technical" else recall_tokens)(error))
+
+
 def _recall_excerpt(text, maximum=500):
     text = "".join(" " if unicodedata.category(char).startswith("C") else char for char in text)
     text = " ".join(text.split())
@@ -842,7 +880,7 @@ def _check_recall_query(error, component, version, limit):
     return query_terms
 
 
-def _load_recall_corpus(cases_dir, component, version):
+def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
     component, version = component.strip().casefold(), version.strip()
     try:
         directory = Path(cases_dir)
@@ -900,7 +938,14 @@ def _load_recall_corpus(cases_dir, component, version):
             skipped["duplicate"] += 1
             continue
         seen.add(fingerprint)
-        documents.append(Counter(recall_tokens(_recall_document(case))))
+        document = _recall_document(case)
+        if ranking == "technical":
+            problem = case["problem"]
+            primary = "\n".join(_recall_excerpt(field, 1000) for field in
+                                [problem["summary"], problem["component"], *problem["symptoms"][:12]])[:10000]
+            documents.append(technical_counts(primary, document))
+        else:
+            documents.append(Counter(recall_tokens(document)))
         summaries.append(_recall_summary(case, entry.name, version))
 
     return documents, summaries, skipped, len(entries)
@@ -915,6 +960,7 @@ class PostingIndex:
     """
 
     def __init__(self, documents):
+        documents = list(documents)
         self.ids = tuple(identifier for identifier, _ in documents)
         if len(set(self.ids)) != len(self.ids):
             raise ValueError("duplicate document ID")
@@ -932,19 +978,41 @@ class PostingIndex:
                 self.postings.setdefault(term, []).append((index, contribution))
 
     def rank(self, query_terms, limit=None, explain=True):
-        scores, matches = {}, {}
+        contributions = {}
         for term in sorted(set(query_terms)):
-            for index, contribution in self.postings.get(term, ()):
-                scores[index] = scores.get(index, 0.0) + contribution
-                if explain:
-                    matches.setdefault(index, []).append((term, contribution))
-        order = sorted(scores, key=lambda index: (-scores[index], self.ids[index]))
-        if limit is not None:
-            order = order[:limit]
+            for index, value in self.postings.get(term, ()):
+                contributions.setdefault(index, []).append((term, value))
+        # sum() retains the legacy summation semantics, including Python
+        # 3.12+'s more accurate float summation.
+        scores = {index: sum(value for _, value in matches)
+                  for index, matches in contributions.items()}
+        key = lambda index: (-scores[index], self.ids[index])
+        order = sorted(scores, key=key) if limit is None else heapq.nsmallest(limit, scores, key=key)
         return [(scores[index], self.ids[index],
-                 [term for term, _ in sorted(matches.get(index, ()),
-                                              key=lambda pair: (-pair[1], pair[0]))[:20]])
+                 [term for term, _ in sorted(contributions[index],
+                                              key=lambda pair: (-pair[1], pair[0]))[:20]]
+                 if explain else [])
                 for index in order]
+
+
+def scan_rank(documents, query_terms):
+    """One-shot scan avoids building postings for never-queried vocabulary."""
+    query_terms = set(query_terms)
+    lengths = [sum(terms.values()) for _, terms in documents]
+    mean = sum(lengths) / len(lengths) if lengths else 1.0
+    frequencies = Counter(term for _, doc in documents for term in query_terms.intersection(doc))
+    inverse = {term: math.log1p((len(documents) - count + 0.5) / (count + 0.5))
+               for term, count in frequencies.items()}
+    ranked = []
+    for (identifier, doc), length in zip(documents, lengths):
+        norm = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
+        contributions = {term: inverse[term] * (2.5 * doc[term]) / (doc[term] + norm)
+                         for term in sorted(query_terms.intersection(doc))}
+        score = sum(contributions.values())
+        if score > 0:
+            ranked.append((score, identifier, sorted(contributions,
+                           key=lambda term: (-contributions[term], term))[:20]))
+    return sorted(ranked, key=lambda row: (-row[0], row[1]))
 
 
 class RecallSnapshot:
@@ -954,20 +1022,25 @@ class RecallSnapshot:
     source files have remained unchanged or that their assertions are true.
     """
 
-    def __init__(self, cases_dir, component="", version=""):
+    def __init__(self, cases_dir, component="", version="", ranking="bm25", indexed=True):
         if not isinstance(component, str) or not isinstance(version, str):
             raise RecallInputError("query")
         if len(component) + len(version) > RECALL_MAX_QUERY_CHARS:
             raise RecallInputError("query")
-        self.component, self.version = component, version
+        _rank_terms("", ranking)
+        self.component, self.version, self.ranking = component, version, ranking
         documents, summaries, self.skipped, self.scanned = _load_recall_corpus(
-            cases_dir, component, version)
+            cases_dir, component, version, ranking)
         self.summaries = {row["file"]: row for row in summaries}
-        self.index = PostingIndex(list(zip(self.summaries, documents)))
+        pairs = list(zip(self.summaries, documents))
+        self.index = PostingIndex(pairs) if indexed else None
+        self.documents = None if indexed else pairs
 
     def search(self, error, limit=5):
         terms = _check_recall_query(error, self.component, self.version, limit)
-        ranked = self.index.rank(terms)
+        if self.ranking != "bm25":
+            terms = _rank_terms(error, self.ranking)
+        ranked = self.index.rank(terms) if self.index is not None else scan_rank(self.documents, terms)
         best = ranked[0][0] if ranked else 0.0
         retained = [(score, identifier, matched) for score, identifier, matched in ranked
                     if score >= RECALL_RELATIVE_THRESHOLD * best]
@@ -981,6 +1054,7 @@ class RecallSnapshot:
             "scanned": self.scanned, "eligible": len(self.summaries), "skipped": dict(self.skipped),
             "matched_candidates": len(retained), "truncated": len(retained) > limit,
             "matches": results,
+            **({"ranking": self.ranking} if self.ranking != "bm25" else {}),
             "limits": {"files": RECALL_MAX_FILES, "directory_entries": RECALL_MAX_DIRECTORY_ENTRIES,
                        "file_bytes": RECALL_MAX_FILE_BYTES, "query_characters": RECALL_MAX_QUERY_CHARS,
                        "results": RECALL_MAX_RESULTS, "relative_threshold": RECALL_RELATIVE_THRESHOLD},
@@ -990,19 +1064,19 @@ class RecallSnapshot:
 RECALL_MAX_BATCH = 128
 
 
-def recall_cases(cases_dir, error, component="", version="", limit=5):
+def recall_cases(cases_dir, error, component="", version="", limit=5, ranking="bm25"):
     """One-shot retrieval retains the original result contract."""
     _check_recall_query(error, component, version, limit)
-    return RecallSnapshot(cases_dir, component, version).search(error, limit)
+    return RecallSnapshot(cases_dir, component, version, ranking, indexed=False).search(error, limit)
 
 
-def recall_batch(cases_dir, errors, component="", version="", limit=5):
+def recall_batch(cases_dir, errors, component="", version="", limit=5, ranking="bm25"):
     """Validate all queries before reading any cases; reuse one snapshot."""
     if not isinstance(errors, list) or not 1 <= len(errors) <= RECALL_MAX_BATCH:
         raise RecallInputError("batch")
     for error in errors:
         _check_recall_query(error, component, version, limit)
-    snapshot = RecallSnapshot(cases_dir, component, version)
+    snapshot = RecallSnapshot(cases_dir, component, version, ranking)
     return {"scope": "local_case_recall_batch", "review_required": True,
             "notice": RECALL_NOTICE, "snapshot": "validated_once_in_memory",
             "queries": len(errors),
@@ -1065,7 +1139,17 @@ def main(argv=None):
     recall_parser.add_argument("--component", default="", help="可选精确筛选：忽略大小写和首尾空白，不展开别名")
     recall_parser.add_argument("--version", default="", help="仅字面对比同组件的记录版本，不推断兼容性或影响排序")
     recall_parser.add_argument("--limit", type=int, default=5, help=f"返回数量，1–{RECALL_MAX_RESULTS}，默认 5；不凑足无关案例")
+    recall_parser.add_argument("--ranking", choices=RANKING_MODES, default="bm25",
+                               help="technical 为实验性标识符扩展及症状加权；默认 bm25 保持排序兼容")
     recall_parser.add_argument("--format", choices=("json", "markdown"), default="json")
+    batch_parser = commands.add_parser("recall-batch", help="复用一次校验的内存索引，批量召回")
+    batch_parser.add_argument("--cases-dir", required=True, type=Path)
+    batch_parser.add_argument("--queries-file", required=True, type=Path,
+                              help="普通 UTF-8 JSON 字符串数组，最多 128 条、2 MiB；不回显原始查询")
+    batch_parser.add_argument("--component", default="")
+    batch_parser.add_argument("--version", default="")
+    batch_parser.add_argument("--limit", type=int, default=5)
+    batch_parser.add_argument("--ranking", choices=RANKING_MODES, default="bm25")
     init_parser = commands.add_parser("init", help="创建 blocked 案例模板，不覆盖已有文件")
     init_parser.add_argument("--output", required=True, type=Path)
     validate_parser = commands.add_parser("validate", help="检查记录结构，不证明实际修复")
@@ -1098,11 +1182,12 @@ def main(argv=None):
                     print(f"- {query['id']} / {query['stage']} / {query['source']} / {query['language']}: {query['query']}\n  目的：{query['purpose']}\n  复核：{query['note']}")
         elif args.command == "recall":
             try:
-                report = recall_cases(args.cases_dir, args.error, args.component, args.version, args.limit)
+                report = recall_cases(args.cases_dir, args.error, args.component, args.version, args.limit, args.ranking)
             except RecallInputError as error:
                 messages = {
                     "query": f"问题描述须含可检索词项，查询参数须为字符串且合计不超过 {RECALL_MAX_QUERY_CHARS} 字符。",
                     "limit": f"结果数量须为 1–{RECALL_MAX_RESULTS} 的整数。",
+                    "ranking": "排序模式无效。",
                     "directory": "案例目录不存在、不可读取或为符号链接。未回显路径。",
                     "corpus_limit": f"目录超过 {RECALL_MAX_FILES} 个 JSON 候选或 {RECALL_MAX_DIRECTORY_ENTRIES} 个目录项；请缩小目录。",
                 }
@@ -1111,6 +1196,23 @@ def main(argv=None):
                 emit_recall(report, args.format)
                 return 2
             emit_recall(report, args.format)
+        elif args.command == "recall-batch":
+            try:
+                data, issue = _read_regular_file(args.queries_file, 2 * 1024 * 1024)
+                if issue:
+                    raise RecallInputError("queries_file")
+                errors, _canonical = decode_case_bytes(data)
+                report = recall_batch(args.cases_dir, errors, args.component, args.version,
+                                      args.limit, args.ranking)
+            except RecallInputError as error:
+                print(json.dumps({"scope": "local_case_recall_batch", "input_error": True,
+                                  "error": str(error), "notice": RECALL_NOTICE}, ensure_ascii=True))
+                return 2
+            except (OSError, ValueError, RecursionError):
+                print(json.dumps({"scope": "local_case_recall_batch", "input_error": True,
+                                  "error": "queries_file", "notice": RECALL_NOTICE}, ensure_ascii=True))
+                return 2
+            print(json.dumps(report, ensure_ascii=True, indent=2))
         elif args.command == "init":
             with args.output.open("x", encoding="utf-8") as handle:
                 json.dump(new_case(), handle, ensure_ascii=False, indent=2)

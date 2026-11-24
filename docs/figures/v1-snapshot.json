@@ -1,0 +1,708 @@
+{
+  "schema_version": 1,
+  "release": "v1.0.0",
+  "sources": {
+    "offline": {
+      "run_id": 45355977079,
+      "job_id": 138313769739,
+      "commit": "618413f03a715cfb5573bc0f655d92d931d9db95"
+    },
+    "public_probe": {
+      "run_id": 45355435962,
+      "job_id": 138311971128,
+      "commit": "aba9f3cf78b662c99cec88df04795c432131a8e2"
+    }
+  },
+  "original": {
+    "dataset": "algorithm-paper-code-discovery-v1",
+    "dataset_sha256": "aca6072e8aee51a4f0448d28a715f41ea07f00d648e4aad4324906a4fccd6899",
+    "tasks": 8,
+    "queries": 16,
+    "unique_sources": 32,
+    "background_sha256": null,
+    "observations": 44,
+    "k": 6,
+    "methods": {
+      "fixed_order": {
+        "overall": {
+          "mrr": 0.260417,
+          "recall": 0.1875,
+          "precision": 0.125,
+          "ndcg": 0.161259,
+          "paper_and_code": 0.25,
+          "complete_pair_recall": 0.0625
+        },
+        "symptom": {
+          "mrr": 0.260417,
+          "recall": 0.1875,
+          "precision": 0.125,
+          "ndcg": 0.161259,
+          "paper_and_code": 0.25,
+          "complete_pair_recall": 0.0625
+        },
+        "mechanism": {
+          "mrr": 0.260417,
+          "recall": 0.1875,
+          "precision": 0.125,
+          "ndcg": 0.161259,
+          "paper_and_code": 0.25,
+          "complete_pair_recall": 0.0625
+        }
+      },
+      "stemmed_bm25": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.921875,
+          "precision": 0.614583,
+          "ndcg": 0.941939,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.907032,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.976846,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "sqlite_porter": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.921875,
+          "precision": 0.614583,
+          "ndcg": 0.9395,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.900015,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.978984,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "facet_rank": {
+        "overall": {
+          "mrr": 0.96875,
+          "recall": 0.90625,
+          "precision": 0.604167,
+          "ndcg": 0.920301,
+          "paper_and_code": 0.9375,
+          "complete_pair_recall": 0.8125
+        },
+        "symptom": {
+          "mrr": 0.9375,
+          "recall": 0.84375,
+          "precision": 0.5625,
+          "ndcg": 0.861617,
+          "paper_and_code": 0.875,
+          "complete_pair_recall": 0.6875
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.978984,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "evidence_shortlist": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.921875,
+          "precision": 0.614583,
+          "ndcg": 0.941939,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.907032,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.976846,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "intent_fusion": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.890625,
+          "precision": 0.59375,
+          "ndcg": 0.904443,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.84375
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.894494,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.90625,
+          "precision": 0.604167,
+          "ndcg": 0.914391,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        }
+      },
+      "paired_rank": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.984375,
+          "precision": 0.65625,
+          "ndcg": 0.982329,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.966796,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.997862,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        }
+      }
+    },
+    "planner_comparison": {
+      "legacy_first_8_sources": [
+        "github_issues",
+        "github_prs",
+        "huggingface",
+        "huggingface_forum"
+      ],
+      "new_first_8_sources": [
+        "arxiv",
+        "author_code",
+        "crossref",
+        "github_issues",
+        "github_prs",
+        "github_repositories",
+        "official_docs",
+        "proceedings"
+      ],
+      "new_first_8_stages": [
+        "alternatives",
+        "exact",
+        "implementation",
+        "mechanism",
+        "verification"
+      ]
+    },
+    "triage_p50_ms": 12.604,
+    "scope": "Relevance replay over a curated development corpus; no live discovery or repair-success claim."
+  },
+  "transfer": {
+    "dataset": "algorithm-transfer-v1",
+    "dataset_sha256": "bf6be74c670d50667b6d68e5d15a296e34aaa5d74001427143de594e5c967286",
+    "tasks": 6,
+    "queries": 18,
+    "unique_sources": 56,
+    "background_sha256": "aca6072e8aee51a4f0448d28a715f41ea07f00d648e4aad4324906a4fccd6899",
+    "observations": 68,
+    "k": 6,
+    "methods": {
+      "fixed_order": {
+        "overall": {
+          "mrr": 0.027778,
+          "recall": 0.041667,
+          "precision": 0.027778,
+          "ndcg": 0.023176,
+          "paper_and_code": 0,
+          "complete_pair_recall": 0
+        },
+        "symptom": {
+          "mrr": 0.027778,
+          "recall": 0.041667,
+          "precision": 0.027778,
+          "ndcg": 0.023176,
+          "paper_and_code": 0,
+          "complete_pair_recall": 0
+        },
+        "mechanism": {
+          "mrr": 0.027778,
+          "recall": 0.041667,
+          "precision": 0.027778,
+          "ndcg": 0.023176,
+          "paper_and_code": 0,
+          "complete_pair_recall": 0
+        },
+        "bilingual": {
+          "mrr": 0.027778,
+          "recall": 0.041667,
+          "precision": 0.027778,
+          "ndcg": 0.023176,
+          "paper_and_code": 0,
+          "complete_pair_recall": 0
+        }
+      },
+      "stemmed_bm25": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.930556,
+          "precision": 0.62037,
+          "ndcg": 0.93402,
+          "paper_and_code": 0.944444,
+          "complete_pair_recall": 0.888889
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.791667,
+          "precision": 0.527778,
+          "ndcg": 0.812273,
+          "paper_and_code": 0.833333,
+          "complete_pair_recall": 0.666667
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.992638,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        },
+        "bilingual": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.997149,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        }
+      },
+      "sqlite_porter": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.916667,
+          "precision": 0.611111,
+          "ndcg": 0.927133,
+          "paper_and_code": 0.944444,
+          "complete_pair_recall": 0.861111
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.833333,
+          "precision": 0.555556,
+          "ndcg": 0.847656,
+          "paper_and_code": 0.833333,
+          "complete_pair_recall": 0.75
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.958333,
+          "precision": 0.638889,
+          "ndcg": 0.961766,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.916667
+        },
+        "bilingual": {
+          "mrr": 1,
+          "recall": 0.958333,
+          "precision": 0.638889,
+          "ndcg": 0.971979,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.916667
+        }
+      },
+      "facet_rank": {
+        "overall": {
+          "mrr": 0.935185,
+          "recall": 0.902778,
+          "precision": 0.601852,
+          "ndcg": 0.878716,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.833333
+        },
+        "symptom": {
+          "mrr": 0.888889,
+          "recall": 0.791667,
+          "precision": 0.527778,
+          "ndcg": 0.774373,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.666667
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.916667,
+          "precision": 0.611111,
+          "ndcg": 0.914211,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.833333
+        },
+        "bilingual": {
+          "mrr": 0.916667,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.947565,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        }
+      },
+      "evidence_shortlist": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.930556,
+          "precision": 0.62037,
+          "ndcg": 0.93402,
+          "paper_and_code": 0.944444,
+          "complete_pair_recall": 0.888889
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.791667,
+          "precision": 0.527778,
+          "ndcg": 0.812273,
+          "paper_and_code": 0.833333,
+          "complete_pair_recall": 0.666667
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.992638,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        },
+        "bilingual": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.997149,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        }
+      },
+      "intent_fusion": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.861111,
+          "precision": 0.574074,
+          "ndcg": 0.848941,
+          "paper_and_code": 0.944444,
+          "complete_pair_recall": 0.805556
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.833333,
+          "precision": 0.555556,
+          "ndcg": 0.808533,
+          "paper_and_code": 0.833333,
+          "complete_pair_recall": 0.75
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.852435,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.833333
+        },
+        "bilingual": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.885855,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.833333
+        }
+      },
+      "paired_rank": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.958333,
+          "precision": 0.638889,
+          "ndcg": 0.957434,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.944444
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.879665,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.833333
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 0.992638,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        },
+        "bilingual": {
+          "mrr": 1,
+          "recall": 1,
+          "precision": 0.666667,
+          "ndcg": 1,
+          "paper_and_code": 1,
+          "complete_pair_recall": 1
+        }
+      }
+    },
+    "planner_comparison": {
+      "legacy_first_8_sources": [
+        "github_issues",
+        "github_prs",
+        "huggingface",
+        "huggingface_forum"
+      ],
+      "new_first_8_sources": [
+        "arxiv",
+        "author_code",
+        "crossref",
+        "github_issues",
+        "github_prs",
+        "github_repositories",
+        "official_docs",
+        "proceedings"
+      ],
+      "new_first_8_stages": [
+        "alternatives",
+        "exact",
+        "implementation",
+        "mechanism",
+        "verification"
+      ]
+    },
+    "triage_p50_ms": 18.351,
+    "scope": "Relevance replay over a curated development corpus; no live discovery or repair-success claim."
+  },
+  "gate": {
+    "passed": true,
+    "failures": [],
+    "scope": "Frozen curated development fixtures, not held-out or live provider accuracy."
+  },
+  "attention": {
+    "protocol": "exact-attention-v1",
+    "replicates": 5,
+    "decision": "tradeoffs_require_choice",
+    "frontier": [
+      "materialized",
+      "online",
+      "rowwise"
+    ],
+    "median_frontier": [
+      "materialized",
+      "online",
+      "rowwise"
+    ],
+    "all_pairs_frontier": [
+      "materialized",
+      "online",
+      "rowwise"
+    ],
+    "lock_checked": true,
+    "design_lock_checked": true,
+    "candidates": {
+      "blocked": {
+        "eligible": true,
+        "metrics": {
+          "max_abs_error": {
+            "median": 3.3306690738754696e-16,
+            "min": 2.220446049250313e-16,
+            "max": 3.3306690738754696e-16,
+            "mad": 0,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 47.158967,
+            "min": 47.087863,
+            "max": 47.41979,
+            "mad": 0.07110399999999828,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 27552,
+            "min": 27552,
+            "max": 27552,
+            "mad": 0,
+            "n": 5
+          }
+        }
+      },
+      "materialized": {
+        "eligible": true,
+        "metrics": {
+          "max_abs_error": {
+            "median": 1.1102230246251565e-16,
+            "min": 1.1102230246251565e-16,
+            "max": 2.220446049250313e-16,
+            "mad": 0,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 42.91042,
+            "min": 42.775954,
+            "max": 42.963027,
+            "mad": 0.05260699999999474,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 634920,
+            "min": 634920,
+            "max": 634920,
+            "mad": 0,
+            "n": 5
+          }
+        }
+      },
+      "online": {
+        "eligible": true,
+        "metrics": {
+          "max_abs_error": {
+            "median": 9.992007221626409e-16,
+            "min": 6.661338147750939e-16,
+            "max": 1.4432899320127035e-15,
+            "mad": 0,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 45.380884,
+            "min": 45.162899,
+            "max": 46.347929,
+            "mad": 0.059823000000001514,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 25008,
+            "min": 25008,
+            "max": 25008,
+            "mad": 0,
+            "n": 5
+          }
+        }
+      },
+      "rowwise": {
+        "eligible": true,
+        "metrics": {
+          "max_abs_error": {
+            "median": 1.1102230246251565e-16,
+            "min": 1.1102230246251565e-16,
+            "max": 2.220446049250313e-16,
+            "mad": 0,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 43.490362,
+            "min": 43.160735,
+            "max": 43.608438,
+            "mad": 0.11807600000000207,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 41320,
+            "min": 41320,
+            "max": 41320,
+            "mad": 0,
+            "n": 5
+          }
+        }
+      }
+    }
+  },
+  "schedule": {
+    "scope": "mock_40ms_transport_per_request_not_live_latency",
+    "requests": 6,
+    "repeats": 5,
+    "provider_groups_plan": 3,
+    "provider_groups_balanced": 6,
+    "sequential_median_ms": 243.691,
+    "three_workers_median_ms": 83.175,
+    "speedup": 2.93,
+    "identical_search_records_excluding_timestamps": true
+  },
+  "probe": {
+    "scope": "public_known_item_probe_not_relevance_benchmark",
+    "queries": 6,
+    "requests": 6,
+    "status_counts": {
+      "completed": 3,
+      "unavailable": 1,
+      "rate_limited": 1,
+      "invalid_response": 1
+    },
+    "providers": [
+      {
+        "provider": "github_repositories",
+        "status": "completed",
+        "returned": 5
+      },
+      {
+        "provider": "arxiv",
+        "status": "unavailable",
+        "returned": 0
+      },
+      {
+        "provider": "crossref",
+        "status": "completed",
+        "returned": 5
+      },
+      {
+        "provider": "semantic_scholar",
+        "status": "rate_limited",
+        "returned": 0
+      },
+      {
+        "provider": "openalex",
+        "status": "completed",
+        "returned": 5
+      },
+      {
+        "provider": "dblp",
+        "status": "invalid_response",
+        "returned": 0
+      }
+    ],
+    "valid_observations": 15,
+    "unique_identities": 14,
+    "known_item_matches": [
+      "https://doi.org/10.52202/068431-1189",
+      "https://github.com/dao-ailab/flash-attention"
+    ],
+    "notice": "One public known-item query, not blind retrieval accuracy. Provider errors are recorded; no credentials or automatic retries. Full papers and code were not read by this probe."
+  }
+}

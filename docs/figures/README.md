@@ -14,3 +14,7 @@ Regenerate from the repository root with `node docs/figures/render.cjs`. Check c
 ## Research-decision figure
 
 `research-decision*.svg` visualizes the workflow plus measured discovery replay and numerical variance comparison from [CI run 45343672697](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697), job 138272992882, commit `8d5d2aee6631cb165216069d51792ad8df7aafbb`. Both languages use [research-snapshot.json](research-snapshot.json) and `render-research.cjs`. Regenerate with `node docs/figures/render-research.cjs`; CI uses `--check`. The snapshot is the actual printed report; the diagram distinguishes development ranking from local measured repairs.
+
+## v1.0.0 release figure
+
+`release-v1*.svg` uses the frozen printed reports in [v1-snapshot.json](v1-snapshot.json) from [offline CI run 45355977079](https://github.com/Afloat16/research-to-fix/actions/runs/45355977079) (job 138313769739, commit `618413f03a715cfb5573bc0f655d92d931d9db95`). A separate earlier authorized [known-item probe](https://github.com/Afloat16/research-to-fix/actions/runs/45355435962) is retained in the JSON, not mixed into offline latency. Regenerate/check using `node docs/figures/render-v1.cjs [--check]`. The two curated algorithm corpora, mock transport, and tiny exact-attention example do not establish general agent repair success or GPU performance.

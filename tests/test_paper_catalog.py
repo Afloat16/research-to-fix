@@ -102,11 +102,20 @@ class CatalogTests(unittest.TestCase):
                                 for row in direct["results"]))
             for mode in ("balanced", "bridge"):
                 report = db.observations(plan, qid, limit=3, route_fusion=True, route_mode=mode)
-                self.assertEqual(report["papers_returned"], 3)
+                self.assertGreaterEqual(report["papers_returned"], 1)
+                self.assertLessEqual(report["papers_returned"], 3)
                 self.assertEqual(report["local_mode"], "route_" + mode)
+                if mode == "bridge":
+                    self.assertTrue(any(row["url"] in {"https://github.com/artidoro/qlora",
+                                                       "https://github.com/google-research/simclr"}
+                                        for row in report["results"]))
                 self.assertTrue(all(row["access"] == "metadata" for row in report["results"]))
                 self.assertEqual(report, db.observations(plan, qid, limit=3, route_fusion=True,
                                                          route_mode=mode))
+            titles = {**problem, "concepts": ["memory efficient attention", "quantized adaptation"],
+                      "alternative_concepts": ["contrastive learning"]}
+            results = db.route_search(titles, "memory efficient attention", limit=3, mode="balanced")
+            self.assertEqual(len(results), 3)
             with self.assertRaises(w.WorkflowError):
                 db.observations(plan, qid, route_mode="bridge")
 

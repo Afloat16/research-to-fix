@@ -452,8 +452,14 @@ class Catalog:
             if repository is not None:
                 matched = [discovery.github_repo_url(repository)]
             if matched:
-                linked = self.links(key, limit=1000)
-                refs = sorted(linked, key=lambda ref: (ref["repo_url"] not in matched,
+                linked = {ref["repo_url"]: ref for ref in refs}
+                for repo_url in matched:
+                    ref = self.db.execute(
+                        "SELECT repo_url,official,in_paper,in_repo FROM links WHERE paper_id=? AND repo_url=?",
+                        (key, repo_url)).fetchone()
+                    if ref is not None:
+                        linked[repo_url] = dict(ref)
+                refs = sorted(linked.values(), key=lambda ref: (ref["repo_url"] not in matched,
                               -ref["official"], -ref["in_paper"], -ref["in_repo"], ref["repo_url"]))[:MAX_LINKS]
             common = {"query_id": query_id, "origin": "local_catalog", "access": "metadata",
                       "catalog_snapshot": self.metadata["snapshot"], "catalog_license": self.metadata["license"]}

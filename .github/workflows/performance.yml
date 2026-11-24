@@ -5,12 +5,14 @@ on:
       - 'benchmarks/**'
       - 'skills/research-to-fix/scripts/**'
       - 'examples/numerical-variance/**'
+      - 'examples/exact-topk/**'
       - '.github/workflows/performance.yml'
   pull_request:
     paths:
       - 'benchmarks/**'
       - 'skills/research-to-fix/scripts/**'
       - 'examples/numerical-variance/**'
+      - 'examples/exact-topk/**'
       - '.github/workflows/performance.yml'
   workflow_dispatch:
 permissions:
@@ -43,13 +45,20 @@ jobs:
         run: python benchmarks/discovery.py --output "$RUNNER_TEMP/discovery.json"
       - name: Compare actual numerical repair candidates
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
-      - name: Install optional archive importer
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Benchmark final full catalog')
+      - name: Compare exact top-k alternatives under a locked protocol
+        run: python examples/exact-topk/compare_methods.py --output "$RUNNER_TEMP/exact-topk"
+      - name: Install optional benchmark importer
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run external research benchmark')
         run: |
           python -m pip install --only-binary=:all: pyarrow==20.0.0
-      - name: Benchmark complete pinned public archive
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Benchmark final full catalog')
-        run: python benchmarks/full_catalog.py --approve-public --output "$RUNNER_TEMP/full-catalog"
+      - name: Evaluate independent public duplicate-question labels
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run external research benchmark')
+        run: |
+          python benchmarks/fetch_beir.py --output "$RUNNER_TEMP/beir-programmers"
+          python benchmarks/retrieval.py --beir-dir "$RUNNER_TEMP/beir-programmers" --query-limit 128 --k 10 --repeats 2 --output "$RUNNER_TEMP/beir-report.json"
+      - name: Evaluate live public algorithm discovery
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run external research benchmark')
+        run: python benchmarks/live_problem.py --approve-public --output "$RUNNER_TEMP/live-problem.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -61,6 +70,8 @@ jobs:
             ${{ runner.temp }}/regression.json
             ${{ runner.temp }}/discovery.json
             ${{ runner.temp }}/variance-comparison/
-            ${{ runner.temp }}/full-catalog/report.json
+            ${{ runner.temp }}/exact-topk/
+            ${{ runner.temp }}/beir-report.json
+            ${{ runner.temp }}/live-problem.json
           retention-days: 14
           if-no-files-found: warn

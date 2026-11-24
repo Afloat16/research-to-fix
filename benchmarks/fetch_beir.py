@@ -8,6 +8,7 @@ import argparse
 import hashlib
 from pathlib import Path
 import urllib.request
+from full_catalog import FixedPublicRedirect
 
 BASE = "https://huggingface.co/datasets/BeIR/cqadupstack/resolve/e84b7220ce5a4e6c49aeb568983b0ec5a7584c2c/programmers"
 QRELS = "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/programmers/test.tsv"
@@ -22,9 +23,10 @@ FILES = (
 
 def download(destination):
     destination.mkdir()
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), FixedPublicRedirect())
     for filename, url, expected, limit in FILES:
         target = destination / filename
-        with urllib.request.urlopen(url, timeout=90) as response:
+        with opener.open(url, timeout=90) as response:
             if not response.url.startswith("https://"):
                 raise ValueError("Non-HTTPS dataset response")
             data = response.read(limit + 1)

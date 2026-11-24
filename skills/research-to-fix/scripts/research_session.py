@@ -213,7 +213,7 @@ def main(argv=None):
     inspect = commands.add_parser("review")
     inspect.add_argument("--session", required=True, type=Path)
     inspect.add_argument("--limit", type=int, default=12)
-    inspect.add_argument("--ranking", choices=("bm25", "facet"), default="bm25")
+    inspect.add_argument("--ranking", choices=("bm25", "facet", "fusion"), default="bm25")
     inspect.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:

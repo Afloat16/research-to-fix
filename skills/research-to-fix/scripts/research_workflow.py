@@ -428,8 +428,13 @@ def facets(problem):
     return {name: terms for name, terms in out.items() if terms}
 
 
-def group_results(rows):
-    """Transitive identity grouping across providers; never fuzzy-merge titles."""
+def group_results(rows, diagnostics=None):
+    """Group exact identities; quarantine contradictory transitive aliases.
+
+    A common DOI may link an arXiv paper and a publisher copy, but conflicting
+    arXiv IDs/DOIs or different document families must not erase distinct
+    originals. In a conflicting component retain canonical URL groups only.
+    """
     parent = list(range(len(rows)))
 
     def root(index):
@@ -450,7 +455,23 @@ def group_results(rows):
     groups = defaultdict(list)
     for index, row in enumerate(rows):
         groups[root(index)].append(row)
-    return list(groups.values())
+    final = []
+    conflicts = 0
+    for group in groups.values():
+        keys = set().union(*(row["keys"] for row in group))
+        if (sum(key.startswith("doi:") for key in keys) > 1 or
+                sum(key.startswith("arxiv:") for key in keys) > 1 or
+                len({row["family"] for row in group}) > 1):
+            conflicts += 1
+            partitions = defaultdict(list)
+            for row in group:
+                partitions[(row["url"], row["family"])].append(row)
+            final.extend(partitions[key] for key in sorted(partitions))
+        else:
+            final.append(group)
+    if diagnostics is not None:
+        diagnostics["identity_conflicts"] = conflicts
+    return final
 
 
 def plan_digest(plan):
@@ -473,7 +494,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
 
 def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     """Internal scorer: caller validates all original round plans first."""
-    if ranking not in ("bm25", "facet"):
+    if ranking not in ("bm25", "facet", "fusion"):
         fail("invalid_ranking")
     integer(limit, 1, MAX_SHORTLIST)
     if not isinstance(inputs, list) or not 1 <= len(inputs) <= 12:
@@ -507,7 +528,8 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
             continue
         normalized.append(item)
         returned[item["query_id"]] += 1
-    groups = group_results(normalized)
+    identity_diagnostics = {}
+    groups = group_results(normalized, identity_diagnostics)
     f = facets(plan["problem"])
     query_terms = set().union(*f.values()) if f else set()
     # IDF across unique groups, not duplicated API hits or syndicated copies.
@@ -559,7 +581,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         return relevance, sorted(matched, key=lambda t: (-idf[t], t))[:20], cover
 
     access_order = {name: i for i, name in enumerate(("read", "snippet_only", "metadata", "access_blocked", "unavailable"))}
-    ranked, graph_observations, lexical_documents = [], [], []
+    ranked, graph_observations, lexical_documents, all_nodes = [], [], [], {}
     for group in groups:
         scored = [(score(row), row) for row in group]
         # Never sum duplicated pages into artificial evidence strength.
@@ -573,11 +595,9 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         if positive:
             scored = positive
         (value, terms, cover), winner = scored[0]
-        if value <= 0:
-            skipped["no_relevance"] += 1
-            continue
         ids = sorted(set().union(*(row["keys"] for row in group)))
-        stable_id = "S-" + hashlib.sha256("\n".join(ids).encode()).hexdigest()[:16]
+        # Family and canonical locators disambiguate quarantined groups.
+        stable_id = "S-" + hashlib.sha256(("\n".join(ids) + "\nfamily:" + winner["family"]).encode()).hexdigest()[:16]
         provenance = sorted({(row["query_id"], row["source"], row["origin"], row["original_url"],
                               row["access"], row["revision"]) for row in group})
         sources = [{"query_id": qid, "source": src, "origin": origin, "url": url,
@@ -592,7 +612,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         if not merged_counts:
             merged_counts = core.ranking_counts(winner["title"], winner["title"] + "\n" + winner["snippet"], "stemmed")
         lexical_documents.append((stable_id, merged_counts))
-        ranked.append({"id": stable_id, "url": winner["url"], "title": winner["title"],
+        node = {"id": stable_id, "url": winner["url"], "title": winner["title"],
                        "snippet": winner["snippet"], "kind": winner["kind"], "family": winner["family"],
                        "access": winner["access"], "relevance": round(value, 6),
                        "matched_terms": terms, "facet_coverage": {k: round(v, 6) for k, v in cover.items()},
@@ -600,30 +620,58 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                        "license_hint": winner["license_hint"], "maintenance_hint": winner["maintenance_hint"], "identities": ids,
                        "observations": len(group), "provenance": sources,
                        "provenance_truncated": len(provenance) > len(sources),
-                       "review_required": True})
+                       "read_observations": sum(row["access"] == "read" for row in group),
+                       "review_required": True}
+        all_nodes[stable_id] = node
+        if value > 0:
+            ranked.append(node)
+        else:
+            skipped["no_relevance"] += 1
     full_query = " ".join([plan["problem"]["symptom"], plan["problem"]["task"],
                            plan["problem"]["component"], *plan["problem"]["concepts"],
                            *plan["problem"]["alternative_concepts"], *plan["problem"]["aliases"]])
-    lexical = {identifier: score for score, identifier, _ in core.scan_rank(
-        lexical_documents, core.ranking_tokens(full_query, "stemmed"))}
-    for row in ranked:
+    # Reuse one compact posting index for the full query and individual
+    # intent facets. Reciprocal-rank fusion is opt-in until evaluated.
+    index = core.PostingIndex(lexical_documents) if ranking == "fusion" else None
+    terms = core.ranking_tokens(full_query, "stemmed")
+    lexical = {identifier: score for score, identifier, _ in (
+        index.rank(terms, explain=False) if index else core.scan_rank(lexical_documents, terms))}
+    fused = defaultdict(float)
+    if index:
+        p = plan["problem"]
+        views = [(full_query, 2.0), (p["symptom"], 1.0), (p["task"], 1.0)]
+        views += [(joined(p["task"], concept), 1.0) for concept in p["concepts"] + p["alternative_concepts"]]
+        views += [(alias, .7) for alias in p["aliases"]]
+        seen_views = set()
+        for query, weight in views:
+            terms = frozenset(core.ranking_tokens(query, "stemmed"))
+            if not terms or terms in seen_views:
+                continue
+            seen_views.add(terms)
+            for rank, (_, identifier, _) in enumerate(index.rank(terms, limit=60, explain=False), 1):
+                fused[identifier] += weight / (60 + rank)
+    for row in all_nodes.values():
         row["bm25_score"] = round(lexical.get(row["id"], 0), 6)
+        if ranking == "fusion":
+            row["fusion_score"] = round(fused.get(row["id"], 0), 9)
     def ordering(row):
-        primary = row["bm25_score"] if ranking == "bm25" else row["relevance"]
+        primary = row["bm25_score"] if ranking == "bm25" else row["fusion_score"] if ranking == "fusion" else row["relevance"]
         return (-primary, -row["relevance"], row["id"])
     ranked.sort(key=ordering)
     # Do not displace relevant code/paper candidates simply to fill all
     # source-family slots. Keep lexical top-k and expose other coverage gaps
     # for targeted searches.
     best = max((row["relevance"] for row in ranked), default=0)
-    eligible = [row for row in ranked if row["relevance"] >= (.08 if ranking == "bm25" else max(.08, .30 * best))
+    eligible = [row for row in ranked if row["relevance"] >= (max(.08, .30 * best) if ranking == "facet" else .08)
                 and (ranking != "bm25" or row["bm25_score"] > 0)
+                and (ranking != "fusion" or row["fusion_score"] > 0)
                 and row["access"] not in ("unavailable", "access_blocked")]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
     chosen = eligible[:limit]
     # Match only explicit links to known URL identities. Do not infer
     # official implementation, equivalence, or support from title similarity.
-    nodes = {row["id"]: row for row in ranked}
+    nodes = all_nodes
+    relevant_ids = {row["id"] for row in ranked}
     url_owners = defaultdict(set)
     for key, group in graph_observations:
         for row in group:
@@ -641,9 +689,12 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
             for link in row["links"]:
                 target = by_url.get(link["url"])
                 if target is None:
-                    unresolved.add((key, link["url"], link["relation"], link["basis"]))
+                    if key in relevant_ids:
+                        unresolved.add((key, link["url"], link["relation"], link["basis"]))
                     continue
-                if target == key:
+                # Keep lexical-no-match partners only when a relevant source
+                # actually names them. They never enter the ranked shortlist.
+                if target == key or (key not in relevant_ids and target not in relevant_ids):
                     continue
                 edge_key = (key, target, link["relation"], link["basis"], row["original_url"])
                 edges[edge_key] = {"from": key, "to": target, "relation": link["relation"],
@@ -699,10 +750,11 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     return {"schema_version": SCHEMA, "scope": "research_shortlist", "notice": NOTICE,
             "input_observations": len(raw_rows), "valid_observations": len(normalized),
             "unique_identities": len(groups), "duplicates_collapsed": len(normalized) - len(groups),
+            "identity_conflicts": identity_diagnostics["identity_conflicts"],
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
             "ranking": ranking, "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
             "evidence_graph": {"ambiguous_aliases": sum(len(owners) > 1 for owners in url_owners.values()),
-                               "nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in ranked
+                               "nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in sorted(nodes.values(), key=lambda row: row["id"])
                                          if row["id"] in {key for edge in graph_edges[:100] for key in (edge["from"], edge["to"])}],
                                "edges": graph_edges[:100], "edge_count": len(graph_edges),
                                "paper_code_pairs": pairs[:50], "pair_count": len(pairs),
@@ -733,7 +785,7 @@ def main(argv=None):
     triage.add_argument("--plan", required=True, type=Path)
     triage.add_argument("--results", action="append", required=True, type=Path)
     triage.add_argument("--limit", type=int, default=12)
-    triage.add_argument("--ranking", choices=("bm25", "facet"), default="bm25")
+    triage.add_argument("--ranking", choices=("bm25", "facet", "fusion"), default="bm25")
     triage.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:

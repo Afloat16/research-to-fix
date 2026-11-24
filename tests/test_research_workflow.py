@@ -174,6 +174,38 @@ class TriageTests(unittest.TestCase):
         with self.assertRaises(w.WorkflowError):
             w.rank_results(self.plan, [{"results": []}], 2, "unknown")
 
+    def test_nonlexical_linked_implementation_is_visible_not_ranked(self):
+        paper = self.row("arxiv", "https://arxiv.org/abs/2205.14135",
+                         "FlashAttention memory efficient attention", access="read",
+                         links=[{"url": "https://github.com/example/xyz", "relation": "mentions", "basis": "read"}])
+        code = self.row("github_repositories", "https://github.com/example/xyz", "xyz")
+        report = w.rank_results(self.plan, [{"results": [paper, code]}], 2)
+        self.assertEqual(len(report["shortlist"]), 1)
+        self.assertEqual(report["linked_followups"][0]["url"], "https://github.com/example/xyz")
+        self.assertEqual(report["evidence_graph"]["pair_count"], 0)
+        self.assertEqual(len(report["evidence_graph"]["nodes"]), 2)
+
+    def test_conflicting_transitive_aliases_are_not_silently_merged(self):
+        a = self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention",
+                     doi="10.1000/example")
+        b = self.row("arxiv", "https://arxiv.org/abs/2307.08691", "FlashAttention 2",
+                     doi="10.1000/example")
+        c = self.row("crossref", "https://doi.org/10.1000/example", "Attention")
+        report = w.rank_results(self.plan, [{"results": [a, b, c]}], 5)
+        self.assertEqual(report["identity_conflicts"], 1)
+        self.assertEqual(report["unique_identities"], 3)
+        self.assertGreaterEqual(report["evidence_graph"]["ambiguous_aliases"], 1)
+
+    def test_fusion_deterministic_and_abstains_on_component_only(self):
+        rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention efficient attention"),
+                self.row("github_repositories", "https://github.com/example/attention", "block sparse attention"),
+                self.row("github_repositories", "https://github.com/example/torch", "PyTorch")]
+        a = w.rank_results(self.plan, [{"results": rows}], 3, "fusion")
+        b = w.rank_results(self.plan, [{"results": list(reversed(rows))}], 3, "fusion")
+        self.assertEqual(a, b)
+        self.assertEqual(len(a["shortlist"]), 2)
+        self.assertTrue(all(row["fusion_score"] > 0 for row in a["shortlist"]))
+
     def test_no_search_claim_without_explicit_status_and_stable_order(self):
         rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention"),
                 self.row("github_repositories", "https://github.com/dao-ailab/flash-attention",

@@ -6,6 +6,7 @@ on:
       - 'skills/research-to-fix/scripts/**'
       - 'examples/numerical-variance/**'
       - 'examples/exact-attention/**'
+      - 'examples/streaming-metrics/**'
       - '.github/workflows/performance.yml'
   pull_request:
     paths:
@@ -13,6 +14,7 @@ on:
       - 'skills/research-to-fix/scripts/**'
       - 'examples/numerical-variance/**'
       - 'examples/exact-attention/**'
+      - 'examples/streaming-metrics/**'
       - '.github/workflows/performance.yml'
   workflow_dispatch:
 permissions:
@@ -51,6 +53,8 @@ jobs:
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - name: Compare exact attention workspace algorithms
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
+      - name: Audit real subprocess captures under controlled perturbations
+        run: python benchmarks/capture_audit.py --output "$RUNNER_TEMP/capture-audit.json"
       - name: Measure provider scheduler with mock transport
         run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
       - if: always()
@@ -68,5 +72,6 @@ jobs:
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
             ${{ runner.temp }}/discovery-schedule.json
+            ${{ runner.temp }}/capture-audit.json
           retention-days: 14
           if-no-files-found: warn

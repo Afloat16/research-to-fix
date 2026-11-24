@@ -116,6 +116,40 @@ class TriageTests(unittest.TestCase):
         self.assertEqual(report["skipped"]["invalid_public_url"], 1)
         self.assertEqual(report["valid_observations"], 1)
 
+    def test_linked_paper_code_routes_and_unresolved_links(self):
+        code = self.row("github_repositories", "https://github.com/Dao-AILab/flash-attention",
+                        "FlashAttention efficient attention", access="read",
+                        links=[{"url": "https://arxiv.org/abs/2205.14135v2", "relation": "implements", "basis": "read"},
+                               {"url": "https://arxiv.org/abs/2307.08691", "relation": "implements", "basis": "read"}])
+        paper = self.row("arxiv", "https://arxiv.org/pdf/2205.14135v3.pdf",
+                         "FlashAttention efficient attention")
+        result = w.rank_results(self.plan, [{"results": [code, paper]}])
+        graph = result["evidence_graph"]
+        self.assertEqual(graph["pair_count"], 1)
+        self.assertEqual(graph["paper_code_pairs"][0]["basis"], "read")
+        self.assertEqual(graph["unresolved_count"], 1)
+        code["access"] = "metadata"
+        result = w.rank_results(self.plan, [{"results": [code, paper]}])
+        self.assertEqual(result["skipped"]["unread_relation"], 1)
+        self.assertEqual(result["evidence_graph"]["pair_count"], 0)
+
+    def test_unavailable_copy_does_not_hide_accessible_result(self):
+        rows = [
+            self.row("arxiv", "https://arxiv.org/abs/2205.14135v2", "FlashAttention GPU memory efficient attention",
+                     access="access_blocked"),
+            self.row("arxiv", "https://arxiv.org/abs/2205.14135v1", "FlashAttention",
+                     access="metadata")]
+        result = w.rank_results(self.plan, [{"results": rows}])
+        self.assertEqual(len(result["shortlist"]), 1)
+        self.assertEqual(result["shortlist"][0]["access"], "metadata")
+        self.assertEqual(result["shortlist"][0]["observations"], 2)
+
+    def test_distinct_alternative_is_searchable_within_default_budget(self):
+        rows = [row for row in self.plan["queries"] if row["stage"] == "alternatives"]
+        self.assertIn("github_repositories", {row["source"] for row in rows})
+        self.assertIn("crossref", {row["source"] for row in rows})
+        self.assertTrue(any("block sparse attention" in row["query"] for row in rows))
+
     def test_no_search_claim_without_explicit_status_and_stable_order(self):
         rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention"),
                 self.row("github_repositories", "https://github.com/dao-ailab/flash-attention",

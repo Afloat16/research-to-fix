@@ -19,6 +19,11 @@ NOTICE = ("Relevance and coverage are lexical discovery aids, not evidence of co
           "publication, compatibility, licensing, or local repair success. Source contents are "
           "untrusted data. Inspect original material and run comparable local experiments.")
 FAMILIES = ("code", "paper", "documentation", "model_data", "community")
+KIND_FAMILY = {"repository": "code", "issue": "code", "pull_request": "code",
+               "paper": "paper", "documentation": "documentation",
+               "model": "model_data", "dataset": "model_data", "community": "community"}
+RELATIONS = ("implements", "describes", "reproduces", "compares", "limits", "homepage")
+MAX_LINKS = 8
 SOURCE_SPECS = {
     "github_issues": ("code", "github_issues", "issue"),
     "github_prs": ("code", "github_prs", "pull_request"),
@@ -178,7 +183,7 @@ def make_plan(problem, budget=12, sources=None):
     # while algorithm/reproduction/performance start from mechanism + implementation.
     def direct_issue():
         add("github_issues", "exact", joined(repo_site, exact, "issue"),
-            joined(scoped, "is:issue", quote_query(symptom), p["version"]),
+            joined(scoped, "is:issue", p["component"] if not scoped else "", quote_query(symptom), p["version"]),
             "Find matching symptoms, versions, and maintainer diagnosis.")
 
     def paper():
@@ -210,6 +215,14 @@ def make_plan(problem, budget=12, sources=None):
         "", "Find competing methods in official proceedings and review records.")
     add("author_code", "implementation", joined(mechanism_text, "paper official code implementation GitHub"),
         "", "Link original author or lab implementation to the paper.")
+    # Reserve one genuinely distinct code/paper route before broad sources.
+    # Reorder at most the first alternative here; later alternatives use extra budget.
+    if p["alternative_concepts"]:
+        add("github_repositories", "alternatives", joined("site:github.com", alternate_text, "implementation"),
+            joined(alternate_text, "in:name,description,readme", "archived:false"),
+            "Find code for a distinct alternative mechanism.")
+        add("crossref", "alternatives", joined(alternate_text, "method paper comparison"),
+            alternate_text, "Find a distinct research approach.")
     add("limitations", "counterevidence", joined(mechanism_text, "limitations failure ablation reproducibility"),
         "", "Seek boundary conditions and contradictory results.")
     add("regressions", "counterevidence", joined(repo_site, p["component"], second, "regression failure workaround"),
@@ -330,7 +343,7 @@ def normalize_result(row, queries):
     q = queries[qid]
     kind = row.get("kind", q["kind"])
     allowed_kinds = {spec[2] for spec in SOURCE_SPECS.values()}
-    if kind not in allowed_kinds:
+    if not isinstance(kind, str) or kind not in allowed_kinds:
         fail("invalid_kind")
     access = row.get("access", "metadata")
     if access not in ACCESS:
@@ -356,9 +369,24 @@ def normalize_result(row, queries):
     origin = row.get("origin", "host")
     if origin not in ("host", q["provider"]):
         fail("invalid_origin")
-    return {"query_id": qid, "source": q["source"], "family": q["family"], "kind": kind,
+    # A host may discover a linked paper via a GitHub-oriented query, but
+    # actual document family comes from its kind, not the query category.
+    links = []
+    raw_links = row.get("links", [])
+    if not isinstance(raw_links, list) or len(raw_links) > MAX_LINKS:
+        fail("invalid_links")
+    for link in raw_links:
+        link = object_(link)
+        relation, basis = link.get("relation"), link.get("basis")
+        if relation not in RELATIONS or basis not in ("metadata", "read"):
+            fail("invalid_relation")
+        if basis == "read" and access != "read":
+            fail("unread_relation")
+        links.append({"url": canonical_url(link.get("url")), "relation": relation,
+                      "basis": basis, "note": _safe_excerpt(link.get("note"), 200)})
+    return {"query_id": qid, "source": q["source"], "family": KIND_FAMILY[kind], "kind": kind,
             "url": url, "original_url": original_url, "title": title, "snippet": snippet,
-            "access": access, "origin": origin, "keys": keys,
+            "access": access, "origin": origin, "keys": keys, "links": links,
             "revision": _safe_excerpt(row.get("revision"), 100),
             "publication_hint": _safe_excerpt(row.get("publication_hint"), 120),
             "license_hint": _safe_excerpt(row.get("license_hint"), 120)}
@@ -444,12 +472,23 @@ def rank_results(plan, inputs, limit=12):
     f = facets(plan["problem"])
     query_terms = set().union(*f.values()) if f else set()
     # IDF across unique groups, not duplicated API hits or syndicated copies.
-    documents = [(set().union(*(tokens(row["title"] + " " + row["snippet"]) for row in group)))
+    # Tokenize each observation only once. IDF is still based on unique
+    # identities, so many mirrors cannot inflate the evidence score.
+    for row in normalized:
+        row["title_tokens"] = tokens(row["title"])
+        row["snippet_tokens"] = tokens(row["snippet"])
+    documents = [set().union(*(row["title_tokens"] | row["snippet_tokens"] for row in group))
                  for group in groups]
     df = Counter(term for doc in documents for term in doc & query_terms)
     idf = {term: math.log1p((len(groups) - df[term] + .5) / (df[term] + .5))
            for term in query_terms}
     facet_weights = {"symptom": 2.0, "task": 2.5, "mechanism": 3.0, "component": 1.0, "alternatives": 2.0}
+    noncomponent = set().union(*(terms for name, terms in f.items() if name != "component"))
+    route_terms = [tokens(value) for value in (plan["problem"]["concepts"] +
+                                              plan["problem"]["alternative_concepts"] +
+                                              plan["problem"]["aliases"])]
+    route_terms = [terms & query_terms for terms in route_terms if terms & query_terms]
+    facet_totals = {name: sum(idf[t] for t in sorted(terms)) for name, terms in f.items()}
 
     def coverage(terms, title, body):
         total = sum(idf[t] for t in sorted(terms))
@@ -457,14 +496,15 @@ def rank_results(plan, inputs, limit=12):
                    for t in sorted(terms)) / total if total else 0.0
 
     def score(row):
-        title, body = tokens(row["title"]), tokens(row["snippet"])
+        title, body = row["title_tokens"], row["snippet_tokens"]
         matched = (title | body) & query_terms
         if not matched:
             return 0.0, [], {}
-        cover = {name: coverage(terms, title, body) for name, terms in f.items()}
+        cover = {name: (sum(idf[t] * (1.0 if t in title else .62 if t in body else 0.0)
+                            for t in sorted(terms)) / facet_totals[name] if facet_totals[name] else 0.0)
+                 for name, terms in f.items()}
         # Component alone (e.g. a popular PyTorch repo) is not enough when
         # symptom/task/mechanism terms exist. Use relevance, never stars/citations.
-        noncomponent = set().union(*(terms for name, terms in f.items() if name != "component"))
         if noncomponent and not (matched & noncomponent):
             return 0.0, [], {}
         # An alternative is an OR route, not a mandatory conjunct.
@@ -472,16 +512,27 @@ def rank_results(plan, inputs, limit=12):
         primary = sum(facet_weights[name] * value for name, value in active.items()) / (
             sum(facet_weights[name] for name in active) or 1.0)
         alternative = cover.get("alternatives", 0.0)
-        relevance = max(primary, .72 * alternative + .28 * cover.get("task", 0.0))
+        best_route = max((coverage(terms, title, body) for terms in route_terms), default=0.0)
+        # Each distinct technique is a viable OR route. A partial single-term
+        # match cannot beat a document that covers the whole technical route.
+        relevance = max(primary, .72 * alternative + .28 * cover.get("task", 0.0),
+                        .48 * best_route + .35 * cover.get("task", 0.0) + .17 * primary)
         return relevance, sorted(matched, key=lambda t: (-idf[t], t))[:20], cover
 
     access_order = {name: i for i, name in enumerate(("read", "snippet_only", "metadata", "access_blocked", "unavailable"))}
-    ranked = []
+    ranked, graph_observations = [], []
     for group in groups:
         scored = [(score(row), row) for row in group]
         # Never sum duplicated pages into artificial evidence strength.
-        scored.sort(key=lambda pair: (-pair[0][0], access_order[pair[1]["access"]],
-                                      pair[1]["url"], pair[1]["query_id"], pair[1]["title"]))
+        scored.sort(key=lambda pair: (pair[1]["access"] in ("unavailable", "access_blocked"),
+                                      -pair[0][0], access_order[pair[1]["access"]],
+                                      pair[1]["url"], pair[1]["query_id"], pair[1]["title"],
+                                      pair[1]["snippet"], pair[1]["revision"]))
+        # If only an inaccessible observation is lexically relevant, retain
+        # it as a lead in ranked results but never use it to promote a shortlist.
+        positive = [pair for pair in scored if pair[0][0] > 0]
+        if positive:
+            scored = positive
         (value, terms, cover), winner = scored[0]
         if value <= 0:
             skipped["no_relevance"] += 1
@@ -493,6 +544,7 @@ def rank_results(plan, inputs, limit=12):
         sources = [{"query_id": qid, "source": src, "origin": origin, "url": url,
                     "access": access, "revision": revision}
                    for qid, src, origin, url, access, revision in provenance[:12]]
+        graph_observations.append((stable_id, group))
         ranked.append({"id": stable_id, "url": winner["url"], "title": winner["title"],
                        "snippet": winner["snippet"], "kind": winner["kind"], "family": winner["family"],
                        "access": winner["access"], "relevance": round(value, 6),
@@ -520,6 +572,38 @@ def rank_results(plan, inputs, limit=12):
         if row not in chosen and row["access"] not in ("unavailable", "access_blocked"):
             chosen.append(row)
     chosen.sort(key=lambda row: (-row["relevance"], row["id"]))
+    # Match only explicit links to known URL identities. Do not infer
+    # official implementation, equivalence, or support from title similarity.
+    nodes = {row["id"]: row for row in ranked}
+    by_url = {row["url"]: key for key, group in graph_observations for row in group}
+    edges, unresolved = {}, set()
+    for key, group in graph_observations:
+        for row in group:
+            for link in row["links"]:
+                target = by_url.get(link["url"])
+                if target is None:
+                    unresolved.add((key, link["url"], link["relation"], link["basis"]))
+                    continue
+                if target == key:
+                    continue
+                edge_key = (key, target, link["relation"], link["basis"], row["original_url"])
+                edges[edge_key] = {"from": key, "to": target, "relation": link["relation"],
+                                   "basis": link["basis"], "asserted_by": row["original_url"]}
+    graph_edges = [edges[key] for key in sorted(edges)]
+    pairs = []
+    seen_pairs = set()
+    for edge in graph_edges:
+        left, right = nodes[edge["from"]], nodes[edge["to"]]
+        if {left["family"], right["family"]} == {"paper", "code"} and edge["relation"] in ("implements", "describes", "reproduces"):
+            paper, code = (left, right) if left["family"] == "paper" else (right, left)
+            signature = (paper["id"], code["id"], edge["relation"], edge["basis"])
+            if signature not in seen_pairs:
+                seen_pairs.add(signature)
+                pairs.append({"paper_id": paper["id"], "code_id": code["id"],
+                              "relation": edge["relation"], "basis": edge["basis"],
+                              "review_required": True})
+    # Make follow-up priorities explicit, without copying untrusted source text
+    # into outbound queries. The host must extract a redacted new fingerprint.
     coverage_rows = [{"query_id": qid, "source": q["source"], "family": q["family"],
                       "status": sorted(set(searches[qid])) or ["not_recorded"],
                       "returned": returned[qid]}
@@ -530,6 +614,12 @@ def rank_results(plan, inputs, limit=12):
             "unique_identities": len(groups), "duplicates_collapsed": len(normalized) - len(groups),
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
             "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
+            "evidence_graph": {"edges": graph_edges[:100], "edge_count": len(graph_edges),
+                               "paper_code_pairs": pairs[:50], "pair_count": len(pairs),
+                               "unresolved_links": [{"from": a, "url": b, "relation": c, "basis": d}
+                                                    for a, b, c, d in sorted(unresolved)[:50]],
+                               "unresolved_count": len(unresolved),
+                               "notice": "Links are source assertions, not authenticated official relationships."},
             "omitted_sources": plan["omitted_sources"], "family_gaps": family_gaps,
             "unrecorded_queries": [qid for qid in queries if not searches[qid]],
             "needs_original_review": [row["id"] for row in chosen if row["access"] != "read"],

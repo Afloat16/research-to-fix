@@ -728,13 +728,28 @@ class RecallInputError(ValueError):
     """A fixed error code, never a caller's path, query, or file contents."""
 
 
+RECALL_WORD = re.compile(r"[^\W_]+(?:_[^\W_]+)*")
+HAN_RUN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]+")
+HAN_SEGMENTS = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]+|[^\u3400-\u4dbf\u4e00-\u9fff]+")
+
+
 def recall_tokens(text):
     """Keep technical word tokens; split Han runs into overlapping bigrams."""
     text = unicodedata.normalize("NFKC", text).casefold()
+    words = RECALL_WORD.findall(text)
+    # The overwhelmingly common ASCII technical corpus needs no per-word
+    # Han detection, segmentation or extra regex calls. For Unicode words
+    # without Han, the old inner segmentation produced precisely that word.
+    if text.isascii():
+        return [word for word in words if word not in RECALL_STOPWORDS]
     tokens = []
-    for word in re.findall(r"[^\W_]+(?:_[^\W_]+)*", text):
-        for part in re.findall(r"[\u3400-\u4dbf\u4e00-\u9fff]+|[^\u3400-\u4dbf\u4e00-\u9fff]+", word):
-            if re.fullmatch(r"[\u3400-\u4dbf\u4e00-\u9fff]+", part):
+    for word in words:
+        if not HAN_RUN.search(word):
+            if word not in RECALL_STOPWORDS:
+                tokens.append(word)
+            continue
+        for part in HAN_SEGMENTS.findall(word):
+            if HAN_RUN.fullmatch(part):
                 tokens.extend(part[index:index + 2] for index in range(max(1, len(part) - 1)))
             elif part not in RECALL_STOPWORDS:
                 tokens.append(part)

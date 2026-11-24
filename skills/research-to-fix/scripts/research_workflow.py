@@ -39,6 +39,15 @@ SOURCE_SPECS = {
     "limitations": ("paper", "host", "paper"),
     "regressions": ("code", "host", "issue"),
 }
+LEGACY_SOURCES = tuple(SOURCE_SPECS)
+SOURCE_SPECS.update({
+    "paperswithcode": ("paper", "paperswithcode", "paper"),
+    "openalex": ("paper", "openalex", "paper"),
+    "semantic_scholar": ("paper", "semantic_scholar", "paper"),
+    "dblp": ("paper", "dblp", "paper"),
+    "github_code": ("code", "host", "repository"),
+})
+STRATEGIES = ("legacy", "comprehensive")
 FOCUS = ("algorithm", "bug", "performance", "reproduction")
 STAGES = ("exact", "mechanism", "implementation", "alternatives", "verification", "counterevidence")
 ACCESS = ("metadata", "snippet_only", "read", "access_blocked", "unavailable")
@@ -148,16 +157,20 @@ def quote_query(value):
     return '"' + value.replace('"', " ").replace("\\", " ") + '"'
 
 
-def make_plan(problem, budget=12, sources=None):
+def make_plan(problem, budget=12, sources=None, strategy="legacy"):
     p = normalize_problem(problem)
     integer(budget, 1, MAX_QUERIES)
+    if strategy not in STRATEGIES:
+        fail("invalid_strategy")
+    if strategy == "comprehensive":
+        return comprehensive_plan(p, budget, sources)
     if sources is not None:
         sources = str_list(sources, len(SOURCE_SPECS), 40)
-        if not sources or any(source not in SOURCE_SPECS for source in sources):
+        if not sources or any(source not in LEGACY_SOURCES for source in sources):
             fail("invalid_source")
         selected = set(sources)
     else:
-        selected = set(SOURCE_SPECS)
+        selected = set(LEGACY_SOURCES)
     symptom = p["symptom"]
     # Use bounded, separate mechanism seeds instead of repeating a full traceback.
     mechanism = p["concepts"][0] if p["concepts"] else p["task"] or symptom
@@ -266,13 +279,142 @@ def make_plan(problem, budget=12, sources=None):
             "notice": NOTICE}
 
 
+def plan_fingerprint(plan):
+    """Bind observations to an exact reviewed query plan (not a signature)."""
+    return hashlib.sha256(json.dumps(plan, ensure_ascii=True, sort_keys=True,
+                                     separators=(",", ":"), allow_nan=False).encode("ascii")).hexdigest()
+
+
+def comprehensive_plan(p, budget, sources):
+    """Reserve distinct evidence lanes before spending extra queries.
+
+    No learned synonym or new diagnosis is invented. The host supplies
+    meaningful mechanisms and alternatives after local analysis.
+    """
+    if sources is None:
+        selected = set(SOURCE_SPECS)
+    else:
+        sources = str_list(sources, len(SOURCE_SPECS), 40)
+        if not sources or any(source not in SOURCE_SPECS for source in sources):
+            fail("invalid_source")
+        selected = set(sources)
+    problem = p["symptom"]
+    task = p["task"] or p["component"]
+    mechanisms = p["concepts"] or [task or problem]
+    alternates = p["alternative_concepts"]
+    primary = mechanisms[0]
+    secondary = mechanisms[1] if len(mechanisms) > 1 else primary
+    scope = "repo:" + p["repo"] if p["repo"] else ""
+    site = "site:github.com/" + p["repo"] if p["repo"] else "site:github.com"
+    route = joined(task, primary) if task.casefold() != primary.casefold() else primary
+    rows = []
+    seen = set()
+
+    def add(source, stage, query, native, purpose):
+        if source not in selected:
+            return
+        family, provider, kind = SOURCE_SPECS[source]
+        query = public_text(query, 1024)
+        native = public_text(native, 1024, False)
+        key = (source, (native or query).casefold())
+        if key in seen:
+            return
+        seen.add(key)
+        rows.append({"source": source, "family": family, "provider": provider, "kind": kind,
+                     "stage": stage, "query": query, "native_query": native, "purpose": purpose})
+
+    def direct():
+        add("github_issues", "exact", joined(site, p["component"], quote_query(problem), p["version"]),
+            joined(scope, "is:issue", p["component"] if not scope else "", quote_query(problem), p["version"]),
+            "Find the original symptom and affected versions.")
+        add("github_prs", "verification", joined(site, p["component"], secondary, "fix pull request"),
+            joined(scope, "is:pr is:merged", p["component"] if not scope else "", secondary),
+            "Find merged changes and test evidence; verify release separately.")
+
+    def paper(source, concept, stage):
+        web = {"arxiv": "site:arxiv.org", "openalex": "site:openalex.org",
+               "semantic_scholar": "site:semanticscholar.org", "dblp": "site:dblp.org",
+               "crossref": "paper DOI", "paperswithcode": "site:paperswithcode.co"}[source]
+        add(source, stage, joined(concept, web), concept,
+            "Discover relevant scholarly records and inspect the original publication or linked code.")
+
+    def implementation(concept, stage):
+        add("github_repositories", stage, joined("site:github.com", concept, "implementation"),
+            joined(concept, "in:name,description,readme"),
+            "Find actual implementations and inspect licenses, tests and revisions.")
+
+    if p["focus"] == "bug":
+        direct()
+        implementation(route, "implementation")
+        paper("paperswithcode", route, "mechanism")
+        paper("arxiv", route, "mechanism")
+    else:
+        implementation(route, "implementation")
+        paper("paperswithcode", route, "implementation")
+        paper("arxiv", route, "mechanism")
+        direct()
+    add("official_docs", "verification", joined(p["component"], secondary, p["version"], "official documentation"),
+        "", "Verify supported APIs, versions, and configuration.")
+    if alternates:
+        other = joined(task, alternates[0]) if task.casefold() != alternates[0].casefold() else alternates[0]
+        implementation(other, "alternatives")
+        paper("openalex", other, "alternatives")
+    else:
+        paper("openalex", route, "mechanism")
+    add("limitations", "counterevidence", joined(route, "limitations failure ablation reproducibility"),
+        "", "Investigate failure conditions and contradictory experiments.")
+    paper("semantic_scholar", route, "mechanism")
+    paper("crossref", route, "verification")
+    paper("dblp", route, "verification")
+    add("proceedings", "alternatives",
+        joined(task, alternates[0] if alternates else secondary,
+               "(site:openreview.net OR site:proceedings.mlr.press OR site:openaccess.thecvf.com OR site:aclanthology.org OR site:proceedings.neurips.cc OR site:usenix.org)"),
+        "", "Find original conference records and alternative methods.")
+    add("author_code", "implementation", joined(route, "paper official implementation author repository"),
+        "", "Trace paper, project and author code cross-links.")
+    add("github_code", "implementation", joined(site, secondary, "implementation tests benchmark"),
+        "", "Locate actual source symbols and reproducible benchmarks through host tools.")
+    add("regressions", "counterevidence", joined(site, p["component"], secondary, "regression failure workaround"),
+        "", "Look for unresolved implementation limitations.")
+    add("huggingface_models", "implementation", joined("site:huggingface.co", route, "model card"),
+        route, "Inspect model configurations and revisions.")
+    add("huggingface_datasets", "verification", joined("site:huggingface.co/datasets", task or primary, "benchmark"),
+        task or primary, "Find comparable datasets and evaluation settings.")
+    add("community", "alternatives", joined("(site:zhihu.com OR site:xiaohongshu.com OR site:discuss.huggingface.co)",
+                                            p["component"], p["aliases"][0] if p["aliases"] else secondary, "复现 解决"),
+        "", "Discover community leads and trace them to originals.")
+    for concept in mechanisms[1:]:
+        phrase = joined(task, concept) if task.casefold() != concept.casefold() else concept
+        paper("arxiv", phrase, "mechanism")
+        implementation(phrase, "implementation")
+    for concept in alternates:
+        phrase = joined(task, concept) if task.casefold() != concept.casefold() else concept
+        paper("paperswithcode", phrase, "alternatives")
+        implementation(phrase, "alternatives")
+        paper("openalex", phrase, "alternatives")
+    for alias in p["aliases"]:
+        add("github_issues", "mechanism", joined(site, p["component"], quote_query(alias)),
+            joined(scope, "is:issue", p["component"] if not scope else "", quote_query(alias)),
+            "Check a distinct symptom synonym.")
+    if not rows:
+        fail("empty_plan")
+    queries = [{"id": f"Q{i:02d}", **row} for i, row in enumerate(rows[:budget], 1)]
+    return {"schema_version": 2, "scope": "public_research_plan", "strategy": "comprehensive",
+            "problem": p, "budget": budget, "requested_sources": [source for source in SOURCE_SPECS if source in selected],
+            "queries": queries, "omitted_sources": [source for source in SOURCE_SPECS if source in selected
+                                                     and source not in {row["source"] for row in queries}],
+            "review_required": True, "notice": NOTICE}
+
+
 def validate_plan(value):
     # Regenerate from the explicit public fingerprint. An edited plan cannot
     # inject arbitrary endpoints, hidden queries or native search qualifiers.
     value = object_(value)
-    if value.get("schema_version") != SCHEMA or value.get("scope") != "public_research_plan":
+    version = value.get("schema_version")
+    if type(version) is not int or version not in (1, 2) or value.get("scope") != "public_research_plan":
         fail("invalid_plan")
-    expected = make_plan(value.get("problem"), value.get("budget"), value.get("requested_sources"))
+    expected = make_plan(value.get("problem"), value.get("budget"), value.get("requested_sources"),
+                         "comprehensive" if version == 2 else "legacy")
     if value != expected:
         fail("plan_changed_regenerate")
     return expected
@@ -447,6 +589,8 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
     skipped = Counter()
     for payload in inputs:
         payload = object_(payload)
+        if "plan_id" in payload and payload["plan_id"] != plan_fingerprint(plan):
+            fail("results_plan_mismatch")
         rows = payload.get("results", [])
         status_rows = payload.get("searches", [])
         if not isinstance(rows, list) or not isinstance(status_rows, list) or len(status_rows) > MAX_QUERIES:
@@ -637,7 +781,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
                                                    "basis": pair["basis"], "review_required": True})
     followup_rows = sorted(followups.values(), key=lambda row: ordering(nodes[row["id"]]))[:12]
     return {"schema_version": SCHEMA, "scope": "research_shortlist", "notice": NOTICE,
-            "input_observations": len(raw_rows), "valid_observations": len(normalized),
+            "plan_id": plan_fingerprint(plan), "input_observations": len(raw_rows), "valid_observations": len(normalized),
             "unique_identities": len(groups), "duplicates_collapsed": len(normalized) - len(groups),
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
             "ranking": ranking, "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
@@ -667,6 +811,7 @@ def main(argv=None):
     plan.add_argument("--problem", required=True, type=Path)
     plan.add_argument("--budget", type=int, default=12)
     plan.add_argument("--source", action="append", choices=tuple(SOURCE_SPECS))
+    plan.add_argument("--strategy", choices=STRATEGIES, default="legacy")
     plan.add_argument("--output", type=Path)
     triage = sub.add_parser("triage", help="Normalize, deduplicate and shortlist host/API search results")
     triage.add_argument("--plan", required=True, type=Path)
@@ -677,7 +822,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
-            report = make_plan(read_json(args.problem), args.budget, args.source)
+            report = make_plan(read_json(args.problem), args.budget, args.source, args.strategy)
         else:
             report = rank_results(read_json(args.plan), [read_json(path) for path in args.results], args.limit, args.ranking)
         write_json(report, args.output)

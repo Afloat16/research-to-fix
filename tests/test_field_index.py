@@ -45,6 +45,15 @@ class FieldIndexTests(unittest.TestCase):
                     self.assertEqual(index.rank(query, 3, False),
                                      [(score, key, []) for score, key, _ in expected[:3]])
 
+    def test_precision_feature_channels(self):
+        text = "data_loader Tensor kernel\n缓存测试 folder picker"
+        terms = rc.precision_tokens(text)
+        self.assertEqual(terms, rc.ranking_tokens(text, "hybrid") + [
+            token for token in rc.ranking_tokens(text, "contextual") if token.startswith("phrase:")])
+        self.assertEqual(terms, rc.ranking_tokens(text, "precision_field"))
+        self.assertIn("缓存", terms)
+        self.assertFalse(any(token.startswith("phrase:kernel:") for token in terms))
+
     def test_title_normalization_and_no_match(self):
         docs = [("a", *rc.field_counts("attention kernel", "unrelated " * 200)),
                 ("b", *rc.field_counts("attention kernel", "unrelated " * 10))]

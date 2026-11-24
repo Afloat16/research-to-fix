@@ -164,7 +164,7 @@ def percentile(values, fraction):
 def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
     methods = {}
     outputs = {}
-    for name in ("legacy_scan", "indexed_bm25", "technical", "stemmed", "hybrid",
+    for name in ("legacy_scan", "indexed_bm25", "technical", "stemmed", "hybrid", "contextual",
                  "sqlite_fts5", "sqlite_fts5_porter"):
         if name == "legacy_scan" and not include_scan:
             continue
@@ -182,7 +182,7 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                 del docs
                 def search(text):
                     return [identifier for _, identifier, _ in index.rank(rc.recall_tokens(text), depth, False)]
-        elif name in ("technical", "stemmed", "hybrid"):
+        elif name in ("technical", "stemmed", "hybrid", "contextual"):
             docs = [(row["id"], rc.ranking_counts(*text_fields(row), name)) for row in corpus]
             index = rc.PostingIndex(docs)
             del docs
@@ -219,7 +219,7 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                          **summarize(expected, queries, k)}
         # Release each engine before building the next one.
         del search
-        if name in ("technical", "stemmed", "hybrid", "indexed_bm25"):
+        if name in ("technical", "stemmed", "hybrid", "contextual", "indexed_bm25"):
             del index
         elif name == "legacy_scan":
             del docs

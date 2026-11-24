@@ -110,11 +110,24 @@ class IndexTests(unittest.TestCase):
             path = Path(directory)
             (path / "case.json").write_text(json.dumps(recall_case("Sorting callback")), encoding="utf-8")
             self.assertEqual(rc.recall_cases(path, "sorted")["matches"], [])
-            for mode in ("stemmed", "hybrid"):
+            for mode in ("stemmed", "hybrid", "contextual"):
                 report = rc.recall_cases(path, "sorted", ranking=mode)
                 self.assertEqual(report["matches"][0]["file"], "case.json")
                 self.assertEqual(report["ranking"], mode)
                 self.assertEqual(rc.recall_batch(path, ["sorted"], ranking=mode)["results"][0], report)
+
+    def test_contextual_phrases_are_bounded_and_do_not_cross_fields(self):
+        terms = rc.ranking_tokens("folder picker\nnetwork timeout 缓存泄漏", "contextual")
+        self.assertIn("phrase:folder:picker", terms)
+        self.assertIn("phrase:network:timeout", terms)
+        self.assertNotIn("phrase:picker:network", terms)
+        self.assertIn("缓存", terms)
+        docs = [("a", rc.ranking_counts("folder picker", "folder picker", "contextual")),
+                ("b", rc.ranking_counts("picker folder", "picker folder", "contextual"))]
+        index = rc.PostingIndex(docs)
+        query = rc.ranking_tokens("folder picker", "contextual")
+        self.assertEqual(index.rank(query), rc.scan_rank(docs, query))
+        self.assertEqual(index.rank(query)[0][1], "a")
 
     def test_cli_batch_file_and_no_query_echo(self):
         script = Path(rc.__file__)

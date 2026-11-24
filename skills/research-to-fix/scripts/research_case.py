@@ -741,7 +741,7 @@ def recall_tokens(text):
     return tokens
 
 
-RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid")
+RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual")
 TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
 ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
 CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
@@ -879,8 +879,18 @@ def ranking_tokens(text, mode):
     tokens = technical_tokens(text)
     if mode == "technical":
         return tokens
-    if mode == "stemmed":
-        return [english_stem(token) for token in tokens]
+    if mode in ("stemmed", "contextual"):
+        stems = [english_stem(token) for token in tokens]
+        if mode == "contextual":
+            # Phrase features are independent of English identifier expansion.
+            # Do not manufacture cross-field phrases or double-count Han pairs.
+            for line in text.splitlines():
+                ordered = [english_stem(token) for token in recall_tokens(line)]
+                stems.extend("phrase:" + left + ":" + right for left, right in zip(ordered, ordered[1:])
+                             if 2 <= len(left) <= 64 and 2 <= len(right) <= 64
+                             and left.isascii() and right.isascii()
+                             and left.isalpha() and right.isalpha())
+        return stems
     if mode == "hybrid":
         # Separate namespaces avoid collisions between exact terms and stems.
         # Only alphabetic English words receive a stem channel; Chinese and
@@ -1094,6 +1104,12 @@ def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
     return documents, summaries, skipped, len(entries)
 
 
+def _term_weight(term):
+    # Fixed, deliberately modest phrase bonus. It applies only to the
+    # contextual namespace, never to exact legacy BM25 terms.
+    return 0.35 if term.startswith("phrase:") else 1.0
+
+
 class PostingIndex:
     """In-memory inverted BM25 index. Exact legacy formula, no I/O.
 
@@ -1118,6 +1134,7 @@ class PostingIndex:
             normalization = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
             for term, frequency in terms.items():
                 contribution = inverse[term] * (2.5 * frequency) / (frequency + normalization)
+                contribution *= _term_weight(term)
                 if term not in self.postings:
                     self.postings[term] = (array("I"), array("d"))
                 identifiers, values = self.postings[term]
@@ -1157,7 +1174,7 @@ def scan_rank(documents, query_terms):
     ranked = []
     for (identifier, doc), length in zip(documents, lengths):
         norm = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
-        contributions = {term: inverse[term] * (2.5 * doc[term]) / (doc[term] + norm)
+        contributions = {term: inverse[term] * (2.5 * doc[term]) / (doc[term] + norm) * _term_weight(term)
                          for term in sorted(query_terms.intersection(doc))}
         score = sum(contributions.values())
         if score > 0:
@@ -1291,7 +1308,7 @@ def main(argv=None):
     recall_parser.add_argument("--version", default="", help="仅字面对比同组件的记录版本，不推断兼容性或影响排序")
     recall_parser.add_argument("--limit", type=int, default=5, help=f"返回数量，1–{RECALL_MAX_RESULTS}，默认 5；不凑足无关案例")
     recall_parser.add_argument("--ranking", choices=RANKING_MODES, default="bm25",
-                               help="technical 标识符扩展；stemmed 英文词形归一；hybrid 精确词与词干融合。默认 bm25 保持兼容")
+                               help="technical 标识符扩展；stemmed 英文词形归一；hybrid 精确词与词干融合；contextual 增加短语特征。默认 bm25 保持兼容")
     recall_parser.add_argument("--format", choices=("json", "markdown"), default="json")
     batch_parser = commands.add_parser("recall-batch", help="复用一次校验的内存索引，批量召回")
     batch_parser.add_argument("--cases-dir", required=True, type=Path)

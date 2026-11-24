@@ -114,6 +114,10 @@ python skills/research-to-fix/scripts/research_case.py recall-batch \
 
 Single recall keeps a low-startup scan path. Batch indexing is a snapshot, not a persistent cache; rebuild after modifying cases. All rankers remain lexical, offline, explainable and standard-library-only. Expanded/stem/phrase tokens can produce false matches; no score is a compatibility or success probability. See [benchmark methodology and results](../benchmarks/README.md), [performance evidence](PERFORMANCE.md) and [case reuse](../skills/research-to-fix/references/case-reuse.md).
 
+## Research sessions and measured decisions
+
+For complex algorithm or reproduction tasks, follow the [multi-round research session and comparison guide](../skills/research-to-fix/references/research-decision.md). Start, next, append and review bound public queries to each round; approve API access explicitly, inspect source identity and publication warnings, use paired ranking when explicit links exist, freeze the candidate design before measurement, then run comparable experiments and final regression checks. The [exact-attention example](../examples/exact-attention/README.md) demonstrates both protocol and design locks.
+
 ## Helper tools
 
 ```bash

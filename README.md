@@ -17,6 +17,19 @@
 
 Concept and workflow design: [Afloat16](https://github.com/Afloat16). MIT licensed. **No mandatory Python third-party packages, hosted search service, or embedding model.**
 
+## v1.0.0 — multi-round research and verified decisions
+
+![v1.0.0 evidence ranking, simulated scheduling, and exact-attention measurements](docs/figures/release-v1.svg)
+
+**98.44% / 95.83% Recall@6** on the original and transfer algorithm development fixtures using explicit paper–code pairing; **2.93×** simulated scheduling speedup; **96.06%** less peak traced allocation for online exact attention in the local CPU example. These are bounded, reproducible measurements, not universal repair accuracy or GPU speedup. [Measured run](https://github.com/Afloat16/research-to-fix/actions/runs/45355977079) · [frozen JSON](docs/figures/v1-snapshot.json) · [release notes](docs/releases/v1.0.0.md).
+
+- Research sessions retain up to four rounds, distinct-query budgets, plan-bound payloads and coverage gaps. No automatic repeated requests.
+- Optional public metadata discovery supports GitHub, arXiv, Crossref, Hugging Face, Semantic Scholar, OpenAlex and DBLP; balanced scheduling and up to four workers across independent provider groups are opt-in.
+- Paired ranking promotes explicit implementation relations, not mere URL mentions. Conflicting identifiers and publication warnings are isolated for review. BM25 remains the compatible default.
+- Protocol and candidate-design locks detect post-freeze changes; all-pairs Pareto compares matched replicates, preserving real tradeoffs.
+
+**Live scope:** one authorized known-item probe returned 15 observations from GitHub, Crossref and OpenAlex, including the target paper DOI and code repository. arXiv was unavailable, Semantic Scholar rate-limited, DBLP returned an invalid response. [Probe run](https://github.com/Afloat16/research-to-fix/actions/runs/45355435962). This is an access smoke test, not a representative retrieval score. The optional API is not a full-text reader. Host browsing remains preferred.
+
 ## Where to start
 
 | I want to… | Start here |
@@ -36,6 +49,8 @@ Concept and workflow design: [Afloat16](https://github.com/Afloat16). MIT licens
 Read the [source playbook](skills/research-to-fix/references/source-playbook.md), [evidence rules](skills/research-to-fix/references/evidence-rules.md) and [repair workflow](skills/research-to-fix/references/repair-workflow.md) for the full methodology.
 
 ## Installation
+
+Release archive: [v1.0.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.0.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
 
 Use a host supporting the Agent Skills format. Verify your host's installation tool, then:
 
@@ -65,7 +80,7 @@ seeds and resource budgets, then test the best-supported change.
 
 ## Research-led algorithm optimization
 
-**Find papers and real implementations, then compare repair routes instead of guessing.** For difficult algorithm, reproduction and performance problems, the new research-decision workflow plans mechanism, code, paper, verification, alternative and counterevidence searches. Host search is preferred; an optional explicitly approved public-metadata adapter supports GitHub, arXiv, Crossref and Hugging Face without keys. Duplicate identities are collapsed, source and access provenance is retained, and explicit paper–code links and missing coverage guide the next search. Nothing in the ranking proves applicability.
+**Find papers and real implementations, then compare repair routes instead of guessing.** For difficult algorithm, reproduction and performance problems, the new research-decision workflow plans mechanism, code, paper, verification, alternative and counterevidence searches. Host search is preferred; an optional explicitly approved public-metadata adapter supports GitHub, arXiv, Crossref, Hugging Face, Semantic Scholar, OpenAlex and DBLP without credentials (service access varies). Duplicate identities are collapsed, source and access provenance is retained, and explicit paper–code links and missing coverage guide the next search. Nothing in the ranking proves applicability.
 
 ```text
 Use $research-to-fix to investigate this algorithmic bottleneck.
@@ -78,14 +93,15 @@ implement the best justified option, then verify and record the repair.
 
 | Step | Helper |
 | --- | --- |
-| Public research plan | `research_workflow.py plan` |
+| Bounded multi-round research | `research_session.py start / next / append / review` |
+| Single public research plan | `research_workflow.py plan` |
 | Optional approved public metadata discovery | `public_discovery.py` |
 | Deduplicate, rank, link evidence and identify gaps | `research_workflow.py triage` |
-| Compare comparable measured alternatives | `solution_compare.py` |
+| Freeze candidate design and compare measured alternatives | `solution_compare.py --freeze-design` / `--comparison` |
 
 ![Research decision: architecture, source retrieval comparison and measured Pareto candidates](docs/figures/research-decision.svg)
 
-*Source-linked development replay: 32 identities, 44 observations, 16 queries. The default evidence shortlist matches the stemmed BM25 baseline in Recall@6 (92.19%) and complete pair recall (87.5%); both achieve 100% paper-and-code coverage on this fixture. The standalone facet rank is weaker overall, so it remains optional. The five-replicate local variance experiment produces two eligible Pareto options, centered two-pass and online recurrence. [Measured CI run](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [Frozen report](docs/figures/research-snapshot.json). Not an independent evaluation of live APIs or general agent repair success.*
+*Historical v0 development replay: 32 identities, 44 observations, 16 queries. The default evidence shortlist matches the stemmed BM25 baseline in Recall@6 (92.19%) and complete pair recall (87.5%); both achieve 100% paper-and-code coverage on this fixture. The standalone facet rank is weaker overall, so it remains optional. The five-replicate local variance experiment produces two eligible Pareto options, centered two-pass and online recurrence. [Measured CI run](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [Frozen report](docs/figures/research-snapshot.json). Not an independent evaluation of live APIs or general agent repair success.*
 
 See the [complete workflow and JSON examples](skills/research-to-fix/references/research-decision.md), the [public paper/code benchmark](benchmarks/README.md#algorithm-discovery-and-decision), and the [reproducible numerical variance experiment](examples/numerical-variance/README.md). Network access remains opt-in; execution depends on the host and authorization. A result can be partial or blocked; no guarantee of universal repair success.
 

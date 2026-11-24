@@ -111,6 +111,10 @@ python skills/research-to-fix/scripts/research_case.py recall-batch \
 
 单次召回保留低启动成本扫描路径；批量索引只保存在内存中，案例改变后应重新构建。排序不联网、不依赖模型或第三方包；扩展词、词干和短语可能产生误匹配，分数不能代表兼容性或修复成功率。详见[基准评测](../benchmarks/README.md)、[实测性能记录](PERFORMANCE.md)及[案例复用指南](../skills/research-to-fix/references/case-reuse.md)。
 
+## 多轮研究与可核验决策
+
+复杂算法与复现问题按[多轮研究和实测比较指南](../skills/research-to-fix/references/research-decision.md)执行。start、next、append、review 绑定每轮公开查询；仅明确授权后访问 API，复核来源身份与发表状态；存在明确论文—实现关系时使用 paired；实验前冻结设计，再完成同条件实测与最终回归。[精确注意力示例](../examples/exact-attention/README.md)展示了双锁实验。
+
 ## 辅助工具
 
 ```bash

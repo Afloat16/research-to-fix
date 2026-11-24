@@ -17,6 +17,19 @@
 
 创意与工作流设计：[Afloat16](https://github.com/Afloat16)。MIT 开源。**不要求 Python 第三方运行时依赖、托管搜索服务或向量模型。**
 
+## v1.0.0 — 多轮研究与可核验决策
+
+![v1.0.0 论文—代码配对排序、模拟调度和精确注意力实测](docs/figures/release-v1.zh-CN.svg)
+
+**98.44% / 95.83% Recall@6**（原始与跨领域算法开发语料，显式论文—代码配对策略）；**2.93×** 模拟请求调度加速；**96.06%** 本地 CPU 精确注意力在线递推峰值追踪分配下降。这些是限定实验条件下的可复现结果，不是通用修复准确率或 GPU 加速结论。[实测 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45355977079) · [冻结 JSON](docs/figures/v1-snapshot.json) · [正式版本说明](docs/releases/v1.0.0.md)。
+
+- 多轮研究账本最多四轮，记录去重后的查询预算、计划绑定的结果及覆盖缺口，不自动重试。
+- 可选公开元数据入口支持 GitHub、arXiv、Crossref、Hugging Face、Semantic Scholar、OpenAlex 和 DBLP；均衡调度与最多四个独立来源工作线程需显式启用。
+- 配对排序提升显式实现关系，不把 URL 提及冒充实现；冲突标识、撤回/撤稿警告进入复核。默认 BM25 保持兼容。
+- 实验协议锁及候选设计锁检测冻结后变更；全配对 Pareto 比较同种子实测，保留真正的取舍。
+
+**真实访问范围：**一次明确授权的已知条目探测通过 GitHub、Crossref、OpenAlex 返回 15 条观测，命中目标论文 DOI 和代码仓库。arXiv 不可用、Semantic Scholar 限流、DBLP 响应格式无效。[探测记录](https://github.com/Afloat16/research-to-fix/actions/runs/45355435962)。这不是代表性检索准确率评测；元数据入口不读取全文，优先使用宿主真实浏览能力。
+
 ## 从哪里开始
 
 | 我想… | 从这里开始 |
@@ -36,6 +49,8 @@
 完整方法见[来源检索指南](skills/research-to-fix/references/source-playbook.md)、[证据判定](skills/research-to-fix/references/evidence-rules.md)和[修复流程](skills/research-to-fix/references/repair-workflow.md)。
 
 ## 安装
+
+正式版安装包：[v1.0.0 与 SHA-256 校验文件](https://github.com/Afloat16/research-to-fix/releases/tag/v1.0.0)。解压后将 `research-to-fix/` 目录放入宿主 Skill 目录；安装包只包含提交的 Skill、许可与版本，不包含实验日志或本地用户数据。
 
 使用支持 Agent Skills 格式的宿主。核对安装工具后运行：
 
@@ -78,14 +93,15 @@ npx skills add Afloat16/research-to-fix --skill research-to-fix
 
 | 环节 | 工具 |
 | --- | --- |
-| 公开问题指纹与查询规划 | `research_workflow.py plan` |
+| 有界多轮研究账本 | `research_session.py start / next / append / review` |
+| 单轮公开问题指纹与查询规划 | `research_workflow.py plan` |
 | 明确授权后检索公开元数据 | `public_discovery.py` |
 | 去重、排序、证据关联与缺口发现 | `research_workflow.py triage` |
-| 同条件实测多方案比较 | `solution_compare.py` |
+| 冻结设计与同条件实测比较 | `solution_compare.py --freeze-design` / `--comparison` |
 
 ![研究决策架构、论文开源来源检索对照和实测多方案 Pareto 结果](docs/figures/research-decision.zh-CN.svg)
 
-*来源关联开发回放：32 个真实来源身份、44 条观测、16 条查询。默认短名单的 Recall@6 为 92.19%、完整论文—代码配对召回 87.5%，与 Stemmed BM25 基线相同；本样本论文+代码覆盖 100%。纯分面排序整体较弱，故作为可选策略。五次本地方差配对实测保留中心化两遍、在线递推两个非支配方案。[实测 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [冻结实验报告](docs/figures/research-snapshot.json)。不是实时 API 的独立评测，也不代表 Agent 修复成功率。*
+*历史开发回放：32 个真实来源身份、44 条观测、16 条查询。默认短名单的 Recall@6 为 92.19%、完整论文—代码配对召回 87.5%，与 Stemmed BM25 基线相同；本样本论文+代码覆盖 100%。纯分面排序整体较弱，故作为可选策略。五次本地方差配对实测保留中心化两遍、在线递推两个非支配方案。[实测 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [冻结实验报告](docs/figures/research-snapshot.json)。不是实时 API 的独立评测，也不代表 Agent 修复成功率。*
 
 查看[完整用法与 JSON 格式](skills/research-to-fix/references/research-decision.md)、[论文/开源来源基准](benchmarks/README.md#algorithm-discovery-and-decision)及[真实数值方差修复实验](examples/numerical-variance/README.md)。联网与执行依赖宿主能力及授权；不能保证任何算法问题必定解决。
 

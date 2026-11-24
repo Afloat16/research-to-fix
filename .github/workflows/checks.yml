@@ -41,6 +41,15 @@ jobs:
           node docs/figures/render.cjs --check
           node docs/figures/render-research.cjs --check
           node docs/figures/render-v1.cjs --check
+      - name: Smoke-test committed skill package
+        if: runner.os == 'Linux' && matrix.python == '3.13'
+        shell: bash
+        run: |
+          if [[ -f VERSION ]]; then
+            python tools/build_release.py --commit "$(git rev-parse HEAD)" --output "$RUNNER_TEMP/skill-smoke"
+            cd "$RUNNER_TEMP/skill-smoke"
+            sha256sum --check ./*.sha256
+          fi
       - run: python -m unittest discover -s tests -v
       - run: python -m unittest discover -s examples/streaming-metrics -v
       - name: Record, review, retrieve and verify a reproducible repair case

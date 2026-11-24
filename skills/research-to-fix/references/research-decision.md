@@ -42,7 +42,7 @@ python skills/research-to-fix/scripts/research_session.py next --session session
 
 Include only actual result files; omit either results argument if not used. For host results, use query IDs selected by the proposal, its `plan_sha256` when possible, and actual access/search statuses. The ledger namespaces query IDs across rounds and refuses stale proposals, out-of-round results, repeated query signatures and exceeded limits. Planned, attempted and completed counts differ; no inferred execution or retry. Refine the public fingerprint or report a blocked gap if no new distinct query remains. Never send confidential information.
 
-`paired` is a useful explicit mode when paper–implementation assertions exist; metadata assertions are still unverified leads. Mere `mentions` or `homepage` links are follow-up hints, not implementation relationships. `fusion` is experimental; the compatible default is BM25. Publication warnings and identity conflicts require direct source review. Use the current source revision and actual license before adopting code.
+`paired` is a useful explicit mode when paper–implementation assertions exist; metadata assertions are still unverified leads. Mere `mentions` or `homepage` links are follow-up hints, not implementation relationships. `fusion` is experimental. `precision_field` is an opt-in lexical alternative: exact/stem/phrase features with independent title/snippet normalization; it does not promote paper–code graph edges. The compatible default is BM25. Publication warnings and identity conflicts require direct source review. Use the current source revision and actual license before adopting code.
 
 ## 2. Search through the host or optional public metadata APIs
 

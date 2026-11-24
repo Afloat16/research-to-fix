@@ -30,7 +30,7 @@ recall 只考虑通过现有校验器且 validation.status 为 solved 的记录�
 | --version | 与候选组件对应的版本记录做字面 same / different / unknown 比较；不推断语义版本区间，不改变排名。 |
 | --limit | 默认 5，范围 1–20；不是必须凑满的数量。 |
 | --format | json 或 markdown，默认 json。 |
-| `--ranking` | `bm25` 默认保持兼容；`technical` 扩展技术标识符，`stemmed` 再归一英文词形，`hybrid` 同时保留精确词和词干，`contextual` 增加弱短语特征。各模式保留中文二元组。 |
+| `--ranking` | `bm25` 默认保持兼容；`technical` 扩展技术标识符，`stemmed` 再归一英文词形，`hybrid` 同时保留精确词和词干，`contextual` 增加弱短语特征；`precision_field` 合并精确词、词干和有序短语，对问题指纹与机制/方案字段分别长度归一（4:1 权重）。各模式保留中文二元组。 |
 | 排名 | 本地词项排序；低于本次最高分 0.5 倍的候选不保留。没有模式对应的词项命中时返回空结果。 |
 
 结果提供有界的案例摘要、定位信息、命中理由、版本事实、来源引用和限制，不输出整段命令日志。分数只表示这一批候选的词项相关性，不是成功率或真实性评分，也不适合跨查询直接比较。仅凭少量共有词仍可能命中不适用案例，需要人工判断机制与条件。
@@ -75,3 +75,5 @@ recall 只考虑通过现有校验器且 validation.status 为 solved 的记录�
 | [mini-SWE-agent default.py](https://github.com/SWE-agent/mini-swe-agent/blob/04d809ceab9df28f9adaed044884180159172930/src/minisweagent/agents/default.py) | 保存运行配置、执行轨迹与退出状态，便于追溯。 | 独立示例保留真实测试日志和案例产物；没有引入模型调用、运行框架或自动执行案例的能力。 |
 
 借鉴的是可解释筛选、逐项验收和保留运行产物的做法。检索、结构校验与真实修复效果分别核对；案例复用不是模型训练，也不能自动认证历史记录。
+
+`precision_field` 需要语料字段统计，单次召回也构建内存索引；批量召回复用一次索引。旧 `bm25` 默认及其他模式不变。外部检索评测比较原始 Top-K 排序，本地案例还受 solved、版本复核及相对得分阈值限制，不保证相同召回率。

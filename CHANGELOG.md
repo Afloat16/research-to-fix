@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — external retrieval evaluation and precision-field ranking
+
+- Add a frozen independent external retrieval protocol, official public qrels, revision-pinned dataset downloads and original/normalized SHA-256 manifests. Keep development selection separate from final holdout reporting.
+- Add optional `precision_field` ranking in case recall and evidence triage; preserve all existing default modes. BM25F-style independent field normalization combines exact, stem and ordered-phrase features; title/body weights were selected on the designated development set only.
+- Accelerate common ASCII tokenization with exact old-token-sequence parity, including mixed Unicode and Chinese tests.
+- Add paired SWE-bench result importer with frozen protocol, original denominator, patch-byte consistency, explicit budget handling and task-level intervals. This is evaluation infrastructure, not a measured agent repair success result.
+
 ## 1.0.0 — 2026-11-24
 
 ### Multi-round research, paired evidence, and locked decisions

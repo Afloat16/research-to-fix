@@ -206,6 +206,21 @@ class TriageTests(unittest.TestCase):
         self.assertEqual(len(a["shortlist"]), 2)
         self.assertTrue(all(row["fusion_score"] > 0 for row in a["shortlist"]))
 
+    def test_paired_ranking_only_promotes_explicit_relationship(self):
+        paper = self.row("arxiv", "https://arxiv.org/abs/2205.14135",
+                         "FlashAttention memory efficient attention", access="read",
+                         links=[{"url": "https://github.com/example/xyz", "relation": "implements", "basis": "read"},
+                                {"url": "https://github.com/example/abc", "relation": "mentions", "basis": "read"}])
+        code = self.row("github_repositories", "https://github.com/example/xyz", "xyz")
+        mention = self.row("github_repositories", "https://github.com/example/abc", "abc")
+        report = w.rank_results(self.plan, [{"results": [paper, code, mention]}], 3, "paired")
+        self.assertEqual(len(report["shortlist"]), 2)
+        linked = report["shortlist"][1]
+        self.assertTrue(linked["linked_only"])
+        self.assertEqual(linked["url"], code["url"])
+        self.assertTrue(linked["review_required"])
+        self.assertIn(mention["url"], {r["url"] for r in report["linked_followups"]})
+
     def test_no_search_claim_without_explicit_status_and_stable_order(self):
         rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention"),
                 self.row("github_repositories", "https://github.com/dao-ailab/flash-attention",

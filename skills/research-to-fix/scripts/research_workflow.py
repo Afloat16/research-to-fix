@@ -494,7 +494,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
 
 def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     """Internal scorer: caller validates all original round plans first."""
-    if ranking not in ("bm25", "facet", "fusion"):
+    if ranking not in ("bm25", "facet", "fusion", "paired"):
         fail("invalid_ranking")
     integer(limit, 1, MAX_SHORTLIST)
     if not isinstance(inputs, list) or not 1 <= len(inputs) <= 12:
@@ -655,15 +655,28 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         if ranking == "fusion":
             row["fusion_score"] = round(fused.get(row["id"], 0), 9)
     def ordering(row):
-        primary = row["bm25_score"] if ranking == "bm25" else row["fusion_score"] if ranking == "fusion" else row["relevance"]
+        if ranking == "paired":
+            primary = row.get("pair_score", row["bm25_score"])
+        elif ranking == "fusion":
+            primary = row["fusion_score"]
+        elif ranking == "facet":
+            primary = row["relevance"]
+        else:
+            primary = row["bm25_score"]
         return (-primary, -row["relevance"], row["id"])
     ranked.sort(key=ordering)
     # Do not displace relevant code/paper candidates simply to fill all
     # source-family slots. Keep lexical top-k and expose other coverage gaps
     # for targeted searches.
     best = max((row["relevance"] for row in ranked), default=0)
-    eligible = [row for row in ranked if row["relevance"] >= (max(.08, .30 * best) if ranking == "facet" else .08)
-                and (ranking != "bm25" or row["bm25_score"] > 0)
+    # Absolute facet thresholds penalize verbose problem descriptions and
+    # low-overlap but exact technical terms. Keep the no-match/component-only
+    # filter, expose weak facet coverage explicitly, and do not erase lexical
+    # leads before the host can inspect them.
+    for row in all_nodes.values():
+        row["weak_facet_coverage"] = row["relevance"] < .08
+    eligible = [row for row in ranked if (ranking != "facet" or row["relevance"] >= max(.08, .30 * best))
+                and (ranking not in ("bm25", "paired") or row["bm25_score"] > 0)
                 and (ranking != "fusion" or row["fusion_score"] > 0)
                 and row["access"] not in ("unavailable", "access_blocked")]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
@@ -686,6 +699,8 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     edges, unresolved = {}, set()
     for key, group in graph_observations:
         for row in group:
+            if row["access"] in ("unavailable", "access_blocked"):
+                continue
             for link in row["links"]:
                 target = by_url.get(link["url"])
                 if target is None:
@@ -712,6 +727,30 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                 pairs.append({"paper_id": paper["id"], "code_id": code["id"],
                               "relation": edge["relation"], "basis": edge["basis"],
                               "review_required": True})
+    if ranking == "paired":
+        # One-hop, non-cumulative boosts from explicit paper/code relationships.
+        # Metadata is not certified; links are weaker than direct lexical
+        # evidence and conflicting aliases never form a resolved edge.
+        boosts = defaultdict(float)
+        for pair in pairs:
+            left, right = nodes[pair["paper_id"]], nodes[pair["code_id"]]
+            for seed, partner in ((left, right), (right, left)):
+                if seed["id"] not in relevant_ids or seed["access"] in ("unavailable", "access_blocked"):
+                    continue
+                if partner["access"] in ("unavailable", "access_blocked"):
+                    continue
+                weight = .35 if pair["basis"] == "read" else .25
+                boosts[partner["id"]] = max(boosts[partner["id"]], weight * seed["bm25_score"])
+        for row in nodes.values():
+            row["pair_score"] = round(row["bm25_score"] + boosts[row["id"]], 6)
+            row["linked_only"] = row["id"] not in relevant_ids and boosts[row["id"]] > 0
+        # Never let a component-only/no-match item enter without a direct
+        # link from a relevant item. Report linked-only leads explicitly.
+        paired_ranked = [row for row in nodes.values() if row["id"] in relevant_ids or row["linked_only"]]
+        paired_ranked.sort(key=ordering)
+        ranked = paired_ranked
+        chosen = [row for row in ranked if row["pair_score"] > 0 and
+                  row["access"] not in ("unavailable", "access_blocked")][:limit]
     # Make follow-up priorities explicit, without copying untrusted source text
     # into outbound queries. The host must extract a redacted new fingerprint.
     coverage_rows = [{"query_id": qid, "source": q["source"], "family": q["family"],
@@ -785,7 +824,7 @@ def main(argv=None):
     triage.add_argument("--plan", required=True, type=Path)
     triage.add_argument("--results", action="append", required=True, type=Path)
     triage.add_argument("--limit", type=int, default=12)
-    triage.add_argument("--ranking", choices=("bm25", "facet", "fusion"), default="bm25")
+    triage.add_argument("--ranking", choices=("bm25", "facet", "fusion", "paired"), default="bm25")
     triage.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:

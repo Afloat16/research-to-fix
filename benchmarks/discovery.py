@@ -60,7 +60,7 @@ def benchmark(dataset_path=DATASET):
     family = {key: w.KIND_FAMILY[row["kind"]] for key, row in originals.items()}
     canonical_to_id = {w.canonical_url(row["url"]): row["id"] for row in documents}
     all_metrics, per_query, timings = {}, [], []
-    names = ("fixed_order", "stemmed_bm25", "sqlite_porter", "facet_rank", "evidence_shortlist", "intent_fusion")
+    names = ("fixed_order", "stemmed_bm25", "sqlite_porter", "facet_rank", "evidence_shortlist", "intent_fusion", "paired_rank")
     formulations = ("symptom", "mechanism", "bilingual") if dataset_path == TRANSFER else ("symptom", "mechanism")
     for task in dataset["tasks"]:
         relevant = set(task["relevant"])
@@ -84,6 +84,7 @@ def benchmark(dataset_path=DATASET):
             timings.append((perf_counter_ns() - start) / 1e6)
             facet = w.rank_results(plan, [{"results": rows}], K, "facet")
             fusion = w.rank_results(plan, [{"results": rows}], K, "fusion")
+            paired = w.rank_results(plan, [{"results": rows}], K, "paired")
             if report["duplicates_collapsed"] != expected_observations - expected_identities or report["unique_identities"] != expected_identities:
                 raise RuntimeError("Identity grouping regression")
             def original_id(row):
@@ -103,7 +104,8 @@ def benchmark(dataset_path=DATASET):
                       "sqlite_porter": sqlite.search(text, K),
                       "facet_rank": [original_id(row) for row in facet["ranked"][:K]],
                       "evidence_shortlist": [original_id(row) for row in report["shortlist"]],
-                      "intent_fusion": [original_id(row) for row in fusion["shortlist"]]}
+                      "intent_fusion": [original_id(row) for row in fusion["shortlist"]],
+                      "paired_rank": [original_id(row) for row in paired["shortlist"]]}
             values = {name: metrics(ranked[name], relevant, task["pairs"], family) for name in names}
             for name in names:
                 all_metrics.setdefault((name, formulation), []).append(values[name])

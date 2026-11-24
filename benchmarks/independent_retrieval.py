@@ -23,7 +23,8 @@ import research_case as rc
 METHODS = ("v1_bm25", "v1_technical", "v1_stemmed", "v1_hybrid", "v1_contextual",
            "sqlite_unicode", "sqlite_porter", "field2", "field4", "field8", "title_only",
            "context_field2", "context_field4", "context_field8",
-           "sqlite_unicode4", "sqlite_unicode8", "sqlite_porter4", "sqlite_porter8")
+           "sqlite_unicode4", "sqlite_unicode8", "sqlite_porter4", "sqlite_porter8",
+           "precision_flat", "precision_field4")
 K = 10
 SEED = "r2f-independent-v1:2026-11-24:"
 BOOTSTRAPS = 2000
@@ -68,15 +69,24 @@ def build(corpus, method):
                 "SELECT id FROM docs WHERE docs MATCH ? ORDER BY bm25(docs,0.0,?,1.0), id LIMIT ?",
                 (expression, weight, k))]
         return search, sqlite.db.close
-    if method.startswith(("field", "context_field")) or method == "title_only":
-        mode = "contextual" if method.startswith("context_") else "stemmed"
+    if method == "precision_flat":
+        docs = [(row["id"], Counter(rc.precision_tokens(text_fields(row)[1])) +
+                 Counter(rc.precision_tokens(text_fields(row)[0]))) for row in corpus]
+        index = rc.PostingIndex(docs)
+        del docs
+        def search(text, k):
+            return [identifier for _, identifier, _ in index.rank(rc.precision_tokens(text), k, False)]
+        return search, lambda: None
+    if method.startswith(("field", "context_field", "precision_field")) or method == "title_only":
+        mode = "precision" if method.startswith("precision_") else "contextual" if method.startswith("context_") else "stemmed"
         weights = (1., 0.) if method == "title_only" else (float(method[-1]), 1.)
         docs = [(row["id"], *rc.field_counts(rc._recall_excerpt(row["title"], 1000),
                                              rc._recall_excerpt(row["text"], 9000), mode)) for row in corpus]
         index = rc.FieldIndex(docs, *weights)
         del docs
         def search(text, k):
-            return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, mode), k, False)]
+            return [identifier for _, identifier, _ in index.rank(
+                rc.precision_tokens(text) if mode == "precision" else rc.ranking_tokens(text, mode), k, False)]
         return search, lambda: None
     mode = method.removeprefix("v1_")
     if mode not in rc.RANKING_MODES:
@@ -127,6 +137,8 @@ def evaluate(corpus, queries, metadata, methods=METHODS):
                             "sqlite": sqlite3.sqlite_version},
             "scope": "Full external corpus, binary official qrels, self-ID excluded, same capped document fields. "
                      "Ranking only; not end-to-end repair or live-search accuracy.",
+            "timing_notice": "v1_* preserves the v1.0.0 scoring/token sequence; later runs use the parity-tested faster tokenizer. "
+                             "Separate same-run tokenizer comparison measures old vs new implementation.",
             "query_ids": [row["id"] for row in queries],
             "rankings": {name: data["rankings"] for name, data in per_method.items()},
             "per_query": {name: data["scores"] for name, data in per_method.items()}}

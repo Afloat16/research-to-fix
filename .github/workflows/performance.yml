@@ -57,7 +57,8 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/independent-benchmark-v1.1'
         run: |
           python benchmarks/independent_data.py --dataset programmers --output "$RUNNER_TEMP/programmers"
-          python benchmarks/independent_retrieval.py --data "$RUNNER_TEMP/programmers" --split development --output "$RUNNER_TEMP/independent-development.json"
+          python benchmarks/independent_retrieval.py --data "$RUNNER_TEMP/programmers" --split development --methods v1_contextual field4 context_field2 context_field4 context_field8 precision_flat precision_field4 sqlite_unicode sqlite_unicode4 sqlite_unicode8 sqlite_porter sqlite_porter4 sqlite_porter8 --output "$RUNNER_TEMP/independent-development.json"
+          python benchmarks/tokenizer_benchmark.py --data "$RUNNER_TEMP/programmers" --output "$RUNNER_TEMP/tokenizer.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -75,5 +76,6 @@ jobs:
             ${{ runner.temp }}/discovery-schedule.json
             ${{ runner.temp }}/independent-development.json
             ${{ runner.temp }}/programmers/manifest.json
+            ${{ runner.temp }}/tokenizer.json
           retention-days: 14
           if-no-files-found: warn

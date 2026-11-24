@@ -1178,10 +1178,17 @@ class PostingIndex:
                 for index in order]
 
 
+def precision_tokens(text):
+    """Exact/stem channels plus separately namespaced ordered phrase evidence."""
+    # Keep the original hybrid and contextual algorithms unchanged.
+    return ranking_tokens(text, "hybrid") + [term for term in ranking_tokens(text, "contextual")
+                                             if term.startswith("phrase:")]
+
+
 def field_counts(primary, secondary, mode="stemmed"):
     """Separate title/symptom and body/mechanism fields with the same tokenizer."""
-    return (Counter(ranking_tokens(primary, mode)),
-            Counter(ranking_tokens(secondary, mode)))
+    tokenize = precision_tokens if mode == "precision" else lambda value: ranking_tokens(value, mode)
+    return Counter(tokenize(primary)), Counter(tokenize(secondary))
 
 
 class FieldIndex(PostingIndex):

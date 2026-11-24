@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0 — 2026-11-24 · exact bounded recall, external transfer and research audits
+
+- Default indexed recall uses exact threshold counts, bounded Top-K selection and deferred explanation reconstruction; no scorer/default changes or added runtime dependencies. Strict count/score/ID/order/explanation parity on 288 generated workload-query pairs and all 804 new external queries.
+- Six workloads: 2.85–4.83× P50, 59.4–65.8% lower single-query sampled peak allocation; real Mathematica prepared-token P50 4.88× versus old explanation path.
+- Predeclared full Mathematica transfer, 16,705 documents, 804 queries, eight methods including actual BM25S and rank-bm25. Report all methods, pointwise paired intervals and cost tradeoffs; no universal superiority or agent repair-rate claim.
+- Multi-arm matched agent evaluation importer freezes interventions, model/task/budget protocol and globally distinct run IDs; task-cluster paired results, missing trial accounting and Holm-adjusted sign tests. No real agent trials yet.
+- Add per-stage research coverage audit with completion/read counts, empty results, mixed outcomes and missing counterevidence checks. No assumption that an unobserved counterexample does not exist.
+- Publish reproducible bilingual data-bound dashboards and raw summaries with CI source links.
+
 ## 1.1.0 — 2026-11-24 · external retrieval evaluation and precision-field ranking
 
 - Complete 4 public holdout corpora, 84,892 documents and 1,864 judged queries. Record positive pointwise intervals versus development-tuned SQLite on 3/4, inconclusive SciFact, higher index-build cost and no clear gain over v1 Contextual; no global or repair-rate claim. Persist exact data manifests, full measured results, and bilingual charts.

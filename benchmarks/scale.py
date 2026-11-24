@@ -13,6 +13,7 @@ from time import perf_counter_ns
 import tracemalloc
 
 import retrieval as bench
+from relative_recall import evaluate as relative_recall_bench
 rc = bench.rc
 
 
@@ -129,7 +130,8 @@ def main():
     args = parser.parse_args()
     corpus, queries, metadata = bench.load_synthetic()
     result = {"dataset": metadata, "batch_recall": batch_bench(corpus, queries),
-              "index_scale": memory_bench(), "python": sys.version.split()[0]}
+              "index_scale": memory_bench(), "relative_recall": relative_recall_bench(),
+              "python": sys.version.split()[0]}
     with args.output.open("x", encoding="utf-8") as handle:
         json.dump(result, handle, indent=2)
         handle.write("\n")

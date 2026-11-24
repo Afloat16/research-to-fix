@@ -18,6 +18,24 @@
 Concept and workflow design: [Afloat16](https://github.com/Afloat16). MIT licensed. **No mandatory Python third-party packages, hosted search service, or embedding model.**
 
 
+## v1.2.0 — Exact recall, deeper research audits
+
+![Exact recall acceleration: six workloads, speedup and exact parity](docs/figures/v12-recall.svg)
+
+**2.85–4.83× faster median recall · 59.4–65.8% less sampled peak allocation · 288/288 exact results.** The indexed path now counts all threshold-qualified candidates but selects and explains only the returned Top-K. Ranking scores, document IDs, counts and explanations are identical to the previous full-explanation path on every tested query. Six generated workloads, 5,000 documents, 48 queries per workload, three timing repeats; prepared-token warm-index comparison, not end-to-end repair speed. No new runtime dependencies.
+
+The research ledger now distinguishes unplanned searches, incomplete/mixed outcomes, completed searches with no valid observations, and completed searches with valid observations; a missing counterexample is never evidence that none exists. A new [matched multi-arm agent evaluation protocol](benchmarks/AGENT_COMPARISON_PROTOCOL.md) freezes model, task, seed, budget and intervention digests before scoring; it does **not** report unrun agent trials.
+
+[Measured CI](https://github.com/Afloat16/research-to-fix/actions/runs/45366494938) · [Detailed results and reproduction](benchmarks/V12_RESULTS.md) · [Raw snapshot](docs/figures/v12-snapshot.json) · [Independent transfer protocol](benchmarks/TRANSFER_V12_PROTOCOL.md).
+
+### New external transfer: Mathematica
+
+![Mathematica eight-method retrieval comparison and exact recall results](docs/figures/v12-transfer.svg)
+
+**16,705 documents · 804 real judged queries · eight frozen methods.** No ranking changes or tuning on this corpus. Precision Field nDCG@10 = **0.2366**, +9.71% vs SQLite Unicode 4 and +5.87% vs actual rank-bm25 0.2.2 (positive pointwise paired 95% intervals). Contextual scores 0.2389; differences against Contextual, SQLite Porter and both BM25S variants are inconclusive. BM25S raw query latency remains substantially lower. Exact relative recall produces identical counts, IDs, scores and explanations on **all 804 queries**, with P50 **35.36 → 7.24 ms (4.88×)** in a single paired prepared-token pass. Across the five public evaluation corpora there are 101,597 documents and 2,668 judged queries; results are reported by corpus, not pooled into a leaderboard.
+
+[Eight-method run](https://github.com/Afloat16/research-to-fix/actions/runs/45366934273) · [All metrics, intervals and reproduction](benchmarks/V12_RESULTS.md#mathematica-external-transfer) · [Artifact](https://github.com/Afloat16/research-to-fix/actions/runs/45366934273/artifacts/14906654892).
+
 ## v1.1.0 — External holdouts and precision retrieval
 
 ![External holdout retrieval comparison and paired intervals](docs/figures/independent-holdout.svg)
@@ -63,7 +81,7 @@ Read the [source playbook](skills/research-to-fix/references/source-playbook.md)
 
 ## Installation
 
-Release archive: [v1.1.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.1.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
+Release archive: [v1.2.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.2.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
 
 Use a host supporting the Agent Skills format. Verify your host's installation tool, then:
 

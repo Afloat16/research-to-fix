@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 690" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
+<title id="title">Exact recall acceleration</title>
+<desc id="desc">Five thousand generated documents, six workloads, exact full results. Bars show median latency speedup; memory is one sampled query per workload.</desc>
+<rect x="0" y="0" width="1040" height="690" rx="22" fill="#101a2c"/>
+<text x="36" y="42" font-size="15" fill="#69d6cf" font-weight="700" text-anchor="start">RESEARCH TO FIX  /  v1.2.0</text>
+<text x="36" y="92" font-size="42" fill="#ffffff" font-weight="750" text-anchor="start">Same answers. Less work.</text>
+<text x="36" y="126" font-size="19" fill="#b2c3d9" font-weight="400" text-anchor="start">Exact threshold count + bounded Top-K + deferred explanations</text>
+<rect x="36" y="153" width="316" height="106" rx="14" fill="#1e2d43"/>
+<text x="54" y="201" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">2.85–4.83×</text>
+<text x="54" y="233" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">faster median recall</text>
+<rect x="362" y="153" width="316" height="106" rx="14" fill="#1e2d43"/>
+<text x="380" y="201" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">59.4–65.8%</text>
+<text x="380" y="233" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">less sample peak allocation</text>
+<rect x="688" y="153" width="316" height="106" rx="14" fill="#1e2d43"/>
+<text x="706" y="201" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">288/288</text>
+<text x="706" y="233" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">exact output parity</text>
+<text x="36" y="299" font-size="21" fill="#ffffff" font-weight="650" text-anchor="start">Six workloads · median latency speedup (×)</text>
+<text x="1010" y="299" font-size="15" fill="#a6b8cf" font-weight="400" text-anchor="end">old path = 1×</text>
+<line x1="315" y1="321" x2="315" y2="593" stroke="#293b53" stroke-width="1" stroke-dasharray="none"/>
+<text x="315" y="614" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0</text>
+<line x1="432" y1="321" x2="432" y2="593" stroke="#7d91ab" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="432" y="614" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">1</text>
+<line x1="549" y1="321" x2="549" y2="593" stroke="#293b53" stroke-width="1" stroke-dasharray="none"/>
+<text x="549" y="614" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">2</text>
+<line x1="666" y1="321" x2="666" y2="593" stroke="#293b53" stroke-width="1" stroke-dasharray="none"/>
+<text x="666" y="614" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">3</text>
+<line x1="783" y1="321" x2="783" y2="593" stroke="#293b53" stroke-width="1" stroke-dasharray="none"/>
+<text x="783" y="614" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">4</text>
+<line x1="900" y1="321" x2="900" y2="593" stroke="#293b53" stroke-width="1" stroke-dasharray="none"/>
+<text x="900" y="614" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">5</text>
+<text x="36" y="351" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">BM25 · sparse</text>
+<rect x="315" y="329" width="335.981" height="27" rx="5" fill="#69d6cf" data-scenario="bm25_sparse" data-value="2.8716338613117722"/>
+<text x="662.9811617734773" y="349" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">2.87×</text>
+<text x="36" y="394" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">BM25 · mixed</text>
+<rect x="315" y="372" width="557.825" height="27" rx="5" fill="#69d6cf" data-scenario="bm25_mixed" data-value="4.767737793716153"/>
+<text x="884.8253218647899" y="392" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">4.77×</text>
+<text x="36" y="437" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">BM25 · dense</text>
+<rect x="315" y="415" width="405.523" height="27" rx="5" fill="#69d6cf" data-scenario="bm25_dense" data-value="3.466011789453204"/>
+<text x="732.5233793660249" y="435" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">3.47×</text>
+<text x="36" y="480" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">Precision Field · sparse</text>
+<rect x="315" y="458" width="333.711" height="27" rx="5" fill="#7ba8fa" data-scenario="field_sparse" data-value="2.8522319194452233"/>
+<text x="660.7111345750911" y="478" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">2.85×</text>
+<text x="36" y="523" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">Precision Field · mixed</text>
+<rect x="315" y="501" width="565.241" height="27" rx="5" fill="#7ba8fa" data-scenario="field_mixed" data-value="4.831118133655544"/>
+<text x="892.2408216376987" y="521" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">4.83×</text>
+<text x="36" y="566" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">Precision Field · dense</text>
+<rect x="315" y="544" width="409.580" height="27" rx="5" fill="#7ba8fa" data-scenario="field_dense" data-value="3.5006861011335073"/>
+<text x="736.5802738326204" y="564" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">3.50×</text>
+<text x="36" y="648" font-size="15" fill="#b2c3d9" font-weight="400" text-anchor="start">5,000 generated documents · 48 queries/workload · 3 repeats · prepared-token warm index</text>
+<text x="36" y="671" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="start">Allocation is one sampled query/workload; not end-to-end repair accuracy or total index memory.</text>
+</svg>

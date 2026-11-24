@@ -41,6 +41,11 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(report["completed_queries"], 1)
         self.assertEqual({r["query_id"].split("-")[0] for r in report["triage"]["coverage"]}, {"R01", "R02"})
         self.assertEqual(report["triage"]["unique_identities"], 2)
+        audit = report["triage"]["coverage_audit"]
+        self.assertEqual(sum(row["planned_queries"] for row in audit["stages"]), 9)
+        self.assertEqual(sum(row["attempted_queries"] for row in audit["stages"]), 2)
+        self.assertEqual(sum(row["completed_queries"] for row in audit["stages"]), 1)
+        self.assertEqual(sum(row["valid_observations"] for row in audit["stages"]), 2)
 
     def test_tampered_or_stale_proposal_and_mismatched_payload(self):
         state = s.start(PROBLEM)

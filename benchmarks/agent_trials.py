@@ -152,11 +152,21 @@ def usage_record(value, protocol):
 
 def collect(lock, root, arm):
     p = validate_lock(lock)
+    return collect_arm(p, lock["protocol_sha256"], root, arm,
+                       p["skill_commit"] if arm == "skill" else None)
+
+
+def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_digest=None, require_digest=False):
+    """Shared artifact checks for paired and multi-arm trials."""
     manifest = read_json(root / "manifest.json")
-    if not isinstance(manifest, dict) or set(manifest) != {"protocol_sha256", "arm", "applied_skill_commit", "run_ids"}:
+    fields = {"protocol_sha256", "arm", "applied_skill_commit", "run_ids"}
+    if require_digest:
+        fields.add("intervention_sha256")
+    if not isinstance(manifest, dict) or set(manifest) != fields:
         fail("Invalid run manifest")
-    if (manifest["protocol_sha256"] != lock["protocol_sha256"] or manifest["arm"] != arm
-            or manifest["applied_skill_commit"] != (p["skill_commit"] if arm == "skill" else None)):
+    if (manifest["protocol_sha256"] != protocol_digest or manifest["arm"] != arm
+            or manifest["applied_skill_commit"] != skill_commit
+            or (require_digest and manifest["intervention_sha256"] != intervention_digest)):
         fail("Run does not match frozen intervention")
     expected = {row["instance_id"] for row in p["instances"]}
     run_ids = manifest["run_ids"]

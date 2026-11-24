@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 735" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">
+<title id="title">Real Mathematica retrieval transfer</title>
+<desc id="desc">All eight nDCG@10 scores and exact recall parity/speed on real queries; not agent repair accuracy.</desc>
+<rect x="0" y="0" width="1040" height="735" rx="22" fill="#101a2c"/>
+<text x="36" y="42" font-size="15" fill="#69d6cf" font-weight="700" text-anchor="start">RESEARCH TO FIX  /  EXTERNAL TRANSFER</text>
+<text x="36" y="90" font-size="38" fill="#ffffff" font-weight="750" text-anchor="start">Real corpus. All comparators.</text>
+<text x="36" y="124" font-size="18" fill="#b2c3d9" font-weight="400" text-anchor="start">BEIR Mathematica · 16,705 documents · 804 test queries · frozen methods</text>
+<rect x="36" y="151" width="316" height="102" rx="14" fill="#1e2d43"/>
+<text x="54" y="199" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">4.88×</text>
+<text x="54" y="231" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">exact recall P50 speedup</text>
+<rect x="362" y="151" width="316" height="102" rx="14" fill="#1e2d43"/>
+<text x="380" y="199" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">804/804</text>
+<text x="380" y="231" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">exact full-output parity</text>
+<rect x="688" y="151" width="316" height="102" rx="14" fill="#1e2d43"/>
+<text x="706" y="199" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">0.2366</text>
+<text x="706" y="231" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">Precision Field nDCG@10</text>
+<text x="36" y="291" font-size="21" fill="#fff" font-weight="650" text-anchor="start">Retrieval quality · nDCG@10 (zero baseline)</text>
+<line x1="290" y1="306" x2="290" y2="620" stroke="#304159" stroke-width="1"/>
+<text x="290" y="643" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0.00</text>
+<line x1="409.2" y1="306" x2="409.2" y2="620" stroke="#304159" stroke-width="1"/>
+<text x="409.2" y="643" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0.05</text>
+<line x1="528.4" y1="306" x2="528.4" y2="620" stroke="#304159" stroke-width="1"/>
+<text x="528.4" y="643" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0.10</text>
+<line x1="647.6" y1="306" x2="647.6" y2="620" stroke="#304159" stroke-width="1"/>
+<text x="647.6" y="643" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0.15</text>
+<line x1="766.8" y1="306" x2="766.8" y2="620" stroke="#304159" stroke-width="1"/>
+<text x="766.8" y="643" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0.20</text>
+<line x1="886" y1="306" x2="886" y2="620" stroke="#304159" stroke-width="1"/>
+<text x="886" y="643" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="middle">0.25</text>
+<text x="36" y="333" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">R2F Contextual</text>
+<rect x="290" y="313" width="569.441" height="25" rx="5" fill="#7ba8fa" data-method="v1_contextual" data-value="0.23885951023270863"/>
+<text x="871.4410723947774" y="333" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2389</text>
+<text x="36" y="372" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">R2F Precision Field</text>
+<rect x="290" y="352" width="564.037" height="25" rx="5" fill="#69d6cf" data-method="precision_field4" data-value="0.23659249403569868"/>
+<text x="866.0365057811057" y="372" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2366</text>
+<text x="36" y="411" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">BM25S Matched</text>
+<rect x="290" y="391" width="546.976" height="25" rx="5" fill="#687b96" data-method="bm25s_matched" data-value="0.22943614402198162"/>
+<text x="848.9757673484041" y="411" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2294</text>
+<text x="36" y="450" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">BM25S Native</text>
+<rect x="290" y="430" width="539.675" height="25" rx="5" fill="#687b96" data-method="bm25s_native" data-value="0.22637357186357546"/>
+<text x="841.6745953227639" y="450" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2264</text>
+<text x="36" y="489" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">SQLite Porter</text>
+<rect x="290" y="469" width="537.826" height="25" rx="5" fill="#687b96" data-method="sqlite_porter" data-value="0.22559830024213884"/>
+<text x="839.826347777259" y="489" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2256</text>
+<text x="36" y="528" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">rank-bm25 Matched</text>
+<rect x="290" y="508" width="532.761" height="25" rx="5" fill="#687b96" data-method="rank_bm25_matched" data-value="0.22347375699599994"/>
+<text x="834.7614366784638" y="528" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2235</text>
+<text x="36" y="567" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">SQLite Unicode 4</text>
+<rect x="290" y="547" width="514.118" height="25" rx="5" fill="#687b96" data-method="sqlite_unicode4" data-value="0.21565355058661878"/>
+<text x="816.1180645984991" y="567" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2157</text>
+<text x="36" y="606" font-size="17" fill="#e7edf7" font-weight="500" text-anchor="start">R2F BM25</text>
+<rect x="290" y="586" width="503.716" height="25" rx="5" fill="#7ba8fa" data-method="v1_bm25" data-value="0.21129011666738545"/>
+<text x="805.7156381350469" y="606" font-size="17" fill="#f0f5ff" font-weight="650" text-anchor="start">0.2113</text>
+<text x="36" y="680" font-size="15" fill="#b2c3d9" font-weight="400" text-anchor="start">Positive pointwise intervals vs Unicode 4, rank-bm25 and old BM25; other comparisons inconclusive.</text>
+<text x="36" y="706" font-size="15" fill="#a6b8cf" font-weight="400" text-anchor="start">BM25S queries are faster; recall speedup compares the old explanation path, not BM25S.</text>
+</svg>

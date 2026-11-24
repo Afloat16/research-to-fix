@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "relative_run": {
+    "id": 45366494938,
+    "job_id": 138349447314,
+    "commit": "0c65120111e94c1b4d964b231b3531bbf4233fa9",
+    "url": "https://github.com/Afloat16/research-to-fix/actions/runs/45366494938"
+  },
+  "relative_recall": {
+    "documents": 5000,
+    "queries_per_scenario": 48,
+    "repeats": 3,
+    "exact_parity_queries": 288,
+    "limit": 5,
+    "relative_threshold": 0.5,
+    "python": "3.13.18",
+    "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "scenarios": {
+      "bm25_sparse": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 52,
+        "methods": {
+          "full": {
+            "p50_ms": 0.2599805,
+            "p95_ms": 0.299118,
+            "sample_query_peak_bytes": 41508
+          },
+          "bounded": {
+            "p50_ms": 0.090534,
+            "p95_ms": 0.116537,
+            "sample_query_peak_bytes": 16812
+          }
+        },
+        "p50_speedup": 2.8716338613117722,
+        "p95_speedup": 2.5667212988149686,
+        "sample_query_peak_reduction": 0.5949696444058976
+      },
+      "bm25_mixed": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 116.5,
+        "methods": {
+          "full": {
+            "p50_ms": 10.048303,
+            "p95_ms": 15.694683,
+            "sample_query_peak_bytes": 2211612
+          },
+          "bounded": {
+            "p50_ms": 2.1075619999999997,
+            "p95_ms": 2.296374,
+            "sample_query_peak_bytes": 779564
+          }
+        },
+        "p50_speedup": 4.767737793716153,
+        "p95_speedup": 6.834550034097233,
+        "sample_query_peak_reduction": 0.6475132166039974
+      },
+      "bm25_dense": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 4255.5,
+        "methods": {
+          "full": {
+            "p50_ms": 27.505358,
+            "p95_ms": 33.610912,
+            "sample_query_peak_bytes": 5286696
+          },
+          "bounded": {
+            "p50_ms": 7.935737,
+            "p95_ms": 8.137202,
+            "sample_query_peak_bytes": 1807148
+          }
+        },
+        "p50_speedup": 3.466011789453204,
+        "p95_speedup": 4.130524472662716,
+        "sample_query_peak_reduction": 0.6581706230129366
+      },
+      "field_sparse": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 45,
+        "methods": {
+          "full": {
+            "p50_ms": 0.2593235,
+            "p95_ms": 0.314798,
+            "sample_query_peak_bytes": 41444
+          },
+          "bounded": {
+            "p50_ms": 0.0909195,
+            "p95_ms": 0.115245,
+            "sample_query_peak_bytes": 16812
+          }
+        },
+        "p50_speedup": 2.8522319194452233,
+        "p95_speedup": 2.7315545142956315,
+        "sample_query_peak_reduction": 0.594344175272657
+      },
+      "field_mixed": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 86.5,
+        "methods": {
+          "full": {
+            "p50_ms": 10.187688,
+            "p95_ms": 15.391748,
+            "sample_query_peak_bytes": 2211612
+          },
+          "bounded": {
+            "p50_ms": 2.108764,
+            "p95_ms": 2.309819,
+            "sample_query_peak_bytes": 779564
+          }
+        },
+        "p50_speedup": 4.831118133655544,
+        "p95_speedup": 6.663616499820981,
+        "sample_query_peak_reduction": 0.6475132166039974
+      },
+      "field_dense": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 4077.5,
+        "methods": {
+          "full": {
+            "p50_ms": 27.529399,
+            "p95_ms": 34.729998,
+            "sample_query_peak_bytes": 5286696
+          },
+          "bounded": {
+            "p50_ms": 7.864001,
+            "p95_ms": 8.120331,
+            "sample_query_peak_bytes": 1807148
+          }
+        },
+        "p50_speedup": 3.5006861011335073,
+        "p95_speedup": 4.276919007365587,
+        "sample_query_peak_reduction": 0.6581706230129366
+      }
+    },
+    "scope": "Generated prepared-token warm-index recall, including threshold count and explanations; not index build, end-to-end file I/O, relevance or repair accuracy. Single fixed query allocation sample per scenario."
+  },
+  "transfer_run": {
+    "id": 45366934273,
+    "job_id": 138350955677,
+    "commit": "74ba0309601b5fdfd8ee642d90c5826ff9087ded",
+    "url": "https://github.com/Afloat16/research-to-fix/actions/runs/45366934273",
+    "artifact_id": 14906654892
+  },
+  "transfer": {
+    "scope": "Predeclared transfer, binary qrels, no tuning; retrieval only.",
+    "dataset": {
+      "dataset": "mathematica",
+      "license": "CC-BY-SA-4.0",
+      "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+      "expected_documents": 16705,
+      "expected_test_queries": 804,
+      "files": {
+        "corpus.jsonl": {
+          "sha256": "5a4cc8d1c27236484658d3f83e9612853ae2e0ddcbfd74b377633ccb77d4165c",
+          "rows": 16705
+        },
+        "queries.jsonl": {
+          "sha256": "638913cbbcc1b8f1e22f9936ee96e13536d4e0358dcc490314f1b0dd23421bd5",
+          "rows": 804
+        },
+        "test.tsv": {
+          "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/mathematica/test.tsv",
+          "sha256": "328d123124f9cffde8508a39c05954ec8dce81fd1eae8658b729022c374cd342",
+          "bytes": 19779
+        }
+      },
+      "original_downloads": {
+        "corpus.jsonl.gz": {
+          "url": "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/cqadupstack-mathematica.jsonl.gz",
+          "sha256": "ddc52c8bdbbeae002c6419468980fcab1f2ced98aab0822e5d6e0768b0cb73b6",
+          "bytes": 6992481
+        },
+        "queries.jsonl": {
+          "url": "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/cqadupstack-mathematica.jsonl",
+          "sha256": "d06afbf19b327b1672248eba7eaa042d78274c756baf4f427c489bfeafbc319c",
+          "bytes": 65747
+        },
+        "test.tsv": {
+          "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/mathematica/test.tsv",
+          "sha256": "328d123124f9cffde8508a39c05954ec8dce81fd1eae8658b729022c374cd342",
+          "bytes": 19779
+        }
+      }
+    },
+    "documents": 16705,
+    "queries": 804,
+    "methods": {
+      "precision_field4": {
+        "mrr@10": 0.2312682618652768,
+        "ndcg@10": 0.23659249403569868,
+        "recall@10": 0.3350380651686622,
+        "hit@10": 0.40298507462686567,
+        "build_ms": 13956.030742,
+        "query_p50_ms": 7.7928435,
+        "query_p95_ms": 19.08105
+      },
+      "v1_contextual": {
+        "mrr@10": 0.23039810866303403,
+        "ndcg@10": 0.23885951023270863,
+        "recall@10": 0.34198695168844423,
+        "hit@10": 0.4017412935323383,
+        "build_ms": 11261.905676,
+        "query_p50_ms": 6.238099999999999,
+        "query_p95_ms": 15.354678
+      },
+      "v1_bm25": {
+        "mrr@10": 0.2083747927031509,
+        "ndcg@10": 0.21129011666738545,
+        "recall@10": 0.2945569770196636,
+        "hit@10": 0.35323383084577115,
+        "build_ms": 2952.512108,
+        "query_p50_ms": 4.793156,
+        "query_p95_ms": 14.23039
+      },
+      "sqlite_unicode4": {
+        "mrr@10": 0.21448906262339099,
+        "ndcg@10": 0.21565355058661878,
+        "recall@10": 0.2978737266050699,
+        "hit@10": 0.36069651741293535,
+        "build_ms": 1750.894281,
+        "query_p50_ms": 14.1828445,
+        "query_p95_ms": 33.328707
+      },
+      "sqlite_porter": {
+        "mrr@10": 0.22485884071704967,
+        "ndcg@10": 0.22559830024213884,
+        "recall@10": 0.3107813724418202,
+        "hit@10": 0.3694029850746269,
+        "build_ms": 1770.785778,
+        "query_p50_ms": 17.9190255,
+        "query_p95_ms": 36.613415
+      },
+      "bm25s_native": {
+        "mrr@10": 0.22485933428097607,
+        "ndcg@10": 0.22637357186357546,
+        "recall@10": 0.3157165181418913,
+        "hit@10": 0.3743781094527363,
+        "build_ms": 5886.834814,
+        "query_p50_ms": 0.236431,
+        "query_p95_ms": 0.73411
+      },
+      "bm25s_matched": {
+        "mrr@10": 0.2234413251204296,
+        "ndcg@10": 0.22943614402198162,
+        "recall@10": 0.32785078727242906,
+        "hit@10": 0.3818407960199005,
+        "build_ms": 5628.701037,
+        "query_p50_ms": 0.175803,
+        "query_p95_ms": 0.687433
+      },
+      "rank_bm25_matched": {
+        "mrr@10": 0.21834823896391062,
+        "ndcg@10": 0.22347375699599994,
+        "recall@10": 0.31302313979552787,
+        "hit@10": 0.3718905472636816,
+        "build_ms": 5007.048872,
+        "query_p50_ms": 20.436781000000003,
+        "query_p95_ms": 37.457677
+      }
+    },
+    "paired_ndcg_precision_vs": {
+      "v1_contextual": {
+        "mean_delta": -0.0022670161970099615,
+        "ci95_low": -0.011325633686678637,
+        "ci95_high": 0.006697673494548885,
+        "win": 101,
+        "tie": 602,
+        "loss": 101,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "v1_bm25": {
+        "mean_delta": 0.02530237736831323,
+        "ci95_low": 0.014327937082364652,
+        "ci95_high": 0.035957070593449936,
+        "win": 138,
+        "tie": 578,
+        "loss": 88,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4": {
+        "mean_delta": 0.020938943449079903,
+        "ci95_low": 0.010859904555504039,
+        "ci95_high": 0.031003875415043083,
+        "win": 127,
+        "tie": 592,
+        "loss": 85,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter": {
+        "mean_delta": 0.01099419379355985,
+        "ci95_low": -0.0012170489684622317,
+        "ci95_high": 0.023266822392229373,
+        "win": 128,
+        "tie": 579,
+        "loss": 97,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "bm25s_native": {
+        "mean_delta": 0.010218922172123215,
+        "ci95_low": -0.0005779440249607929,
+        "ci95_high": 0.021211238435559054,
+        "win": 113,
+        "tie": 590,
+        "loss": 101,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "bm25s_matched": {
+        "mean_delta": 0.007156350013717059,
+        "ci95_low": -0.0032273422842431527,
+        "ci95_high": 0.0175948645987368,
+        "win": 112,
+        "tie": 594,
+        "loss": 98,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "rank_bm25_matched": {
+        "mean_delta": 0.013118737039698744,
+        "ci95_low": 0.0022667852534134607,
+        "ci95_high": 0.0241604754758852,
+        "win": 127,
+        "tie": 589,
+        "loss": 88,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      }
+    },
+    "exact_recall": {
+      "queries": 804,
+      "exact_count_scores_ids_explanations": true,
+      "full_p50_ms": 35.357298,
+      "bounded_p50_ms": 7.23827,
+      "full_p95_ms": 120.981601,
+      "bounded_p95_ms": 20.893653,
+      "p50_speedup": 4.884771913730767,
+      "scope": "One paired pass, full explanation first, prepared tokens, warm index; no relevance impact."
+    },
+    "environment": {
+      "python": "3.13.18",
+      "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+      "sqlite": "3.46.1",
+      "bm25s": "0.2.14",
+      "rank-bm25": "0.2.2",
+      "numpy": "2.2.6",
+      "scipy": "1.15.3",
+      "tqdm": "4.67.1"
+    }
+  }
+}

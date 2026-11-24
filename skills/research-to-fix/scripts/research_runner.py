@@ -22,7 +22,7 @@ MAX_CATALOG_QUERIES = 3
 
 def run_round(plan, output, inputs=None, database=None, approve_public=False,
               query_ids=None, requests=8, per_query=8, workers=3, limit=12,
-              ranking="bm25", transport=d.request_metadata, catalog_routes=False):
+              ranking="bm25", transport=d.request_metadata, catalog_routes=False, catalog_route_mode="fusion"):
     plan = w.validate_plan(plan)
     binding = w.plan_fingerprint(plan)
     queries = {q["id"]: q for q in plan["queries"]}
@@ -53,6 +53,8 @@ def run_round(plan, output, inputs=None, database=None, approve_public=False,
     if not inputs and database is None and not approve_public:
         w.fail("no_enabled_research_source")
     catalog_queries = [q for q in selected if q["provider"] == "paperswithcode"][:MAX_CATALOG_QUERIES]
+    if catalog_route_mode not in ("fusion", "balanced", "bridge") or (catalog_route_mode != "fusion" and not catalog_routes):
+        w.fail("invalid_catalog_route_mode")
     if catalog_routes and database is None:
         w.fail("catalog_required_for_routes")
     if database is not None and not catalog_queries:
@@ -71,7 +73,7 @@ def run_round(plan, output, inputs=None, database=None, approve_public=False,
         with catalog.Catalog(database) as db:
             for i, query in enumerate(catalog_queries, 1):
                 result = db.observations(plan, query["id"], limit=min(limit, catalog.MAX_PAPERS),
-                                         route_fusion=catalog_routes)
+                                         route_fusion=catalog_routes, route_mode=catalog_route_mode)
                 name = f"catalog-{i:02d}.json"
                 w.write_json(result, output / name)
                 files.append(name)
@@ -115,6 +117,7 @@ def main(argv=None):
     parser.add_argument("--input", type=Path, action="append", default=[])
     parser.add_argument("--catalog", type=Path)
     parser.add_argument("--catalog-routes", action="store_true")
+    parser.add_argument("--catalog-route-mode", choices=("fusion", "balanced", "bridge"), default="fusion")
     parser.add_argument("--approve-public", action="store_true")
     parser.add_argument("--query-id", action="append")
     parser.add_argument("--max-requests", type=int, default=8)
@@ -130,7 +133,7 @@ def main(argv=None):
                            [w.read_json(path) for path in args.input], args.catalog,
                            args.approve_public, args.query_id, args.max_requests,
                            args.per_query, args.workers, args.limit, args.ranking,
-                           catalog_routes=args.catalog_routes)
+                           catalog_routes=args.catalog_routes, catalog_route_mode=args.catalog_route_mode)
         w.write_json(report, None)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError, sqlite3.Error) as error:

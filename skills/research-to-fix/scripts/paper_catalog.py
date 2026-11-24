@@ -30,7 +30,7 @@ MAX_ROWS = 1_000_000
 MAX_PAPERS = 20
 MAX_LINKS = 3
 MAX_ROUTES = 6
-SCHEMA = 2
+SCHEMA = 3
 NOTICE = ("Local catalog metadata is user-supplied and not independently authenticated. "
           "Historical official flags are leads, not current license, maintenance, applicability or correctness guarantees.")
 
@@ -54,6 +54,14 @@ def paper_identity(arxiv, landing):
 
 def title_key(value):
     return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+
+def repo_search_fields(url):
+    owner, name = url.removeprefix("https://github.com/").split("/", 1)
+    # Same identifier expansion at index and query time, with independent
+    # repository-name and owner weights. This is metadata, not code search.
+    terms = lambda value: " ".join(dict.fromkeys(core.ranking_tokens(value, "technical")))
+    return url, terms(name), terms(owner)
 
 
 def normalize(row):
@@ -120,6 +128,7 @@ CREATE TABLE links (
     PRIMARY KEY(paper_id, repo_url)
 ) WITHOUT ROWID;
 CREATE VIRTUAL TABLE paper_fts USING fts5(id UNINDEXED, title, abstract, tokenize='porter unicode61');
+CREATE VIRTUAL TABLE repo_fts USING fts5(repo_url UNINDEXED, name, owner, tokenize='porter unicode61');
 """
 PAPER_INSERT = """
 INSERT INTO papers VALUES(?,?,?,?,?)
@@ -189,6 +198,8 @@ def build_catalog(input_path, database, source="user-supplied metadata", license
         db.execute("CREATE INDEX paper_title_key ON papers(title_key,id)")
         db.execute("CREATE INDEX repo_paper_id ON links(repo_url,paper_id)")
         db.execute("INSERT INTO paper_fts(id,title,abstract) SELECT id,title,abstract FROM papers ORDER BY id")
+        db.executemany("INSERT INTO repo_fts VALUES(?,?,?)",
+                       (repo_search_fields(row[0]) for row in db.execute("SELECT DISTINCT repo_url FROM links ORDER BY repo_url")))
         papers = db.execute("SELECT count(*) FROM papers").fetchone()[0]
         links = db.execute("SELECT count(*) FROM links").fetchone()[0]
         metadata = {"source": source, "license": license_, "snapshot": snapshot,
@@ -260,7 +271,33 @@ class Catalog:
             "SELECT id,title,abstract,bm25(paper_fts,0,4,1) AS score FROM paper_fts "
             "WHERE paper_fts MATCH ? ORDER BY score,id LIMIT ?", (expression, limit))]
 
-    def route_search(self, problem, query, limit=12):
+    def search_repositories(self, query, limit=12):
+        """Conjunctive search over indexed repository names and owners only."""
+        w.integer(limit, 1, MAX_PAPERS)
+        query = w.public_text(query, 1024)
+        terms = list(dict.fromkeys(term for term in core.ranking_tokens(query, "technical")
+                                   if len(term) > 1 and term not in w.GENERIC))[:12]
+        if not terms:
+            return []
+        expression = " AND ".join('"' + term.replace('"', '""') + '"' for term in terms)
+        return [dict(row) for row in self.db.execute(
+            "SELECT repo_url,bm25(repo_fts,0,4,1) AS score FROM repo_fts "
+            "WHERE repo_fts MATCH ? ORDER BY score,repo_url LIMIT ?", (expression, limit))]
+
+    def repository_bridge(self, query, limit=12):
+        """Find related papers through repository-name metadata, at most two per repo."""
+        papers = {}
+        for repo in self.search_repositories(query, min(limit, MAX_PAPERS)):
+            for row in self.papers_for_repository(repo["repo_url"], min(2, limit)):
+                if row["id"] not in papers:
+                    papers[row["id"]] = {**row, "matched_repositories": [repo["repo_url"]]}
+                elif repo["repo_url"] not in papers[row["id"]]["matched_repositories"]:
+                    papers[row["id"]]["matched_repositories"].append(repo["repo_url"])
+                if len(papers) >= limit:
+                    return list(papers.values())
+        return list(papers.values())
+
+    def route_search(self, problem, query, limit=12, mode="fusion"):
         """Fuse bounded lexical routes from the reviewed problem, not guessed synonyms.
 
         A route gets an equal vote; identical normalized routes count once.
@@ -269,6 +306,8 @@ class Catalog:
         """
         problem = w.normalize_problem(problem)
         w.integer(limit, 1, MAX_PAPERS)
+        if mode not in ("fusion", "balanced", "bridge"):
+            w.fail("invalid_catalog_route_mode")
         candidates = [query, *problem["concepts"], *problem["alternative_concepts"],
                       *problem["aliases"], problem["task"], problem["symptom"]]
         routes = []
@@ -283,6 +322,7 @@ class Catalog:
             if len(routes) == MAX_ROUTES:
                 break
         scores, papers, details = Counter(), {}, {}
+        route_ids = []
         depth = MAX_PAPERS
         for route in routes:
             hits = self.search(route, depth, conjunction=True)
@@ -294,13 +334,47 @@ class Catalog:
                 hits.extend(row for row in self.search(route, depth) if row["id"] not in existing)
                 hits = hits[:depth]
                 match = "all_then_any"
+            route_ids.append([row["id"] for row in hits])
             for rank, row in enumerate(hits, 1):
                 key = row["id"]
                 scores[key] += 1 / (20 + rank)
                 papers[key] = row
                 details.setdefault(key, []).append({"query": route, "rank": rank, "match": match})
-        keys = sorted(scores, key=lambda key: (-scores[key], key))[:limit]
-        return [{**papers[key], "score": scores[key], "route_matches": details[key]} for key in keys]
+        # Experimental alternative: reserve a small number of distinct route
+        # leaders, then fill with global RRF. Avoid collapsing all query routes
+        # onto the same heavily represented mechanism.
+        keys = []
+        if mode == "bridge":
+            # Repository names are a distinct evidence channel. Keep only a
+            # bounded share and do not infer equivalence from the name.
+            bridge_scores, bridge_rows, bridge_routes = Counter(), {}, {}
+            for route in routes:
+                for rank, row in enumerate(self.repository_bridge(route, min(6, depth)), 1):
+                    key = row["id"]
+                    bridge_scores[key] += 1 / (20 + rank)
+                    bridge_rows.setdefault(key, row)
+                    bridge_routes.setdefault(key, []).append({"query": route, "rank": rank, "match": "repository_name"})
+                    if key in bridge_rows:
+                        old = bridge_rows[key].get("matched_repositories", [])
+                        bridge_rows[key]["matched_repositories"] = sorted(set(old + row["matched_repositories"]))
+            for key in sorted(bridge_scores, key=lambda key: (-bridge_scores[key], key))[:max(1, limit * 2 // 5)]:
+                if key not in papers:
+                    papers[key] = bridge_rows[key]
+                else:
+                    papers[key]["matched_repositories"] = bridge_rows[key]["matched_repositories"]
+                details.setdefault(key, []).extend(bridge_routes[key])
+                scores.setdefault(key, bridge_scores[key])
+                keys.append(key)
+        if mode in ("balanced", "bridge"):
+            reserve = min(limit, max(len(keys), limit * 3 // 5))
+            for hits in route_ids:
+                if len(keys) >= reserve:
+                    break
+                leader = next((key for key in hits if key not in keys), None)
+                if leader is not None:
+                    keys.append(leader)
+        keys.extend(key for key in sorted(scores, key=lambda key: (-scores[key], key)) if key not in keys)
+        return [{**papers[key], "score": scores[key], "route_matches": details[key]} for key in keys[:limit]]
 
     def lookup(self, arxiv_id):
         discovery.paper_detail_request(arxiv_id)
@@ -336,15 +410,17 @@ class Catalog:
             "SELECT repo_url,official,in_paper,in_repo FROM links WHERE paper_id=? "
             "ORDER BY official DESC,in_paper DESC,in_repo DESC,repo_url LIMIT ?", (key, limit))]
 
-    def observations(self, plan, query_id, limit=12, paper_ids=None, exact_title=None, repository=None, route_fusion=False):
+    def observations(self, plan, query_id, limit=12, paper_ids=None, exact_title=None, repository=None, route_fusion=False, route_mode="fusion", repo_keywords=None):
         plan = w.validate_plan(plan)
         query = next((row for row in plan["queries"] if row["id"] == query_id and
                       row["provider"] == "paperswithcode"), None)
         if not query:
             w.fail("catalog_query_required")
-        if type(route_fusion) is not bool or sum(value is not None for value in (paper_ids, exact_title, repository)) + int(route_fusion) > 1:
+        if type(route_fusion) is not bool or sum(value is not None for value in (paper_ids, exact_title, repository, repo_keywords)) + int(route_fusion) > 1:
             w.fail("ambiguous_catalog_lookup")
         w.integer(limit, 1, MAX_PAPERS)
+        if route_mode not in ("fusion", "balanced", "bridge") or (route_mode != "fusion" and not route_fusion):
+            w.fail("invalid_catalog_route_mode")
         if paper_ids is not None:
             if not isinstance(paper_ids, list) or not 1 <= len(paper_ids) <= discovery.MAX_PAPER_LOOKUPS:
                 w.fail("invalid_paper_lookup_count")
@@ -356,8 +432,10 @@ class Catalog:
             papers = self.lookup_title(exact_title, limit)
         elif repository is not None:
             papers = self.papers_for_repository(repository, limit)
+        elif repo_keywords is not None:
+            papers = self.repository_bridge(repo_keywords, limit)
         elif route_fusion:
-            papers = self.route_search(plan["problem"], query["native_query"], limit)
+            papers = self.route_search(plan["problem"], query["native_query"], limit, route_mode)
         else:
             papers = self.search(query["native_query"], limit)
         results = []
@@ -368,6 +446,15 @@ class Catalog:
                 w.fail("invalid_catalog_database")
             url = stored["url"]
             refs = self.links(key)
+            # Retain the repository-name match in the bounded link set even
+            # when more official flags exist for this paper.
+            matched = row.get("matched_repositories", [])
+            if repository is not None:
+                matched = [discovery.github_repo_url(repository)]
+            if matched:
+                linked = self.links(key, limit=1000)
+                refs = sorted(linked, key=lambda ref: (ref["repo_url"] not in matched,
+                              -ref["official"], -ref["in_paper"], -ref["in_repo"], ref["repo_url"]))[:MAX_LINKS]
             common = {"query_id": query_id, "origin": "local_catalog", "access": "metadata",
                       "catalog_snapshot": self.metadata["snapshot"], "catalog_license": self.metadata["license"]}
             paper = dict(common, kind="paper", url=url, title=row["title"], snippet=row["abstract"],
@@ -395,9 +482,12 @@ class Catalog:
                 "plan_id": w.plan_fingerprint(plan), "catalog": self.metadata,
                 "query_id": query_id, "local_mode": ("identifier" if paper_ids else
                     "exact_title" if exact_title is not None else
-                    "repository_reverse" if repository is not None else "route_fusion" if route_fusion else "keyword"),
+                    "repository_reverse" if repository is not None else "repository_keywords" if repo_keywords is not None else
+                    "route_" + route_mode if route_fusion else "keyword"),
                 "local_rank_evidence": [{"paper_id": row["id"], "route_matches": row["route_matches"]}
                                         for row in papers if "route_matches" in row],
+                "repository_matches": [{"paper_id": row["id"], "repo_urls": row["matched_repositories"]}
+                                       for row in papers if row.get("matched_repositories")],
                 "papers_returned": len(papers), "results": results, "searches": []}
 
 
@@ -420,6 +510,8 @@ def main(argv=None):
     mode.add_argument("--exact-title")
     mode.add_argument("--repository")
     mode.add_argument("--route-fusion", action="store_true", help="Fuse distinct reviewed problem phrases")
+    mode.add_argument("--repo-keywords", help="Reviewed repository-name keywords, not source-code contents")
+    find.add_argument("--route-mode", choices=("fusion", "balanced", "bridge"), default="fusion")
     find.add_argument("--limit", type=int, default=12)
     find.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
@@ -429,7 +521,7 @@ def main(argv=None):
         else:
             with Catalog(args.database) as catalog:
                 report = catalog.observations(w.read_json(args.plan), args.query_id, args.limit, args.paper_id,
-                                              args.exact_title, args.repository, args.route_fusion)
+                                              args.exact_title, args.repository, args.route_fusion, args.route_mode, args.repo_keywords)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError, sqlite3.Error) as error:

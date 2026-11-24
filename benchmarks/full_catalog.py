@@ -167,9 +167,10 @@ def problem_benchmark(path):
                 urls = {w.canonical_url(row["url"]) for row in result["results"]}
                 return sorted(key for key, url in qrels.items() if url in urls)
             methods = {}
-            for mode in ("keyword", "route_fusion"):
+            for mode in ("keyword", "route_fusion", "route_balanced", "route_bridge"):
                 start = time.perf_counter_ns()
-                out = db.observations(plan, q["id"], limit=K, route_fusion=(mode == "route_fusion"))
+                out = db.observations(plan, q["id"], limit=K, route_fusion=(mode != "keyword"),
+                                      route_mode=mode.removeprefix("route_") if mode != "keyword" else "fusion")
                 latency = (time.perf_counter_ns() - start) / 1e6
                 hit = matches(out)
                 methods[mode] = {"known_hits": len(hit), "known_recall": len(hit) / len(qrels),
@@ -180,7 +181,7 @@ def problem_benchmark(path):
     return {"tasks": tasks, "paper_limit": K,
             "total_known_sources": sum(row["known_sources"] for row in tasks),
             "known_hits": {mode: sum(row["methods"][mode]["known_hits"] for row in tasks)
-                           for mode in ("keyword", "route_fusion")},
+                           for mode in ("keyword", "route_fusion", "route_balanced", "route_bridge")},
             "scope": "Eight development problems; labels are known positives only; no exact gold IDs/titles in queries."}
 
 

@@ -87,6 +87,29 @@ class CatalogTests(unittest.TestCase):
                 catalog.observations(plan, plan["queries"][0]["id"], route_fusion=True,
                                      exact_title="Memory efficient exact attention")
 
+    def test_repository_keyword_bridge_and_balanced_routes(self):
+        pc.build_catalog(self.input, self.database)
+        problem = {**PROBLEM, "concepts": ["memory efficient attention", "qlora"],
+                   "alternative_concepts": ["simclr"]}
+        plan = w.make_plan(problem, 1, ["paperswithcode"], "comprehensive")
+        qid = plan["queries"][0]["id"]
+        with pc.Catalog(self.database) as db:
+            self.assertEqual(db.search_repositories("flash attention")[0]["repo_url"],
+                             "https://github.com/dao-ailab/flash-attention")
+            direct = db.observations(plan, qid, repo_keywords="qlora")
+            self.assertEqual(direct["local_mode"], "repository_keywords")
+            self.assertTrue(any(row["url"] == "https://github.com/artidoro/qlora"
+                                for row in direct["results"]))
+            for mode in ("balanced", "bridge"):
+                report = db.observations(plan, qid, limit=3, route_fusion=True, route_mode=mode)
+                self.assertEqual(report["papers_returned"], 3)
+                self.assertEqual(report["local_mode"], "route_" + mode)
+                self.assertTrue(all(row["access"] == "metadata" for row in report["results"]))
+                self.assertEqual(report, db.observations(plan, qid, limit=3, route_fusion=True,
+                                                         route_mode=mode))
+            with self.assertRaises(w.WorkflowError):
+                db.observations(plan, qid, route_mode="bridge")
+
     def test_local_results_bound_to_plan_and_metadata_only(self):
         pc.build_catalog(self.input, self.database)
         plan = w.make_plan(PROBLEM, 1, ["paperswithcode"], "comprehensive")

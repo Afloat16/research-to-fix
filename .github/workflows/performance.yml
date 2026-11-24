@@ -49,9 +49,11 @@ jobs:
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - name: Compare exact top-k alternatives under a locked protocol
         run: python examples/exact-topk/compare_methods.py --output "$RUNNER_TEMP/exact-topk"
-      - name: Compare focused live public algorithm discovery
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run focused live benchmark')
-        run: python benchmarks/live_problem.py --approve-public --strategy focused --output "$RUNNER_TEMP/live-focused.json"
+      - name: Optional pinned full archive benchmark
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run catalog bridge benchmark')
+        run: |
+          python -m pip install --only-binary=:all: pyarrow==20.0.0
+          python benchmarks/full_catalog.py --approve-public --output "$RUNNER_TEMP/full-catalog"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -65,6 +67,6 @@ jobs:
             ${{ runner.temp }}/discovery-gate.json
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/exact-topk/
-            ${{ runner.temp }}/live-focused.json
+            ${{ runner.temp }}/full-catalog/report.json
           retention-days: 14
           if-no-files-found: warn

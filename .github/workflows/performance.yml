@@ -41,6 +41,8 @@ jobs:
         run: python benchmarks/regression.py --synthetic "$RUNNER_TEMP/retrieval.json" --github "$RUNNER_TEMP/github-titles.json" --scale "$RUNNER_TEMP/scale.json" --output "$RUNNER_TEMP/regression.json"
       - name: Evaluate paper and code evidence reranking
         run: python benchmarks/discovery.py --output "$RUNNER_TEMP/discovery.json"
+      - name: Evaluate additional algorithm transfer and bilingual queries
+        run: python benchmarks/discovery.py --dataset transfer --output "$RUNNER_TEMP/discovery-transfer.json"
       - name: Compare actual numerical repair candidates
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - if: always()
@@ -53,6 +55,7 @@ jobs:
             ${{ runner.temp }}/scale.json
             ${{ runner.temp }}/regression.json
             ${{ runner.temp }}/discovery.json
+            ${{ runner.temp }}/discovery-transfer.json
             ${{ runner.temp }}/variance-comparison/
           retention-days: 14
           if-no-files-found: warn

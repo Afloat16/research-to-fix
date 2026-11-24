@@ -22,6 +22,8 @@ MAX_WORKERS = 4
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 TIMEOUT_SECONDS = 10
 MAX_PER_QUERY = 10
+MAX_PAPER_LOOKUPS = 4
+PAPER_DETAIL = "https://paperswithcode.co/api/v1/papers/arxiv/"
 USER_AGENT = "Research-to-Fix/1.0 (+https://github.com/Afloat16/research-to-fix)"
 API = {
     "github_repositories": "https://api.github.com/search/repositories",
@@ -99,9 +101,18 @@ def make_request(query, limit):
 def request_metadata(url, provider):
     # The only caller constructs this URL from an allowlisted endpoint. Reject
     # redirects, avoid environment proxy credentials, and send no cookies/auth.
-    endpoint = API.get(provider)
-    if not endpoint or not url.startswith(endpoint + "?"):
-        raise ProviderError("unavailable")
+    if provider == "paperswithcode_detail":
+        parsed = urllib.parse.urlsplit(url)
+        # The exact identifier path is the only non-search request allowed.
+        if (parsed.scheme != "https" or parsed.netloc != "paperswithcode.co"
+                or not parsed.path.startswith("/api/v1/papers/arxiv/")
+                or not w.normalized_arxiv(urllib.parse.unquote(parsed.path.removeprefix("/api/v1/papers/arxiv/")))
+                or parsed.query != "include_resources=true" or parsed.fragment):
+            raise ProviderError("unavailable")
+    else:
+        endpoint = API.get(provider)
+        if not endpoint or not url.startswith(endpoint + "?"):
+            raise ProviderError("unavailable")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     headers = {"User-Agent": USER_AGENT,
                "Accept": "application/atom+xml" if provider == "arxiv" else "application/json"}
@@ -549,6 +560,70 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
                         and all(row["status"] == "completed" for row in searches)}
 
 
+def paper_detail_request(value):
+    # Only explicit, reviewed bibliographic IDs, never result URLs. A
+    # versioned ID resolves its work's current catalog record; provenance
+    # reports that record's version rather than promising the old version.
+    if not isinstance(value, str) or len(value) > 40:
+        w.fail("invalid_arxiv_id")
+    identifier = w.normalized_arxiv(value)
+    if not identifier or not w.ARXIV.fullmatch(value):
+        w.fail("invalid_arxiv_id")
+    return PAPER_DETAIL + urllib.parse.quote(identifier, safe="") + "?include_resources=true"
+
+
+def resolve_papers(plan, paper_ids, query_id, approve_public=False, transport=request_metadata):
+    if approve_public is not True:
+        w.fail("explicit_public_approval_required")
+    plan = w.validate_plan(plan)
+    if not isinstance(paper_ids, list) or not 1 <= len(paper_ids) <= MAX_PAPER_LOOKUPS:
+        w.fail("invalid_paper_lookup_count")
+    queries = {row["id"]: row for row in plan["queries"]}
+    if not isinstance(query_id, str) or query_id not in queries or queries[query_id]["provider"] != "paperswithcode":
+        w.fail("paper_lookup_requires_catalog_query")
+    q = queries[query_id]
+    # Validate every ID before any outbound request; collapse versions.
+    urls = [paper_detail_request(value) for value in paper_ids]
+    if len(set(urls)) != len(urls):
+        w.fail("duplicate_paper_lookup")
+    results, lookups, stopped = [], [], None
+    for value, url in zip(paper_ids, urls):
+        identity = w.normalized_arxiv(value)
+        if stopped:
+            lookups.append({"arxiv_id": identity, "status": "skipped_budget",
+                            "reason": "provider_stopped_after_" + stopped, "returned": 0})
+            continue
+        start = time.monotonic()
+        row = {"arxiv_id": identity, "status": "unavailable", "returned": 0,
+               "searched_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        try:
+            raw = transport(url, "paperswithcode_detail")
+            if not isinstance(raw, bytes) or not raw or len(raw) > MAX_RESPONSE_BYTES:
+                raise ProviderError("invalid_response")
+            payload, _ = core.decode_case_bytes(raw)
+            if not isinstance(payload, dict) or w.normalized_arxiv(payload.get("arxiv_id")) != identity:
+                raise ProviderError("invalid_response")
+            found, partial = parse_paperswithcode(q, {"results": [payload]}, 1)
+            results.extend(found)
+            row.update(status="partial" if partial else "completed", returned=len(found))
+        except ProviderError as error:
+            row["status"] = error.code
+            if error.code in ("rate_limited", "access_blocked"):
+                stopped = error.code
+        except (ValueError, TypeError, RecursionError, KeyError, OverflowError):
+            row["status"] = "invalid_response"
+        row["elapsed_ms"] = round((time.monotonic() - start) * 1000, 3)
+        lookups.append(row)
+    statuses = {row["status"] for row in lookups}
+    completed = statuses == {"completed"}
+    # Lookup is not evidence that the original broad search ran. Keep its
+    # status separate and bind results to the reviewed query for triage.
+    return {"schema_version": 1, "scope": "public_paper_link_resolution",
+            "plan_id": w.plan_fingerprint(plan), "query_id": query_id,
+            "notice": DISCOVERY_NOTICE, "lookups": lookups, "results": results, "searches": [],
+            "requests": sum("searched_at" in row for row in lookups), "complete": completed}
+
+
 def main(argv=None):
     parser = core.SafeArgumentParser(description=__doc__)
     parser.add_argument("--plan", required=True, type=Path)
@@ -558,6 +633,8 @@ def main(argv=None):
     parser.add_argument("--per-query", type=int, default=8)
     parser.add_argument("--workers", type=int, default=1, help="Independent provider groups only (1–4)")
     parser.add_argument("--query-id", action="append")
+    parser.add_argument("--resolve-paper-id", action="append",
+                        help="Resolve explicitly reviewed arXiv IDs via the catalog (max 4); requires one catalog query ID")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
@@ -565,8 +642,16 @@ def main(argv=None):
             w.fail("explicit_public_approval_required")
         if args.output.exists() or args.output.is_symlink():
             w.fail("output_exists")
-        report = discover(w.read_json(args.plan), args.approve_public, args.max_requests,
-                          args.per_query, args.query_id, workers=args.workers)
+        plan = w.read_json(args.plan)
+        if args.resolve_paper_id:
+            if not args.query_id or len(args.query_id) != 1:
+                w.fail("paper_lookup_requires_catalog_query")
+            if len(args.resolve_paper_id) > args.max_requests:
+                w.fail("invalid_paper_lookup_count")
+            report = resolve_papers(plan, args.resolve_paper_id, args.query_id[0], args.approve_public)
+        else:
+            report = discover(plan, args.approve_public, args.max_requests,
+                              args.per_query, args.query_id, workers=args.workers)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

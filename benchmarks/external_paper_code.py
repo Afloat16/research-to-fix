@@ -130,8 +130,11 @@ def live_lookup(queries):
     # Fixed hash-selected queries, no repo labels or answers in outgoing text.
     for item in queries[:MAX_LIVE_QUERIES]:
         title = item["title"]
-        problem = {"symptom": "find original public implementation", "task": title,
-                   "concepts": [title[:100]], "focus": "algorithm"}
+        # Full title stays in the public fingerprint. Task and query seed
+        # are bounded; avoid repeating the title in the native query.
+        short_title = title if len(title) <= 120 else title[:120].rsplit(" ", 1)[0]
+        problem = {"symptom": "find original public implementation for " + title,
+                   "task": short_title, "focus": "algorithm"}
         try:
             plan = w.make_plan(problem, 2, ["github_repositories", "paperswithcode"], "comprehensive")
         except w.WorkflowError:
@@ -156,14 +159,46 @@ def live_lookup(queries):
     return rows
 
 
+def exact_lookup(queries):
+    # This is a different information condition from title-only search:
+    # the paper identifier is known. Never pool the results as if equally hard.
+    rows = []
+    plan = w.make_plan({"symptom": "find published paper implementation",
+                        "task": "paper code lookup", "focus": "algorithm"},
+                       1, ["paperswithcode"], "comprehensive")
+    selected = queries[:MAX_LIVE_QUERIES]
+    if not selected:
+        return []
+    result = discovery.resolve_papers(plan, [row["id"] for row in selected],
+                                      plan["queries"][0]["id"], True)
+    by_id = defaultdict(set)
+    for row in result["results"]:
+        if row["kind"] != "repository":
+            continue
+        for link in row.get("links", []):
+            match = w.canonical_url(link["url"])
+            if match.startswith("https://arxiv.org/abs/"):
+                by_id[match.split("/abs/", 1)[1]].add(w.canonical_url(row["url"]))
+    labels = {row["id"]: row["relevant"] for row in selected}
+    for lookup in result["lookups"]:
+        key = lookup["arxiv_id"]
+        found = sorted(by_id[key])
+        rows.append({"paper_id": key, "status": lookup["status"], "returned_codes": len(found),
+                     "metrics": metric(found, labels[key]) if lookup["status"] in ("completed", "partial") else None,
+                     "gold_repositories": labels[key], "returned_repositories": found,
+                     "elapsed_ms": lookup.get("elapsed_ms")})
+    return rows
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approve-public", action="store_true", help="Approve fixed public archive and lookup requests")
     parser.add_argument("--input", type=Path, help="Replay a previously saved archive JSON; no network")
     parser.add_argument("--live", action="store_true", help="Also evaluate up to four public title queries via fixed APIs")
+    parser.add_argument("--exact", action="store_true", help="Also evaluate up to four known arXiv IDs (different information condition)")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    if (not args.input or args.live) and not args.approve_public:
+    if (not args.input or args.live or args.exact) and not args.approve_public:
         parser.error("explicit public approval required")
     args.output.mkdir(parents=True, exist_ok=False)
     archive = w.read_json(args.input) if args.input else fetch_archive()
@@ -179,6 +214,7 @@ def main():
                        "Live catalog may share this archive; the online evaluation is not independent of that provider.",
               "offline_slug_methods": slug_benchmark(queries, repos) if queries and repos else None,
               "live": live_lookup(queries) if args.live and queries else [],
+              "known_id_lookup": exact_lookup(queries) if args.exact and queries else [],
               "sample_selection": "fixed row offsets; all valid official arXiv labels; SHA-256 order for at most four live lookups"}
     w.write_json(result, args.output / "report.json")
     # The archive itself is not printed to logs.

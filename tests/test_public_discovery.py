@@ -147,6 +147,42 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(len(links), 2)
         self.assertTrue(all(row["relation"] == "mentions" and row["basis"] == "metadata" for row in links))
 
+    def test_parallel_groups_preserve_order_and_do_not_overlap_provider(self):
+        import threading
+        plan = w.make_plan(PROBLEM, 24, ["github_repositories", "github_issues", "crossref"])
+        barrier = threading.Barrier(2)
+        active = set()
+        lock = threading.Lock()
+        first = set()
+        def transport(url, provider):
+            group = d.GROUPS[provider]
+            with lock:
+                self.assertNotIn(group, active)
+                active.add(group)
+                initial = group not in first
+                first.add(group)
+            try:
+                if initial:
+                    barrier.wait(timeout=4)
+                if provider.startswith("github"):
+                    return encoded({"items": []})
+                return encoded({"message": {"items": []}})
+            finally:
+                with lock:
+                    active.remove(group)
+        report = d.discover(plan, True, 4, transport=transport, workers=2, schedule="balanced")
+        self.assertEqual(report["requests"], len(plan["queries"]))
+        self.assertEqual([row["query_id"] for row in report["searches"]], [q["id"] for q in plan["queries"]])
+        self.assertTrue(report["complete"])
+
+    def test_balanced_reservation_expands_distinct_providers(self):
+        plan = w.make_plan(PROBLEM, 24)
+        plan_order = d.reserve_queries(plan["queries"], 6, "plan")
+        balanced = d.reserve_queries(plan["queries"], 6, "balanced")
+        count = lambda rows: len({d.GROUPS[q["provider"]] for q in rows})
+        self.assertGreater(count(balanced), count(plan_order))
+        self.assertEqual(len(balanced), 6)
+
     def test_public_credential_like_excerpts_are_not_retained(self):
         row = next(row for row in w.make_plan(PROBLEM)["queries"] if row["provider"] == "github_issues")
         result, _ = d.parse_github(row, {"items": [{"html_url": "https://github.com/a/b/issues/1",

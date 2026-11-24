@@ -2,6 +2,8 @@
 """Opt-in, bounded public metadata discovery. Never fetch or execute result URLs."""
 import http.client
 import json
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 import re
 import socket
 import sys
@@ -70,8 +72,12 @@ def make_request(query, limit):
                                   if word.casefold() not in w.GENERIC and len(word) > 1))[:5]
         if not terms:
             raise ProviderError("invalid_response")
-        params = {"search_query": " AND ".join('all:"' + term + '"' for term in terms),
-                  "start": 0, "max_results": limit, "sortBy": "relevance", "sortOrder": "descending"}
+        clauses = ['all:"' + term + '"' for term in terms]
+        # Require an anchor and a second signal, not every word of a verbose
+        # problem description. The local ranker can filter the broader pool.
+        expression = clauses[0] if len(clauses) == 1 else clauses[0] + " AND (" + " OR ".join(clauses[1:]) + ")"
+        params = {"search_query": expression, "start": 0, "max_results": limit,
+                  "sortBy": "relevance", "sortOrder": "descending"}
     elif provider == "semantic_scholar":
         params = {"query": native.replace("-", " "), "limit": limit,
                   "fields": "paperId,title,abstract,externalIds,url,year,venue,publicationTypes"}
@@ -393,13 +399,36 @@ def parse_response(query, raw, limit):
     raise ProviderError("unavailable")
 
 
-def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=None, transport=request_metadata):
-    # Validate and refuse before making a single outbound request.
+def reserve_queries(query_list, maximum, schedule):
+    """Reserve bounded requests before executing, with optional provider diversity."""
+    native = [q for q in query_list if q["provider"] in API]
+    if schedule == "balanced":
+        groups = defaultdict(list)
+        for q in native:
+            groups[GROUPS[q["provider"]]].append(q)
+        native = [group[index] for index in range(max(map(len, groups.values()), default=0))
+                  for group in groups.values() if index < len(group)]
+    reserved, counts = [], defaultdict(int)
+    for q in native:
+        group = GROUPS[q["provider"]]
+        if len(reserved) < maximum and counts[group] < GROUP_LIMITS[group]:
+            reserved.append(q)
+            counts[group] += 1
+    return reserved
+
+
+def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=None,
+             transport=request_metadata, workers=1, schedule="plan"):
+    # Validate before any transport; no automatic retry or redistribution of
+    # requests after provider failure. Each provider group is serialized.
     if approve_public is not True:
         w.fail("explicit_public_approval_required")
     plan = w.validate_plan(plan)
     w.integer(max_requests, 1, MAX_REQUESTS)
     w.integer(per_query, 1, MAX_PER_QUERY)
+    w.integer(workers, 1, 4)
+    if schedule not in ("plan", "balanced"):
+        w.fail("invalid_schedule")
     queries = {query["id"]: query for query in plan["queries"]}
     if query_ids is not None:
         selected = w.str_list(query_ids, len(queries), 8)
@@ -408,36 +437,59 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
         query_list = [queries[qid] for qid in selected]
     else:
         query_list = list(queries.values())
-    requests, results, searches, host_pending = 0, [], [], []
-    provider_counts, stopped = {}, {}
-    for query in query_list:
-        provider = query["provider"]
+    reserved = reserve_queries(query_list, max_requests, schedule)
+    reserved_ids = {q["id"] for q in reserved}
+    host_pending = [q["id"] for q in query_list if q["provider"] not in API]
+
+    def execute_sequence(sequence):
+        output, stopped = [], {}
+        for q in sequence:
+            provider, qid = q["provider"], q["id"]
+            group = GROUPS[provider]
+            record = {"query_id": qid, "provider": provider, "returned": 0}
+            if group in stopped:
+                output.append((qid, [], dict(record, status="skipped_budget",
+                               reason="provider_stopped_after_" + stopped[group]), False))
+                continue
+            record["searched_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            try:
+                url = make_request(q, per_query)
+                found, partial = parse_response(q, transport(url, provider), per_query)
+                output.append((qid, found, dict(record, status="partial" if partial else "completed",
+                               returned=len(found),
+                               reason="provider_incomplete_results" if partial else "metadata_only"), True))
+            except ProviderError as error:
+                output.append((qid, [], dict(record, status=error.code, reason=error.code), True))
+                if error.code in ("rate_limited", "access_blocked"):
+                    stopped[group] = error.code
+        return output
+
+    if workers == 1:
+        executions = execute_sequence(reserved)
+    else:
+        groups = defaultdict(list)
+        for q in reserved:
+            groups[GROUPS[q["provider"]]].append(q)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            executions = [row for sequence in pool.map(execute_sequence, groups.values()) for row in sequence]
+    by_id = {qid: (found, status, attempted) for qid, found, status, attempted in executions}
+    requests, results, searches = 0, [], []
+    # Stable output ordering follows reviewed query IDs, not completion time.
+    for q in query_list:
+        qid, provider = q["id"], q["provider"]
         if provider not in API:
-            host_pending.append(query["id"])
             continue
-        group = GROUPS[provider]
-        record = {"query_id": query["id"], "provider": provider, "returned": 0}
-        if group in stopped:
-            searches.append(dict(record, status="skipped_budget", reason="provider_stopped_after_" + stopped[group]))
+        if qid not in reserved_ids:
+            searches.append({"query_id": qid, "provider": provider, "returned": 0,
+                             "status": "skipped_budget", "reason": "request_or_provider_limit"})
             continue
-        if requests >= max_requests or provider_counts.get(group, 0) >= GROUP_LIMITS[group]:
-            searches.append(dict(record, status="skipped_budget", reason="request_or_provider_limit"))
-            continue
-        record["searched_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        requests += 1
-        provider_counts[group] = provider_counts.get(group, 0) + 1
-        try:
-            url = make_request(query, per_query)
-            found, partial = parse_response(query, transport(url, provider), per_query)
-            results.extend(found)
-            searches.append(dict(record, status="partial" if partial else "completed", returned=len(found),
-                                 reason="provider_incomplete_results" if partial else "metadata_only"))
-        except ProviderError as error:
-            searches.append(dict(record, status=error.code, reason=error.code))
-            if error.code in ("rate_limited", "access_blocked"):
-                stopped[group] = error.code
+        found, status, attempted = by_id[qid]
+        requests += int(attempted)
+        results.extend(found)
+        searches.append(status)
     return {"schema_version": 1, "scope": "public_metadata_discovery", "plan_sha256": w.plan_digest(plan),
-            "notice": DISCOVERY_NOTICE, "requests": requests, "results": results,
+            "notice": DISCOVERY_NOTICE, "requests": requests, "reserved_requests": len(reserved),
+            "schedule": schedule, "workers": workers, "results": results,
             "searches": searches, "host_required_queries": host_pending,
             "unselected_queries": [qid for qid in queries if qid not in {q["id"] for q in query_list}],
             "complete": not host_pending and len(query_list) == len(queries)
@@ -453,6 +505,8 @@ def main(argv=None):
                         help="I have reviewed the public fingerprint and consent to these fixed API queries")
     parser.add_argument("--max-requests", type=int, default=6)
     parser.add_argument("--per-query", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=1, help="1–4 independent provider groups; no concurrent requests within a provider")
+    parser.add_argument("--schedule", choices=("plan", "balanced"), default="plan")
     parser.add_argument("--query-id", action="append")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
@@ -479,7 +533,7 @@ def main(argv=None):
             plan = w.read_json(args.plan)
             selected = args.query_id
         report = discover(plan, args.approve_public, args.max_requests,
-                          args.per_query, selected)
+                          args.per_query, selected, workers=args.workers, schedule=args.schedule)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

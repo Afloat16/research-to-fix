@@ -46,7 +46,7 @@ def paired_interval(left, right, resamples=BOOTSTRAPS):
         raise ValueError("paired sample required")
     deltas = [a - b for a, b in zip(left, right)]
     rng = random.Random(764291)
-    samples = sorted(statistics.mean(rng.choices(deltas, k=len(deltas))) for _ in range(resamples))
+    samples = sorted(sum(rng.choices(deltas, k=len(deltas))) / len(deltas) for _ in range(resamples))
     return {"mean_delta": statistics.mean(deltas),
             "ci95_low": samples[int(.025 * (len(samples) - 1))],
             "ci95_high": samples[int(.975 * (len(samples) - 1))],

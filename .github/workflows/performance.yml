@@ -53,12 +53,9 @@ jobs:
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
       - name: Measure provider scheduler with mock transport
         run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
-      - name: Run preregistered public development benchmark (explicit branch experiment)
+      - name: Run frozen external holdouts (explicit branch experiment)
         if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/independent-benchmark-v1.1'
-        run: |
-          python benchmarks/independent_data.py --dataset programmers --output "$RUNNER_TEMP/programmers"
-          python benchmarks/independent_retrieval.py --data "$RUNNER_TEMP/programmers" --split development --methods v1_contextual field4 context_field2 context_field4 context_field8 precision_flat precision_field4 sqlite_unicode sqlite_unicode4 sqlite_unicode8 sqlite_porter sqlite_porter4 sqlite_porter8 --output "$RUNNER_TEMP/independent-development.json"
-          python benchmarks/tokenizer_benchmark.py --data "$RUNNER_TEMP/programmers" --output "$RUNNER_TEMP/tokenizer.json"
+        run: python benchmarks/independent_suite.py --selection benchmarks/independent_selection.json --output "$RUNNER_TEMP/independent-final"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -74,8 +71,7 @@ jobs:
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
             ${{ runner.temp }}/discovery-schedule.json
-            ${{ runner.temp }}/independent-development.json
-            ${{ runner.temp }}/programmers/manifest.json
-            ${{ runner.temp }}/tokenizer.json
+            ${{ runner.temp }}/independent-final/*.json
+            ${{ runner.temp }}/independent-final/*/manifest.json
           retention-days: 14
           if-no-files-found: warn

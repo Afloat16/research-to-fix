@@ -47,7 +47,7 @@ SOURCE_SPECS.update({
     "dblp": ("paper", "dblp", "paper"),
     "github_code": ("code", "host", "repository"),
 })
-STRATEGIES = ("legacy", "comprehensive")
+STRATEGIES = ("legacy", "comprehensive", "focused")
 FOCUS = ("algorithm", "bug", "performance", "reproduction")
 STAGES = ("exact", "mechanism", "implementation", "alternatives", "verification", "counterevidence")
 ACCESS = ("metadata", "snippet_only", "read", "access_blocked", "unavailable")
@@ -162,8 +162,8 @@ def make_plan(problem, budget=12, sources=None, strategy="legacy"):
     integer(budget, 1, MAX_QUERIES)
     if strategy not in STRATEGIES:
         fail("invalid_strategy")
-    if strategy == "comprehensive":
-        return comprehensive_plan(p, budget, sources)
+    if strategy in ("comprehensive", "focused"):
+        return comprehensive_plan(p, budget, sources, focused=strategy == "focused")
     if sources is not None:
         sources = str_list(sources, len(SOURCE_SPECS), 40)
         if not sources or any(source not in LEGACY_SOURCES for source in sources):
@@ -286,7 +286,7 @@ def plan_fingerprint(plan):
                                      separators=(",", ":"), allow_nan=False).encode("ascii")).hexdigest()
 
 
-def comprehensive_plan(p, budget, sources):
+def comprehensive_plan(p, budget, sources, focused=False):
     """Reserve distinct evidence lanes before spending extra queries.
 
     No learned synonym or new diagnosis is invented. The host supplies
@@ -332,41 +332,41 @@ def comprehensive_plan(p, budget, sources):
             joined(scope, "is:pr is:merged", p["component"] if not scope else "", secondary),
             "Find merged changes and test evidence; verify release separately.")
 
-    def paper(source, concept, stage):
+    def paper(source, concept, stage, native=None):
         web = {"arxiv": "site:arxiv.org", "openalex": "site:openalex.org",
                "semantic_scholar": "site:semanticscholar.org", "dblp": "site:dblp.org",
                "crossref": "paper DOI", "paperswithcode": "site:paperswithcode.co"}[source]
-        add(source, stage, joined(concept, web), concept,
+        add(source, stage, joined(concept, web), native if focused and native else concept,
             "Discover relevant scholarly records and inspect the original publication or linked code.")
 
-    def implementation(concept, stage):
+    def implementation(concept, stage, native=None):
         add("github_repositories", stage, joined("site:github.com", concept, "implementation"),
-            joined(concept, "in:name,description,readme"),
+            joined(native if focused and native else concept, "in:name,description,readme"),
             "Find actual implementations and inspect licenses, tests and revisions.")
 
     if p["focus"] == "bug":
         direct()
-        implementation(route, "implementation")
-        paper("paperswithcode", route, "mechanism")
-        paper("arxiv", route, "mechanism")
+        implementation(route, "implementation", secondary)
+        paper("paperswithcode", route, "mechanism", secondary)
+        paper("arxiv", route, "mechanism", primary)
     else:
-        implementation(route, "implementation")
-        paper("paperswithcode", route, "implementation")
-        paper("arxiv", route, "mechanism")
+        implementation(route, "implementation", secondary)
+        paper("paperswithcode", route, "implementation", secondary)
+        paper("arxiv", route, "mechanism", primary)
         direct()
     add("official_docs", "verification", joined(p["component"], secondary, p["version"], "official documentation"),
         "", "Verify supported APIs, versions, and configuration.")
     if alternates:
         other = joined(task, alternates[0]) if task.casefold() != alternates[0].casefold() else alternates[0]
-        implementation(other, "alternatives")
-        paper("openalex", other, "alternatives")
+        implementation(other, "alternatives", alternates[0])
+        paper("openalex", other, "alternatives", alternates[0])
     else:
-        paper("openalex", route, "mechanism")
+        paper("openalex", route, "mechanism", secondary)
     add("limitations", "counterevidence", joined(route, "limitations failure ablation reproducibility"),
         "", "Investigate failure conditions and contradictory experiments.")
-    paper("semantic_scholar", route, "mechanism")
-    paper("crossref", route, "verification")
-    paper("dblp", route, "verification")
+    paper("semantic_scholar", route, "mechanism", primary)
+    paper("crossref", route, "verification", secondary)
+    paper("dblp", route, "verification", primary)
     add("proceedings", "alternatives",
         joined(task, alternates[0] if alternates else secondary,
                "(site:openreview.net OR site:proceedings.mlr.press OR site:openaccess.thecvf.com OR site:aclanthology.org OR site:proceedings.neurips.cc OR site:usenix.org)"),
@@ -386,13 +386,13 @@ def comprehensive_plan(p, budget, sources):
         "", "Discover community leads and trace them to originals.")
     for concept in mechanisms[1:]:
         phrase = joined(task, concept) if task.casefold() != concept.casefold() else concept
-        paper("arxiv", phrase, "mechanism")
-        implementation(phrase, "implementation")
+        paper("arxiv", phrase, "mechanism", concept)
+        implementation(phrase, "implementation", concept)
     for concept in alternates:
         phrase = joined(task, concept) if task.casefold() != concept.casefold() else concept
-        paper("paperswithcode", phrase, "alternatives")
-        implementation(phrase, "alternatives")
-        paper("openalex", phrase, "alternatives")
+        paper("paperswithcode", phrase, "alternatives", concept)
+        implementation(phrase, "alternatives", concept)
+        paper("openalex", phrase, "alternatives", concept)
     for alias in p["aliases"]:
         add("github_issues", "mechanism", joined(site, p["component"], quote_query(alias)),
             joined(scope, "is:issue", p["component"] if not scope else "", quote_query(alias)),
@@ -400,7 +400,8 @@ def comprehensive_plan(p, budget, sources):
     if not rows:
         fail("empty_plan")
     queries = [{"id": f"Q{i:02d}", **row} for i, row in enumerate(rows[:budget], 1)]
-    plan = {"schema_version": 2, "scope": "public_research_plan", "strategy": "comprehensive",
+    plan = {"schema_version": 3 if focused else 2, "scope": "public_research_plan",
+            "strategy": "focused" if focused else "comprehensive",
             "problem": p, "budget": budget, "requested_sources": [source for source in SOURCE_SPECS if source in selected],
             "queries": queries, "omitted_sources": [source for source in SOURCE_SPECS if source in selected
                                                      and source not in {row["source"] for row in queries}],
@@ -414,10 +415,10 @@ def validate_plan(value):
     # inject arbitrary endpoints, hidden queries or native search qualifiers.
     value = object_(value)
     version = value.get("schema_version")
-    if type(version) is not int or version not in (1, 2) or value.get("scope") != "public_research_plan":
+    if type(version) is not int or version not in (1, 2, 3) or value.get("scope") != "public_research_plan":
         fail("invalid_plan")
     expected = make_plan(value.get("problem"), value.get("budget"), value.get("requested_sources"),
-                         "comprehensive" if version == 2 else "legacy")
+                         {1: "legacy", 2: "comprehensive", 3: "focused"}[version])
     if value != expected:
         fail("plan_changed_regenerate")
     return expected

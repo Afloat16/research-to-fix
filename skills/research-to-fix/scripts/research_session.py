@@ -130,7 +130,8 @@ def aggregate(rounds, limit=12, ranking="bm25"):
                   for key, row in by_query.items() if key not in successful]
     # Compute gap actions from the reviewed fingerprint, never source text.
     candidate_plan = w.make_plan(plans[-1]["problem"], w.MAX_QUERIES,
-                                 combined["requested_sources"], "comprehensive")
+                                 combined["requested_sources"],
+                                 "focused" if plans[-1]["schema_version"] == 3 else "comprehensive")
     stage_order = {"counterevidence": 0, "alternatives": 1, "implementation": 2,
                    "verification": 3, "mechanism": 4, "exact": 5}
     followup = []

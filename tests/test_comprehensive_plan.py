@@ -30,6 +30,18 @@ class ComprehensivePlanTests(unittest.TestCase):
         self.assertTrue({"openalex", "semantic_scholar", "dblp"}.issubset({q["source"] for q in plan["queries"]}))
         self.assertEqual(len({(q["source"], q["native_query"] or q["query"]) for q in plan["queries"]}), len(plan["queries"]))
 
+    def test_focused_provider_queries_use_only_reviewed_short_phrases(self):
+        plan = w.make_plan(PROBLEM, 20, strategy="focused")
+        self.assertEqual(plan["schema_version"], 3)
+        self.assertEqual(plan, w.validate_plan(plan))
+        first = {row["source"]: row for row in reversed(plan["queries"])}
+        self.assertEqual(first["paperswithcode"]["native_query"], PROBLEM["concepts"][1])
+        self.assertEqual(first["arxiv"]["native_query"], PROBLEM["concepts"][0])
+        self.assertEqual(first["openalex"]["native_query"], PROBLEM["alternative_concepts"][0])
+        self.assertIn(PROBLEM["concepts"][1], first["github_repositories"]["native_query"])
+        self.assertIn(PROBLEM["task"], first["paperswithcode"]["query"])
+        self.assertNotEqual(plan["plan_id"], w.make_plan(PROBLEM, 20, strategy="comprehensive")["plan_id"])
+
     def test_versioned_plan_and_payload_binding(self):
         plan = w.make_plan(PROBLEM, 8, strategy="comprehensive")
         edited = copy.deepcopy(plan)

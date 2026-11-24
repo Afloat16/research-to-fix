@@ -31,13 +31,13 @@ def identity_keys(row):
     return keys
 
 
-def evaluate(task, documents, transport=d.request_metadata):
+def evaluate(task, documents, transport=d.request_metadata, strategy="comprehensive"):
     relevant = set(task["relevant"])
     labels = {key: set() for key in relevant}
     for row in documents:
         if row["id"] in labels:
             labels[row["id"]].update(identity_keys(row))
-    plan = w.make_plan(task["problem"], 20, strategy="comprehensive")
+    plan = w.make_plan(task["problem"], 20, strategy=strategy)
     start = time.monotonic()
     response = d.discover(plan, True, max_requests=8, per_query=8, workers=3, transport=transport)
     elapsed = time.monotonic() - start
@@ -90,13 +90,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approve-public", action="store_true")
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--strategy", choices=("comprehensive", "focused"), default="comprehensive")
     args = parser.parse_args()
     if not args.approve_public:
         parser.error("explicit public approval required")
     dataset = json.loads(DATASET.read_text(encoding="utf-8"))
     tasks = {row["id"]: row for row in dataset["tasks"]}
-    rows = [evaluate(tasks[key], dataset["documents"]) for key in TASK_IDS]
+    rows = [evaluate(tasks[key], dataset["documents"], strategy=args.strategy) for key in TASK_IDS]
     report = {"scope": "live discovery on three fixed public diagnostic problems",
+              "strategy": args.strategy,
               "qrels": "known positive source identities; unjudged results are not negative labels",
               "tasks": rows, "total_known_sources": sum(row["known_sources"] for row in rows),
               "raw_union_known_hits": sum(row["raw_union"]["known_hits"] for row in rows),

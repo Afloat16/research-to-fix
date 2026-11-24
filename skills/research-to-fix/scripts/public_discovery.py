@@ -359,23 +359,24 @@ def parse_paperswithcode(query, payload, limit):
                 seen.add(repo_url)
                 hint = ("Papers with Code catalog: official implementation candidate"
                         if repo.get("is_official") is True else "Papers with Code catalog: linked repository")
-                records.append((repo_url, hint))
+                records.append((repo_url, hint, repo.get("is_official") is True))
                 if len(records) == 3:
                     break
         paper = base_row(query, url, title, item.get("abstract"),
                          arxiv_id=aid, doi=doi, revision=excerpt(item.get("version"), 60),
                          publication_hint=excerpt("Catalog metadata; " + excerpt(item.get("conference_name"), 80), 120),
                          links=[{"url": repo_url, "relation": "describes", "basis": "metadata",
-                                 "note": hint} for repo_url, hint in records])
+                                 "note": hint} for repo_url, hint, _ in records])
         if not paper:
             continue
         results.append(paper)
-        for repo_url, hint in records:
+        for repo_url, hint, official in records:
             # Link to the paper as the assertion source, not a claim that
             # the repository README or license has been read.
             row = base_row(query, repo_url, repo_url.removeprefix("https://github.com/"),
                            excerpt(title, 250), kind="repository",
-                           links=[{"url": url, "relation": "implements", "basis": "metadata", "note": hint}],
+                           links=[{"url": url, "relation": "implements" if official else "describes",
+                                   "basis": "metadata", "note": hint}],
                            publication_hint=hint)
             if row:
                 results.append(row)
@@ -504,7 +505,7 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
             host_pending.append(query["id"])
         else:
             pending.append(query)
-    if plan["schema_version"] == 2:
+    if plan["schema_version"] in (2, 3):
         # Round-robin provider groups before spending repeat calls on GitHub.
         # Explicit selection still bounds the exact approved query set.
         buckets = {}

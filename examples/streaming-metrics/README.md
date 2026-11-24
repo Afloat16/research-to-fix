@@ -63,3 +63,7 @@ python skills/research-to-fix/scripts/research_case.py recall --cases-dir /tmp/s
 逐测试结果按稳定的方法 ID 汇总子测试，错误或失败不会被后续成功覆盖。因此，原始日志中的 failure/error 事件数可能大于方法级的失败数量。已有输出目录一律拒绝；中途出错时保留已产生的日志，换用新目录重试。
 
 这份新记录只验证行为测试，没有重新测量内存或执行新的外部调研。`recall` 和 `validate` 仍只读取案例数据，不执行案例中的命令。使用历史案例时重新核对当前问题的条件，不复用旧的 solved 结论。
+
+## 完整性复核与封存
+
+可运行 `research_case.py review` 查看声明的可比性和证据缺口。需保留完整的可重放证据时，按 [证据包指南](../../skills/research-to-fix/references/evidence-bundle.md) 封存 `case.json`、运行记录所引用的日志/报告以及两轮的 `metrics.py`、`test_metrics.py`、`test_metrics_streaming.py`、`_record_tests.py`。清单校验不会重新运行这些文件，也不能证明日志真实性。

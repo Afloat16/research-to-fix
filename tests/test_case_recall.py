@@ -233,6 +233,7 @@ class CaseRecallTests(unittest.TestCase):
             research_case.recall_cases(alias, "IndexError")
 
     @unittest.skipUnless(os.name == "posix", "POSIX byte filenames required")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux byte-oriented filenames required")
     def test_json_cli_preserves_non_utf8_filename_with_valid_utf8_output(self):
         filename = os.fsdecode(b"case-\xff.json")
         self.write_case(filename, recall_case("IndexError"))

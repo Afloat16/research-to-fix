@@ -13,7 +13,7 @@ import sys
 import unicodedata
 from collections import Counter
 from pathlib import Path
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 
 NOTICE = ("仅供人工复核；敏感信息检测不是完整保证。离线公开检索词策略仅允许无凭据的公网 HTTP(S) URI。"
@@ -66,6 +66,11 @@ def contains_credentials(value):
                for match in pattern.finditer(value))
 
 
+def public_ip(address):
+    # ipaddress.is_global alone can include multicast on supported Python versions.
+    return address.is_global and not address.is_multicast and not address.is_reserved
+
+
 def public_url(value):
     """只接受无凭据的公网 HTTP(S) URL；不发起 DNS 或网络请求。"""
     if not isinstance(value, str) or re.search(r"\s|[\\\x00-\x1f\x7f]", value):
@@ -79,6 +84,10 @@ def public_url(value):
             return False
         if parsed.password is not None or parsed.port == 0:
             return False
+        # Check decoded credential markers as well as raw URL text. This is a
+        # heuristic, not a DNS or redirect policy and not a disclosure guarantee.
+        if any(contains_credentials(unquote(part)) for part in (parsed.path, parsed.query, parsed.fragment)):
+            return False
         fields = (parsed.query, parsed.fragment, parsed.fragment.partition("?")[2])
         if any(sensitive_field(key) for field in fields
                for key, _value in parse_qsl(field, keep_blank_values=True)):
@@ -87,7 +96,7 @@ def public_url(value):
         if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".lan")):
             return False
         try:
-            return ipaddress.ip_address(host).is_global
+            return public_ip(ipaddress.ip_address(host))
         except ValueError:
             # 全数字、旧式十六进制 IP 或单标签主机不视为可信公网域名。
             if re.fullmatch(r"[0-9.]+|0x[0-9a-f]+", host):
@@ -110,7 +119,7 @@ def safe_search_input(values):
         addresses += re.findall(r"(?<!\w)(?:[0-9a-fA-F]{0,4}:){2,}[0-9a-fA-F:.]*", value)
         for address in addresses:
             try:
-                if not ipaddress.ip_address(address).is_global:
+                if not public_ip(ipaddress.ip_address(address)):
                     return False
             except ValueError:
                 pass
@@ -118,7 +127,7 @@ def safe_search_input(values):
 
 
 def make_queries(error, component="", version="", concepts=None, source_filters=None,
-                 language_filters=None, max_queries=None, repository=None):
+                 language_filters=None, max_queries=None, repository=None, strategy="source_order"):
     parts = [error, component, version, *(concepts or [])]
     if repository is not None:
         parts.append(repository)
@@ -126,6 +135,8 @@ def make_queries(error, component="", version="", concepts=None, source_filters=
         raise ValueError("检测到可能的凭据、私有 URL 或不支持的 URI，请脱敏后重试。" + NOTICE)
     if not error.strip():
         raise ValueError("报错或症状不能为空。")
+    if not isinstance(strategy, str) or strategy not in ("source_order", "balanced"):
+        raise ValueError("检索计划策略无效。")
     source_filters = source_filters or SOURCE_IDS
     language_filters = language_filters or LANGUAGE_IDS
     if any(not isinstance(source, str) or source not in SOURCE_IDS for source in source_filters):
@@ -175,11 +186,27 @@ def make_queries(error, component="", version="", concepts=None, source_filters=
                             "purpose": purpose, "stage": "error_match" if exact_error else "mechanism",
                             "note": "候选查询：优先核对报错与版本。" if exact_error else mechanism_note})
     total_candidates = len(queries)
+    if strategy == "balanced":
+        # Prioritize one language per selected source before any source gets
+        # a second query. Interleave error and mechanism stages; alternate
+        # the first language across sources when both are requested.
+        by_source = {source: [row for row in queries if row["source"] == source] for source in source_filters}
+        groups = [[source for source in source_filters if by_source[source][0]["stage"] == stage]
+                  for stage in ("error_match", "mechanism")]
+        ordered_sources = []
+        for index in range(max(map(len, groups))):
+            ordered_sources.extend(group[index] for group in groups if index < len(group))
+        queries = [by_source[source][(position + language_round) % len(language_filters)]
+                   for language_round in range(len(language_filters))
+                   for position, source in enumerate(ordered_sources)]
+        for index, row in enumerate(queries, 1):
+            row["id"] = f"S{index}"
     if max_queries is not None:
         queries = queries[:max_queries]
     return {"notice": NOTICE, "review_required": True,
             "note": "以下全部是候选计划；请按相关性优先选择 4–8 条并改写，不要求全部执行。数量上限仅控制生成，不是实际联网预算。",
-            "total_candidates": total_candidates, "truncated": len(queries) < total_candidates, "queries": queries}
+            "total_candidates": total_candidates, "truncated": len(queries) < total_candidates, "queries": queries,
+            **({"strategy": strategy} if strategy != "source_order" else {})}
 
 
 def new_case():
@@ -546,6 +573,130 @@ def reject_json_constant(_value):
     raise ValueError("JSON 不能包含非有限数值")
 
 
+VALIDATE_MAX_FILE_BYTES = 4 * 1024 * 1024
+
+
+def decode_case_bytes(data):
+    """Strict UTF-8 JSON; reject duplicate keys, non-finite numbers and lone surrogates."""
+    case = json.loads(data.decode("utf-8"), object_pairs_hook=unique_json_object,
+                      parse_constant=reject_json_constant)
+    canonical = json.dumps(case, sort_keys=True, ensure_ascii=False,
+                           allow_nan=False).encode("utf-8")
+    return case, canonical
+
+
+REVIEW_NOTICE = ("Completeness review of declared fields only; findings are review prompts, "
+                 "not a score, proof of repair, source verification or artifact integrity check.")
+
+
+def review_case(case):
+    """Summarize evidence and comparison gaps without echoing user content."""
+    errors = validate_case(case)
+    if errors:
+        return {"scope": "case_review", "valid": False, "input_error": False,
+                "errors": errors, "notice": REVIEW_NOTICE}
+    validation = case["validation"]
+    runs = validation["runs"]
+    before = [row for row in runs if row["phase"] == "before"]
+    after = [row for row in runs if row["phase"] == "after"]
+    attempt_mode = "final_attempt_id" in validation or any("attempt_id" in row for row in after)
+    final = ([row for row in after if row.get("attempt_id") == validation.get("final_attempt_id")]
+             if "final_attempt_id" in validation else ([] if attempt_mode else after))
+    baseline, final_by_check = {}, {}
+    for group, records in ((baseline, before), (final_by_check, final)):
+        for row in records:
+            key = tuple(row[field] for field in ("check_id", "kind", "command"))
+            group.setdefault(key, []).append(row)
+
+    pairs = [(rows, final_by_check.get(key, [])) for key, rows in baseline.items()]
+    paired = [(left, right) for left, right in pairs if right]
+    passed = [(left, right) for left, right in paired if all(row["result"] == "pass" for row in right)]
+    comparable = [(left, right) for left, right in passed
+                  if all(row.get("comparison_context") for row in left + right)
+                  and all(row["comparison_context"] == left[0]["comparison_context"] for row in left + right)]
+    changed_acceptance = [(left, right) for left, right in paired
+                          if any(any(row.get(field, default) != left[0].get(field, default)
+                                     for row in left + right)
+                                 for field, default in (("criteria", None), ("expected_exit_code", 0)))]
+    detailed = [(left, right) for left, right in paired
+                if all(row.get("test_results") for row in left + right)]
+    test_detail_regressions = 0
+    for left, right in detailed:
+        required = {identifier for row in left for identifier in row["test_results"]}
+        require_pass = {identifier for row in left for identifier, outcome in row["test_results"].items()
+                        if outcome in ("pass", "fail", "error")}
+        if any(not required.issubset(row["test_results"])
+               or any(row["test_results"].get(identifier) != "pass" for identifier in require_pass)
+               for row in right):
+            test_detail_regressions += 1
+    artifacts = [(left, right) for left, right in paired
+                 if all(isinstance(row.get("artifacts"), dict) and row["artifacts"]
+                        for row in left + right)]
+    evidence = case["evidence"]
+    read = [row for row in evidence if row["access_status"] in ("read", "accessible")]
+    usable = {row["id"] for row in read if row["outcome"] in ("solved_report", "viable_route")}
+    unsupported = [row for row in case["mapping"] if row.get("basis", "external") != "local_code"
+                   and not usable.intersection(row["evidence_ids"])]
+    findings = []
+    if not before:
+        findings.append("no_baseline_checks")
+    if not any(row["result"] == "fail" and row["kind"] in ("reproduction", "benchmark") for row in before):
+        findings.append("no_original_failure_check")
+    if any(row["result"] == "not_run" for row in before):
+        findings.append("baseline_not_run")
+    if attempt_mode and "final_attempt_id" not in validation:
+        findings.append("final_attempt_not_selected")
+    if len(passed) < len(pairs):
+        findings.append("baseline_checks_without_final_pass")
+    if len(comparable) < len(passed):
+        findings.append("final_pass_without_matching_declared_context")
+    if changed_acceptance:
+        findings.append("paired_checks_with_changed_acceptance")
+    if len(detailed) < len(paired):
+        findings.append("paired_checks_without_test_details")
+    if test_detail_regressions:
+        findings.append("baseline_test_ids_missing_or_not_passing")
+    if len(artifacts) < len(paired):
+        findings.append("paired_checks_without_declared_artifacts")
+    if unsupported:
+        findings.append("external_mappings_without_read_support")
+    if any(row["status"] in ("planned", "blocked", "unavailable", "access_blocked") for row in case["searches"]):
+        findings.append("search_coverage_incomplete")
+    if any(row["result"] != "pass" for row in final):
+        findings.append("final_checks_not_all_passed")
+    return {
+        "scope": "case_review", "valid": True, "input_error": False,
+        "declared_status": validation["status"], "review_required": True,
+        "checks": {"baseline_checks": len(pairs), "final_paired_checks": len(paired),
+                   "final_passed_checks": len(passed), "paired_with_test_details": len(detailed),
+                   "passed_with_matching_context": len(comparable),
+                   "paired_with_declared_artifacts": len(artifacts),
+                   "paired_with_changed_acceptance": len(changed_acceptance),
+                   "paired_with_test_detail_regressions": test_detail_regressions,
+                   "historical_after_runs": len(after) - len(final)},
+        "evidence": {"records": len(evidence), "read": len(read),
+                     "read_support": len(usable), "lead_only": sum(row["outcome"] == "lead" for row in evidence),
+                     "external_mappings_without_read_support": len(unsupported)},
+        "findings": findings, "notice": REVIEW_NOTICE,
+    }
+
+
+def emit_review(report, output_format):
+    if output_format == "json":
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif not report["valid"]:
+        for error in report["errors"]:
+            print(error, file=sys.stderr)
+    else:
+        print("Declared status: " + report["declared_status"])
+        for section in ("checks", "evidence"):
+            print(section + ":")
+            for key, value in report[section].items():
+                print(f"  {key}: {value}")
+        print("Review prompts: " + (", ".join(report["findings"]) or "none detected"))
+        print(REVIEW_NOTICE)
+
+
 def emit_validation(errors, output_format, input_error=False):
     if output_format == "json":
         print(json.dumps({"valid": not errors, "scope": "record_consistency", "errors": errors,
@@ -607,18 +758,40 @@ def _recall_document(case):
     return "\n".join(_recall_excerpt(field, 1000) for field in fields)[:10000]
 
 
-def _recall_read(path):
+def plain_stat(metadata, kind):
+    # Windows junctions and other reparse points are not ordinary local entries.
+    reparse = getattr(metadata, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return kind(metadata.st_mode) and not reparse
+
+
+def _read_regular_file(path, maximum):
+    # Preflight also rejects symlinks on platforms without O_NOFOLLOW.
+    initial = os.lstat(path)
+    if not plain_stat(initial, stat.S_ISREG):
+        return None, "non_regular"
     # O_NOFOLLOW protects the final path component where supported; the directory
     # walk also excludes links. Nonblocking open avoids a raced-in FIFO on POSIX.
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     with os.fdopen(os.open(path, flags), "rb") as handle:
         metadata = os.fstat(handle.fileno())
-        if not stat.S_ISREG(metadata.st_mode):
+        if not plain_stat(metadata, stat.S_ISREG):
             return None, "non_regular"
-        if metadata.st_size > RECALL_MAX_FILE_BYTES:
+        if (initial.st_dev, initial.st_ino) != (metadata.st_dev, metadata.st_ino):
+            return None, "unreadable"
+        if metadata.st_size > maximum:
             return None, "oversized"
-        data = handle.read(RECALL_MAX_FILE_BYTES + 1)
-    return (None, "oversized") if len(data) > RECALL_MAX_FILE_BYTES else (data, None)
+        data = handle.read(maximum + 1)
+        final = os.fstat(handle.fileno())
+        if len(data) > maximum:
+            return None, "oversized"
+        if (metadata.st_size != len(data) or final.st_size != metadata.st_size
+                or final.st_mtime_ns != metadata.st_mtime_ns):
+            return None, "unreadable"
+    return data, None
+
+
+def _recall_read(path):
+    return _read_regular_file(path, RECALL_MAX_FILE_BYTES)
 
 
 def _recall_summary(case, filename, requested_version):
@@ -668,7 +841,7 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
     component, version = component.strip().casefold(), version.strip()
     try:
         directory = Path(cases_dir)
-        if directory.is_symlink() or not directory.is_dir():
+        if not plain_stat(directory.lstat(), stat.S_ISDIR):
             raise RecallInputError("directory")
         entries = []
         with os.scandir(directory) as scan:
@@ -700,8 +873,7 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
             skipped[issue] += 1
             continue
         try:
-            case = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_json_object, parse_constant=reject_json_constant)
-            canonical = json.dumps(case, sort_keys=True, ensure_ascii=False, allow_nan=False).encode("utf-8")
+            case, canonical = decode_case_bytes(raw)
         except (ValueError, RecursionError):
             skipped["invalid_json"] += 1
             continue
@@ -804,6 +976,8 @@ def main(argv=None):
     query_parser.add_argument("--language", action="append", choices=LANGUAGE_IDS, help="筛选查询语言，可重复；按首次指定的顺序生成，默认 en、zh")
     query_parser.add_argument("--limit", type=int, help="最多生成的候选查询数，须为正整数；不代表实际联网预算")
     query_parser.add_argument("--repo", help="公开仓库 owner/name；仅缩小 GitHub issues 和 pull request 查询路径，不检查仓库是否存在")
+    query_parser.add_argument("--strategy", choices=("source_order", "balanced"), default="source_order",
+                              help="balanced 交错错误匹配与机制检索，先覆盖各来源再补充语言；不代表相关性排序")
     query_parser.add_argument("--format", choices=("json", "markdown"), default="json")
     recall_parser = commands.add_parser("recall", help="离线检索显式目录中的历史案例线索", description=RECALL_NOTICE)
     recall_parser.add_argument("--cases-dir", required=True, type=Path, help="只读直接子层普通 JSON；拒绝目录本身及其条目的符号链接，祖先路径按系统规则解析")
@@ -815,13 +989,25 @@ def main(argv=None):
     init_parser = commands.add_parser("init", help="创建 blocked 案例模板，不覆盖已有文件")
     init_parser.add_argument("--output", required=True, type=Path)
     validate_parser = commands.add_parser("validate", help="检查记录结构，不证明实际修复")
-    validate_parser.add_argument("file", type=Path)
+    validate_parser.add_argument("file", type=Path, help="普通 UTF-8 JSON 文件（非符号链接，最多 4 MiB）")
     validate_parser.add_argument("--format", choices=("text", "json"), default="text", help="文本诊断或供 CI 使用的 JSON 结果")
+    review_parser = commands.add_parser("review", help="Summarize declared evidence and comparison gaps (no score)")
+    review_parser.add_argument("file", type=Path, help="Regular UTF-8 JSON file, at most 4 MiB")
+    review_parser.add_argument("--format", choices=("text", "json"), default="json")
     args = parser.parse_args(argv)
+
+    def record_input_error(message):
+        if args.command == "review":
+            emit_review({"scope": "case_review", "valid": False, "input_error": True,
+                         "errors": [message], "notice": REVIEW_NOTICE}, args.format)
+        else:
+            emit_validation([message], args.format, input_error=True)
+        return 2
+
     try:
         if args.command == "queries":
             plan = make_queries(args.error, args.component, args.version, args.concept, args.source,
-                                args.language, args.limit, args.repo)
+                                args.language, args.limit, args.repo, args.strategy)
             if args.format == "json":
                 print(json.dumps(plan, ensure_ascii=False, indent=2))
             else:
@@ -851,15 +1037,21 @@ def main(argv=None):
                 handle.write("\n")
             print("已创建案例模板；初始状态为 blocked。")
         else:
-            with args.file.open(encoding="utf-8") as handle:
-                case = json.load(handle, object_pairs_hook=unique_json_object, parse_constant=reject_json_constant)
+            data, issue = _read_regular_file(args.file, VALIDATE_MAX_FILE_BYTES)
+            if issue:
+                return record_input_error("案例必须是普通文件且不超过 4 MiB；未回显路径。")
+            case, _canonical = decode_case_bytes(data)
+            if args.command == "review":
+                report = review_case(case)
+                emit_review(report, args.format)
+                return 0 if report["valid"] else 1
             errors = validate_case(case)
             emit_validation(errors, args.format)
             return 1 if errors else 0
         return 0
     except (ValueError, RecursionError):
-        if args.command == "validate":
-            emit_validation(["案例 JSON 格式、编码或嵌套层级无效；未回显内容。"], args.format, input_error=True)
+        if args.command in {"validate", "review"}:
+            return record_input_error("案例 JSON 格式、编码或嵌套层级无效；未回显内容。")
         else:
             print("查询参数无效、描述为空或含可能的凭据、非公开地址；请检查参数并脱敏。" + NOTICE, file=sys.stderr)
         return 2
@@ -868,8 +1060,8 @@ def main(argv=None):
         return 2
     except OSError:
         message = "文件操作失败；请检查输入文件、目录和权限。未回显路径。"
-        if args.command == "validate":
-            emit_validation([message], args.format, input_error=True)
+        if args.command in {"validate", "review"}:
+            return record_input_error(message)
         else:
             print(message, file=sys.stderr)
         return 2

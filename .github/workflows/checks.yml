@@ -7,12 +7,27 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUTF8: '1'
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
-        python: ['3.10', '3.13']
+        os: [ubuntu-latest]
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        include:
+          - os: windows-latest
+            python: '3.13'
+          - os: macos-latest
+            python: '3.13'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -22,17 +37,35 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m unittest discover -s tests -v
       - run: python -m unittest discover -s examples/streaming-metrics -v
-      - name: Record and retrieve a reproducible repair case
+      - name: Record, review, retrieve and verify a reproducible repair case
+        if: runner.os == 'Linux'
+        shell: bash
         run: |
-          python examples/streaming-metrics/record_case.py --output "$RUNNER_TEMP/research-to-fix-case"
-          python skills/research-to-fix/scripts/research_case.py validate "$RUNNER_TEMP/research-to-fix-case/case.json" --format json
-          python skills/research-to-fix/scripts/research_case.py recall --cases-dir "$RUNNER_TEMP/research-to-fix-case" --error 'single-use iterator count mean' --format json > "$RUNNER_TEMP/research-to-fix-recall.json"
+          case_dir="$RUNNER_TEMP/research-to-fix-case"
+          script_dir=skills/research-to-fix/scripts
+          python examples/streaming-metrics/record_case.py --output "$case_dir"
+          python "$script_dir/research_case.py" validate "$case_dir/case.json" --format json
+          python "$script_dir/research_case.py" review "$case_dir/case.json" --format json > "$RUNNER_TEMP/research-to-fix-review.json"
+          python "$script_dir/research_case.py" recall --cases-dir "$case_dir" --error 'single-use iterator count mean' --format json > "$RUNNER_TEMP/research-to-fix-recall.json"
+          artifacts=()
+          for phase in before after; do
+            for snapshot in metrics.py test_metrics.py test_metrics_streaming.py _record_tests.py; do
+              artifacts+=(--artifact "runs/$phase/$snapshot")
+            done
+          done
+          python "$script_dir/case_bundle.py" seal --directory "$case_dir" "${artifacts[@]}" > "$RUNNER_TEMP/research-to-fix-seal.json"
+          manifest_hash=$(python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["manifest_sha256"])' "$RUNNER_TEMP/research-to-fix-seal.json")
+          python "$script_dir/case_bundle.py" verify --directory "$case_dir" --expected-manifest-sha256 "$manifest_hash" > "$RUNNER_TEMP/research-to-fix-verify.json"
       - name: Save example run artifacts
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: repair-case-python-${{ matrix.python }}
           path: |
             ${{ runner.temp }}/research-to-fix-case/
             ${{ runner.temp }}/research-to-fix-recall.json
+            ${{ runner.temp }}/research-to-fix-review.json
+            ${{ runner.temp }}/research-to-fix-seal.json
+            ${{ runner.temp }}/research-to-fix-verify.json
           retention-days: 7
           if-no-files-found: error

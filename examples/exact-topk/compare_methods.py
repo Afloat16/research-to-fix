@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exact top-k vector search: measured alternative mechanisms under a locked protocol."""
 import argparse
+import hashlib
 import heapq
 import json
 from pathlib import Path
@@ -140,18 +141,25 @@ def experiment(output):
             row.update(applicability="adapted", applicability_note="Same exact ordered distance semantics; tested",
                        license_status="not_copied", license_note="Independent implementation using stdlib API")
         candidates[name] = row
+    measurement_dir = output / "measurements"
+    measurement_dir.mkdir()
     names = list(METHODS)
     for i, seed in enumerate(SEEDS):
         vectors, query = inputs(seed)
         expected = oracle(vectors, query, K)
         for name in names[i % len(names):] + names[:i % len(names)]:
             metrics, checks, observed = measure(vectors, query, METHODS[name], expected)
-            candidates[name]["runs"].append({"replicate": f"seed-{seed}", "variant_id": name,
-                                             "command": COMMAND, "exit_code": 0,
-                                             "metrics": metrics, "checks": checks, "observed": observed})
+            run = {"replicate": f"seed-{seed}", "variant_id": name,
+                   "command": COMMAND, "exit_code": 0, "metrics": metrics,
+                   "checks": checks, "observed": observed}
+            filename = f"measurements/{name}-seed-{seed}.json"
+            w.write_json(sc.measurement_record(name, lock["protocol_sha256"], run), output / filename)
+            run["measurement_artifact"] = {"path": filename,
+                                           "sha256": hashlib.sha256((output / filename).read_bytes()).hexdigest()}
+            candidates[name]["runs"].append(run)
     comparison = {"schema_version": 2, "protocol": protocol, "evidence": evidence,
                   "candidates": list(candidates.values())}
-    report = sc.compare(comparison, lock)
+    report = sc.compare(comparison, lock, output)
     if not all(row["eligible"] for row in report["candidates"]):
         raise RuntimeError("exact_topk_regression")
     w.write_json(comparison, output / "comparison.json")
@@ -167,6 +175,7 @@ def main():
     report = experiment(args.output)
     print(json.dumps({"experiment": "exact-topk-v2", "replicates": report["replicates"],
                       "protocol_lock_checked": report["protocol_lock_checked"],
+                      "measurement_artifacts": report["measurement_artifacts"],
                       "frontier": report["pareto_frontier"], "decision": report["decision"],
                       "candidates": {row["id"]: row["metrics"] for row in report["candidates"]}}, indent=2))
 

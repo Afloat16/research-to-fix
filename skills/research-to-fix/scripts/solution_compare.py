@@ -8,6 +8,7 @@ import statistics
 import sys
 from pathlib import Path
 
+import case_bundle as bundle
 import research_case as core
 import research_workflow as w
 
@@ -20,6 +21,8 @@ MAX_REPLICATES = 64
 MAX_OBJECTIVES = 12
 MAX_CHECKS = 24
 MAX_ABS = 1e100
+MAX_MEASUREMENT_BYTES = 64 * 1024
+MAX_MEASUREMENT_TOTAL = 32 * 1024 * 1024
 STATES = ("planned", "blocked", "measured")
 BASIS = ("baseline", "local", "external", "mixed")
 
@@ -296,7 +299,54 @@ def paired_delta(base, other, spec):
     return result
 
 
-def compare(value, lock=None):
+def measurement_record(candidate_id, protocol_sha256, run):
+    """Canonical, independent structured measurement file for one replicate.
+
+    This binds values to a local file; it does not authenticate who produced
+    that file or establish that a command was really executed.
+    """
+    return {"schema_version": 1, "candidate_id": identifier(candidate_id),
+            "protocol_sha256": protocol_sha256, "variant_id": identifier(run.get("variant_id")),
+            "replicate": identifier(run.get("replicate")), "command": command_text(run.get("command")),
+            "exit_code": run.get("exit_code"), "metrics": w.object_(run.get("metrics")),
+            "checks": w.object_(run.get("checks")), "observed": w.text(run.get("observed"), 800)}
+
+
+def verify_measurements(value, directory, protocol_sha256):
+    root = bundle.checked_root(directory)
+    seen, total = set(), 0
+    for candidate_row in rows(value.get("candidates"), MAX_CANDIDATES, 2):
+        key = identifier(candidate_row.get("id"))
+        for run in rows(candidate_row.get("runs", []), MAX_REPLICATES):
+            artifact = run.get("measurement_artifact")
+            if not isinstance(artifact, dict) or set(artifact) != {"path", "sha256"}:
+                w.fail("measurement_artifact_required")
+            name = bundle.portable_path(artifact["path"])
+            fingerprint = artifact["sha256"]
+            if name.casefold() in seen or not bundle.valid_digest(fingerprint):
+                w.fail("invalid_measurement_artifact")
+            seen.add(name.casefold())
+            raw = bundle.read_member(root, name, MAX_MEASUREMENT_BYTES)
+            total += len(raw)
+            if total > MAX_MEASUREMENT_TOTAL:
+                w.fail("measurement_artifact_limit")
+            if hashlib.sha256(raw).hexdigest() != fingerprint:
+                w.fail("measurement_artifact_digest_mismatch")
+            actual, _ = core.decode_case_bytes(raw)
+            expected = measurement_record(key, protocol_sha256, run)
+            if type(expected["exit_code"]) is not int:
+                w.fail("measurement_exit_code_required")
+            # Canonical serialization avoids Python bool/int equality and
+            # preserves the declared metrics and exact command semantics.
+            encode = lambda obj: json.dumps(obj, sort_keys=True, ensure_ascii=True,
+                                           separators=(",", ":"), allow_nan=False)
+            if encode(actual) != encode(expected):
+                w.fail("measurement_artifact_content_mismatch")
+    return {"checked": True, "files": len(seen), "bytes": total,
+            "scope": "local file digest and structured value consistency, not proof of execution"}
+
+
+def compare(value, lock=None, artifact_root=None):
     value = w.object_(value)
     version = value.get("schema_version")
     if type(version) is not int or version not in (1, 2):
@@ -308,6 +358,10 @@ def compare(value, lock=None):
         w.fail("protocol_lock_mismatch")
     if version == 2 and lock is None:
         w.fail("protocol_lock_required")
+    if artifact_root is not None and version != 2:
+        w.fail("measurement_artifacts_require_v2")
+    measurement_status = (verify_measurements(value, artifact_root, digest) if artifact_root is not None
+                          else {"checked": False, "files": 0})
     evidence = evidence_records(value.get("evidence", []))
     candidates, runs = [], {}
     for row in rows(value.get("candidates"), MAX_CANDIDATES, 2):
@@ -362,9 +416,12 @@ def compare(value, lock=None):
         warnings.append("unmeasured_options_remain")
     if lock is None:
         warnings.append("no_independent_protocol_lock_checked")
+    if artifact_root is None:
+        warnings.append("measurement_artifacts_not_checked")
     return {"schema_version": 1, "scope": "conditional_measured_comparison", "notice": NOTICE,
             "protocol_id": spec["id"], "protocol_sha256": digest, "protocol_lock_checked": lock is not None,
             "dominance_mode": spec["dominance_mode"], "replicates": len(spec["replicates"]),
+            "measurement_artifacts": measurement_status,
             "objectives": spec["objectives"], "declared_priority": spec["priority"],
             "baseline": baseline["id"], "decision": decision, "selected_candidate": selected,
             "pareto_frontier": [row["id"] for row in frontier],
@@ -378,16 +435,17 @@ def main(argv=None):
     operation.add_argument("--comparison", type=Path)
     operation.add_argument("--freeze-protocol", type=Path, help="Freeze the declared protocol before measurement")
     parser.add_argument("--protocol-lock", type=Path, help="Independently retained protocol lock (required for schema v2)")
+    parser.add_argument("--artifact-root", type=Path, help="Verify every v2 replicate measurement JSON against its declared SHA-256 and values")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
         if args.freeze_protocol:
-            if args.protocol_lock:
-                w.fail("unexpected_protocol_lock")
+            if args.protocol_lock or args.artifact_root:
+                w.fail("unexpected_protocol_lock_or_artifacts")
             result = protocol_lock(w.read_json(args.freeze_protocol))
         else:
             result = compare(w.read_json(args.comparison),
-                             w.read_json(args.protocol_lock) if args.protocol_lock else None)
+                             w.read_json(args.protocol_lock) if args.protocol_lock else None, args.artifact_root)
         w.write_json(result, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

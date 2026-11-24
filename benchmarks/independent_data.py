@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Fetch only pinned public BEIR files, never user data; benchmark-only."""
 import argparse
+import csv
+import io
 import hashlib
 import gzip
 import json
@@ -127,13 +129,83 @@ def fetch_jsonl(dataset, output):
     return manifest
 
 
+NASA_REVISION = "f26b9c9a4060d759b0ae44354059b37387dd414e"
+NASA_BASE = "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/" + NASA_REVISION + "/"
+
+
+def nasa_records(corpus, queries, qrels):
+    """Use the declared name and README only, never judgment URLs/metadata."""
+    docs = [{"_id": str(row["_id"]), "title": row.get("title") or row.get("name") or "",
+             "text": row.get("text") or ""} for row in corpus]
+    questions = [{"_id": "query:" + str(row["_id"]), "text": row["text"]} for row in queries]
+    doc_ids = {row["_id"] for row in docs}
+    query_ids = {row["_id"] for row in questions}
+    if len(doc_ids) != len(docs) or len(query_ids) != len(questions):
+        raise ValueError("Duplicate NASA IDs")
+    pairs = set()
+    for data in qrels:
+        for row in csv.DictReader(io.StringIO(data.decode("utf-8")), delimiter="\t"):
+            qid, did = "query:" + row["query-id"], row["corpus-id"]
+            if qid not in query_ids or did not in doc_ids:
+                raise ValueError("NASA qrel ID outside corpus/query set")
+            if int(row["score"]) > 0:
+                pairs.add((qid, did))
+    if not pairs:
+        raise ValueError("No positive NASA judgments")
+    return docs, questions, pairs
+
+
+def fetch_nasa(output):
+    output.mkdir(parents=True, exist_ok=False)
+    raw = {}
+    original = {}
+    for name, limit in (("corpus.jsonl", 128 * 1024 * 1024), ("queries.jsonl", 1024 * 1024),
+                        ("qrels/earth.tsv", 1024 * 1024), ("qrels/astro.tsv", 1024 * 1024),
+                        ("qrels/planetary.tsv", 1024 * 1024)):
+        raw[name], original[name] = download_bytes(NASA_BASE + name, limit)
+        print("NASA", name, original[name]["sha256"], flush=True)
+    docs, queries, pairs = nasa_records(
+        (json.loads(line) for line in raw["corpus.jsonl"].splitlines() if line.strip()),
+        (json.loads(line) for line in raw["queries.jsonl"].splitlines() if line.strip()),
+        [raw["qrels/" + division + ".tsv"] for division in ("earth", "astro", "planetary")])
+    if len(docs) != 5264 or len(queries) != 219:
+        raise ValueError("NASA advertised counts mismatch")
+    files = {}
+    for name, records in (("corpus.jsonl", docs), ("queries.jsonl", queries)):
+        target = output / name
+        with target.open("x", encoding="utf-8", newline="\n") as out:
+            for row in records:
+                out.write(json.dumps(row, ensure_ascii=True, separators=(",", ":")) + "\n")
+        files[name] = {"sha256": hashlib.sha256(target.read_bytes()).hexdigest(), "rows": len(records)}
+    (output / "qrels").mkdir()
+    target = output / "qrels" / "test.tsv"
+    with target.open("x", encoding="utf-8", newline="\n") as out:
+        out.write("query-id\tcorpus-id\tscore\n")
+        for qid, did in sorted(pairs):
+            out.write(qid + "\t" + did + "\t1\n")
+    files["test.tsv"] = {"sha256": hashlib.sha256(target.read_bytes()).hexdigest(), "rows": len(pairs)}
+    manifest = {"dataset": "nasa", "source": "NASA IMPACT Science Repos SME Benchmark",
+                "license": "Dataset card: Apache-2.0; source repository content retains its own terms",
+                "revision": NASA_REVISION, "expected_documents": 5264,
+                "expected_test_queries": len({qid for qid, _ in pairs}),
+                "published_queries": 219,
+                "unjudged_queries": 219 - len({qid for qid, _ in pairs}),
+                "fields": "title/name and text (README); no query metadata, qrel URLs or enriched context",
+                "files": files, "original_downloads": original}
+    (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset", choices=DATASETS, required=True)
+    parser.add_argument("--dataset", choices=(*DATASETS, "nasa"), required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--format", choices=("jsonl", "parquet"), default="jsonl")
     args = parser.parse_args()
-    (fetch_jsonl if args.format == "jsonl" else fetch)(args.dataset, args.output)
+    if args.dataset == "nasa":
+        fetch_nasa(args.output)
+    else:
+        (fetch_jsonl if args.format == "jsonl" else fetch)(args.dataset, args.output)
 
 
 if __name__ == "__main__":

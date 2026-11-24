@@ -44,7 +44,7 @@ class AgentTrialTests(unittest.TestCase):
     def test_fixed_denominator_and_paired_cluster(self):
         lock = a.freeze(protocol())
         with tempfile.TemporaryDirectory() as temp:
-            base, skill = Path(temp) / "baseline", Path(temp) / "skill"
+            base, skill = Path(temp).resolve() / "baseline", Path(temp).resolve() / "skill"
             arm(base, lock, "baseline", False)
             arm(skill, lock, "skill", True)
             result = a.summarize(lock, base, skill)
@@ -57,7 +57,7 @@ class AgentTrialTests(unittest.TestCase):
     def test_patch_mismatch_and_overbudget(self):
         lock = a.freeze(protocol())
         with tempfile.TemporaryDirectory() as temp:
-            base, skill = Path(temp) / "baseline", Path(temp) / "skill"
+            base, skill = Path(temp).resolve() / "baseline", Path(temp).resolve() / "skill"
             arm(base, lock, "baseline", False)
             arm(skill, lock, "skill", True)
             write(skill / "seed-1" / "usage.json", {"repo__a-1": {"tokens": 1001, "tool_calls": 2, "seconds": 3}})

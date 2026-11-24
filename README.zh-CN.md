@@ -17,6 +17,13 @@
 
 创意与工作流设计：[Afloat16](https://github.com/Afloat16)。MIT 开源。**不要求 Python 第三方运行时依赖、托管搜索服务或向量模型。**
 
+
+## 外部保留集实测 — 检索性能证据
+
+![外部保留集排序性能与配对区间](docs/figures/independent-holdout.zh-CN.svg)
+
+**84,892 篇文档 · 1,864 条有标签保留查询 · 四套公开语料。** 可选 `precision_field` 融合精确词、词干、有序短语及独立字段归一。在程序设计（+11.52%）、统计学（+11.49%）和 NASA（+8.32%）中，相对开发集预选的 SQLite 对照，nDCG@10 的逐数据集配对 95% 区间为正。SciFact 未证明确切优势，SQLite Porter 的实测分数最高；统计学的旧 Contextual 仍最高。相对旧 Contextual 的四组区间均跨零，因此不替换默认模式。索引构建仍较慢。[实测 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45359141496) · [完整证据与复现实验](benchmarks/INDEPENDENT_RESULTS.md) · [冻结报告](docs/figures/independent-snapshot.json)。
+
 ## v1.0.0 — 多轮研究与可核验决策
 
 ![v1.0.0 论文—代码配对排序、模拟调度和精确注意力实测](docs/figures/release-v1.zh-CN.svg)
@@ -166,6 +173,7 @@ python skills/research-to-fix/scripts/research_case.py recall-batch \
 | `stemmed` | 英文词形变化影响相似问题匹配 |
 | `hybrid` | 同时保留精确技术词与词干特征 |
 | `contextual` | 尝试有序短语信号 |
+| `precision_field` | 精确词、词干、短语与独立字段归一（可选） |
 
 具体限制、评分解释及快照行为见[本地案例复用指南](skills/research-to-fix/references/case-reuse.md)。任何排序均不证明修复正确性。
 

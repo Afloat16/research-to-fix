@@ -23,7 +23,7 @@ concurrency:
 jobs:
   offline:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     env:
       PYTHONUTF8: '1'
     steps:
@@ -53,14 +53,6 @@ jobs:
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
       - name: Measure provider scheduler with mock transport
         run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
-      - name: Run frozen external holdouts (explicit branch experiment)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/independent-benchmark-v1.1'
-        run: python benchmarks/independent_suite.py --selection benchmarks/independent_selection.json --output "$RUNNER_TEMP/independent-final"
-      - name: Verify precision extraction parity on real corpus (explicit test branch)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/test/precision-field-integration'
-        run: |
-          python benchmarks/independent_data.py --dataset programmers --output "$RUNNER_TEMP/programmers"
-          python benchmarks/tokenizer_benchmark.py --data "$RUNNER_TEMP/programmers" --output "$RUNNER_TEMP/precision-parity.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -76,8 +68,5 @@ jobs:
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
             ${{ runner.temp }}/discovery-schedule.json
-            ${{ runner.temp }}/independent-final/*.json
-            ${{ runner.temp }}/independent-final/*/manifest.json
-            ${{ runner.temp }}/precision-parity.json
           retention-days: 14
           if-no-files-found: warn

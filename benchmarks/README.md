@@ -87,3 +87,5 @@ The separate explicitly approved public known-item probe ran six requests in [CI
 See [INDEPENDENT_PROTOCOL.md](INDEPENDENT_PROTOCOL.md) and [independent_selection.json](independent_selection.json) for development selection and frozen external datasets, scoring rules and exact measured development results. Use `python benchmarks/independent_suite.py --selection benchmarks/independent_selection.json --output /path/to/new-output` only when authorized to download those public datasets. The suite records failures without inventing scores. Ordinary CI remains offline. Run `python benchmarks/tokenizer_benchmark.py --data /path/to/downloaded/programmers --output tokenizer.json` for paired exact-token parity and timing.
 
 [AGENT_TRIAL_PROTOCOL.md](AGENT_TRIAL_PROTOCOL.md) defines a distinct same-model, same-scaffold, same-budget SWE-bench evaluation. Its offline result importer does not run models or repairs and its synthetic tests are not repair success measurements.
+
+[Completed independent holdout results](INDEPENDENT_RESULTS.md) include all four datasets and six frozen methods, full uncertainty and cost tradeoffs, plus actual CI provenance.

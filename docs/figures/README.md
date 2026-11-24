@@ -18,3 +18,7 @@ Regenerate from the repository root with `node docs/figures/render.cjs`. Check c
 ## v1.0.0 release figure
 
 `release-v1*.svg` uses the frozen printed reports in [v1-snapshot.json](v1-snapshot.json) from [offline CI run 45355977079](https://github.com/Afloat16/research-to-fix/actions/runs/45355977079) (job 138313769739, commit `618413f03a715cfb5573bc0f655d92d931d9db95`). A separate earlier authorized [known-item probe](https://github.com/Afloat16/research-to-fix/actions/runs/45355435962) is retained in the JSON, not mixed into offline latency. Regenerate/check using `node docs/figures/render-v1.cjs [--check]`. The two curated algorithm corpora, mock transport, and tiny exact-attention example do not establish general agent repair success or GPU performance.
+
+## External holdout figure
+
+`independent-holdout*.svg` is rendered from `independent-snapshot.json`: actual holdout run 45359141496 (job 138324408563) and parity run 45360121033 (job 138327753247). `node docs/figures/render-independent.cjs --check` verifies deterministic SVGs. Three selected methods are visualized, all six are preserved in the JSON and full report. Pointwise bootstrap intervals are unadjusted; not agent repair scores.

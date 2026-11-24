@@ -1,0 +1,1357 @@
+{
+  "schema": 1,
+  "scope": "Revision-pinned external retrieval holdouts with frozen development selection; not agent repair success",
+  "sources": {
+    "holdout": {
+      "run": 45359141496,
+      "job": 138324408563,
+      "commit": "0b826705016a1dadce95f02fddfd23c0ff8fe599"
+    },
+    "tokenizer": {
+      "run": 45360121033,
+      "job": 138327753247,
+      "commit": "bb7985be55e19f05f476c36ce29f48f63fde7eaa"
+    },
+    "development": {
+      "run": 45358476313,
+      "commit": "5c92f598246350e174ff7fda7fc03bf48cf47b98"
+    }
+  },
+  "status": {
+    "selection_sha256": "b4fae56543b692ae9bb71fcaf5378e05dd91a6a62b245bcf54e8a1348f291048",
+    "datasets": {
+      "programmers": {
+        "status": "completed",
+        "documents": 32176,
+        "queries": 700,
+        "report_sha256": "c838e51fb66c37405b8c9c992863fbc40604ba4348662911a888f72a64c12707"
+      },
+      "stats": {
+        "status": "completed",
+        "documents": 42269,
+        "queries": 652,
+        "report_sha256": "cb29b9762ef9d2e9ec4dbe22bb0d12eb2539bb9bec1c463752b8fcbac370247a"
+      },
+      "scifact": {
+        "status": "completed",
+        "documents": 5183,
+        "queries": 300,
+        "report_sha256": "c929fb1ad35290115b6cc489755bdcb87b97f3e6abf2f1dafbaf1b40566f08ce"
+      },
+      "nasa": {
+        "status": "completed",
+        "documents": 5264,
+        "queries": 212,
+        "report_sha256": "d979409fa808e2aee586fa8edef493e113a07e8e07cad75339f27949ead4232c"
+      }
+    }
+  },
+  "reports": {
+    "programmers": {
+      "dataset": {
+        "dataset": "programmers",
+        "license": "CC-BY-SA-4.0",
+        "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+        "expected_documents": 32176,
+        "expected_test_queries": 876,
+        "files": {
+          "corpus.jsonl": {
+            "sha256": "4e39fcc5f440806ad643aee67cad2d17c227fa29c81c121a079ee398a8d64f3e",
+            "rows": 32176
+          },
+          "queries.jsonl": {
+            "sha256": "f80e8c3b7aadd8c17f573571093713e9877f7d54a1c73a4b32de9edd92eff0f0",
+            "rows": 876
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/programmers/test.tsv",
+            "sha256": "ed69afa873c64d34298792d694c82c4293e4b7e3c6ea3edc7a73662d4b0cba76",
+            "bytes": 27053
+          }
+        },
+        "original_downloads": {
+          "corpus.jsonl.gz": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/cqadupstack-programmers.jsonl.gz",
+            "sha256": "2779027fdaaa5f578d9b8fe6488937bc3a042e387e927f20dbd0135ac1edf90d",
+            "bytes": 12668400
+          },
+          "queries.jsonl": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/cqadupstack-programmers.jsonl",
+            "sha256": "fcecbac2e3f7d86be8cc463f1bb49fa35d276f35e3a294bbec84c79c1f7a3065",
+            "bytes": 77881
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/programmers/test.tsv",
+            "sha256": "ed69afa873c64d34298792d694c82c4293e4b7e3c6ea3edc7a73662d4b0cba76",
+            "bytes": 27053
+          }
+        },
+        "split": "holdout",
+        "partition_rule": "r2f-independent-v1:2026-11-24:sha256 first 32 bits mod 5 == 0"
+      },
+      "documents": 32176,
+      "queries": 700,
+      "k": 10,
+      "methods": {
+        "precision_field4": {
+          "mrr@10": 0.3277568027210884,
+          "ndcg@10": 0.32029192938539375,
+          "recall@10": 0.3912068171787731,
+          "hit@10": 0.4614285714285714,
+          "build_ms": 39876.342285,
+          "query_p50_ms": 39.1724365,
+          "query_p95_ms": 95.157159,
+          "total_query_ms": 31596.919289
+        },
+        "sqlite_unicode4": {
+          "mrr@10": 0.29025963718820863,
+          "ndcg@10": 0.28721731702529474,
+          "recall@10": 0.36026865802249314,
+          "hit@10": 0.42714285714285716,
+          "build_ms": 3011.350533,
+          "query_p50_ms": 40.2918375,
+          "query_p95_ms": 73.840234,
+          "total_query_ms": 27732.104331
+        },
+        "v1_contextual": {
+          "mrr@10": 0.3251626984126984,
+          "ndcg@10": 0.3189527747732166,
+          "recall@10": 0.39426407341460074,
+          "hit@10": 0.4657142857142857,
+          "build_ms": 25981.409916,
+          "query_p50_ms": 30.847812,
+          "query_p95_ms": 71.199878,
+          "total_query_ms": 25624.952251
+        },
+        "v1_bm25": {
+          "mrr@10": 0.2923174603174603,
+          "ndcg@10": 0.2902589957790378,
+          "recall@10": 0.3642839641449421,
+          "hit@10": 0.42857142857142855,
+          "build_ms": 5585.284195,
+          "query_p50_ms": 26.431330000000003,
+          "query_p95_ms": 69.915934,
+          "total_query_ms": 20909.908993
+        },
+        "sqlite_unicode": {
+          "mrr@10": 0.2877641723356009,
+          "ndcg@10": 0.28813031712805104,
+          "recall@10": 0.36979246754630263,
+          "hit@10": 0.4342857142857143,
+          "build_ms": 2979.048542,
+          "query_p50_ms": 40.570153,
+          "query_p95_ms": 73.494201,
+          "total_query_ms": 27867.930392
+        },
+        "sqlite_porter": {
+          "mrr@10": 0.29960714285714285,
+          "ndcg@10": 0.30019394263084476,
+          "recall@10": 0.381768041668569,
+          "hit@10": 0.45,
+          "build_ms": 2956.458617,
+          "query_p50_ms": 45.532133,
+          "query_p95_ms": 76.706913,
+          "total_query_ms": 31192.170517
+        }
+      },
+      "paired_ndcg": {
+        "precision_field4_vs_sqlite_porter": {
+          "mean_delta": 0.020097986754548977,
+          "ci95_low": 0.007056343378499777,
+          "ci95_high": 0.03440822288318336,
+          "win": 121,
+          "tie": 497,
+          "loss": 82,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode": {
+          "mean_delta": 0.03216161225734267,
+          "ci95_low": 0.020455462316432336,
+          "ci95_high": 0.04440899017929527,
+          "win": 119,
+          "tie": 527,
+          "loss": 54,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode4": {
+          "mean_delta": 0.03307461236009901,
+          "ci95_low": 0.02164936903389584,
+          "ci95_high": 0.044930449128090875,
+          "win": 118,
+          "tie": 534,
+          "loss": 48,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_v1_contextual": {
+          "mean_delta": 0.0013391546121771492,
+          "ci95_low": -0.007741682827177993,
+          "ci95_high": 0.01080743090603107,
+          "win": 92,
+          "tie": 532,
+          "loss": 76,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_porter": {
+          "mean_delta": -0.01297662560555003,
+          "ci95_low": -0.026431151684619687,
+          "ci95_high": 0.00003299391901288215,
+          "win": 94,
+          "tie": 502,
+          "loss": 104,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_unicode": {
+          "mean_delta": -0.0009130001027563402,
+          "ci95_low": -0.00610575291867106,
+          "ci95_high": 0.00433897131832646,
+          "win": 49,
+          "tie": 590,
+          "loss": 61,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_v1_contextual": {
+          "mean_delta": -0.03173545774792186,
+          "ci95_low": -0.046319070587165286,
+          "ci95_high": -0.017530973942078053,
+          "win": 70,
+          "tie": 511,
+          "loss": 119,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_porter": {
+          "mean_delta": 0.01875883214237183,
+          "ci95_low": 0.006128854650827159,
+          "ci95_high": 0.03212210537404285,
+          "win": 105,
+          "tie": 516,
+          "loss": 79,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode": {
+          "mean_delta": 0.03082245764516552,
+          "ci95_low": 0.01645417490498121,
+          "ci95_high": 0.0453644561713902,
+          "win": 122,
+          "tie": 494,
+          "loss": 84,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode4": {
+          "mean_delta": 0.03173545774792186,
+          "ci95_low": 0.017479734487501564,
+          "ci95_high": 0.04620076378046529,
+          "win": 119,
+          "tie": 511,
+          "loss": 70,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_porter": {
+          "mean_delta": -0.009934946851806943,
+          "ci95_low": -0.022832824255358142,
+          "ci95_high": 0.003635836464813119,
+          "win": 104,
+          "tie": 502,
+          "loss": 94,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode": {
+          "mean_delta": 0.002128678650986748,
+          "ci95_low": -0.004159297517272319,
+          "ci95_high": 0.008355424840801894,
+          "win": 75,
+          "tie": 573,
+          "loss": 52,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode4": {
+          "mean_delta": 0.0030416787537430887,
+          "ci95_low": -0.005875406833549936,
+          "ci95_high": 0.011742020438706717,
+          "win": 94,
+          "tie": 540,
+          "loss": 66,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_v1_contextual": {
+          "mean_delta": -0.02869377899417877,
+          "ci95_low": -0.043559272713121405,
+          "ci95_high": -0.014707856396558265,
+          "win": 86,
+          "tie": 498,
+          "loss": 116,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_porter": {
+          "mean_delta": -0.01206362550279369,
+          "ci95_low": -0.025188167103767235,
+          "ci95_high": 0.0004407127008502701,
+          "win": 95,
+          "tie": 509,
+          "loss": 96,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_unicode4": {
+          "mean_delta": 0.0009130001027563402,
+          "ci95_low": -0.00434999304000704,
+          "ci95_high": 0.006060183735042613,
+          "win": 61,
+          "tie": 590,
+          "loss": 49,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_v1_contextual": {
+          "mean_delta": -0.03082245764516552,
+          "ci95_low": -0.04537931631960759,
+          "ci95_high": -0.016647264558656696,
+          "win": 84,
+          "tie": 494,
+          "loss": 122,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode": {
+          "mean_delta": 0.01206362550279369,
+          "ci95_low": -0.00045825810699787656,
+          "ci95_high": 0.02518714879212737,
+          "win": 96,
+          "tie": 509,
+          "loss": 95,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode4": {
+          "mean_delta": 0.01297662560555003,
+          "ci95_low": -0.0001223608451047285,
+          "ci95_high": 0.026396557191681862,
+          "win": 104,
+          "tie": 502,
+          "loss": 94,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_v1_contextual": {
+          "mean_delta": -0.01875883214237183,
+          "ci95_low": -0.03213617064770528,
+          "ci95_high": -0.006168693376852256,
+          "win": 79,
+          "tie": 516,
+          "loss": 105,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        }
+      },
+      "environment": {
+        "python": "3.13.18",
+        "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+        "sqlite": "3.46.1"
+      },
+      "scope": "Full external corpus, binary official qrels, self-ID excluded, same capped document fields. Ranking only; not end-to-end repair or live-search accuracy.",
+      "timing_notice": "v1_* preserves the v1.0.0 scoring/token sequence; later runs use the parity-tested faster tokenizer. Separate same-run tokenizer comparison measures old vs new implementation."
+    },
+    "stats": {
+      "dataset": {
+        "dataset": "stats",
+        "license": "CC-BY-SA-4.0",
+        "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+        "expected_documents": 42269,
+        "expected_test_queries": 652,
+        "files": {
+          "corpus.jsonl": {
+            "sha256": "b010c13b1de9030062c13149e930b6a26ad45a30b850119370ea2215f1d857ec",
+            "rows": 42269
+          },
+          "queries.jsonl": {
+            "sha256": "9d29b96fc0dcc08ec86da7ce746ec0079d7b4e2eba5e341a67e6eb1260b577ae",
+            "rows": 652
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/stats/test.tsv",
+            "sha256": "819b62de1d83923cf83def7f161726e7bff88f69c0840cb391b50c2f7f0f89e8",
+            "bytes": 13648
+          }
+        },
+        "original_downloads": {
+          "corpus.jsonl.gz": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/cqadupstack-stats.jsonl.gz",
+            "sha256": "c3ce74fe9bf8024deb09f1dd6c1812daa1674a3faf0a9a5fce219b2d21c90077",
+            "bytes": 16369368
+          },
+          "queries.jsonl": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/cqadupstack-stats.jsonl",
+            "sha256": "4937ef43aedc8539581d663b715079d59f88f2ce7948d18de839c2d81bdb0204",
+            "bytes": 58316
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/stats/test.tsv",
+            "sha256": "819b62de1d83923cf83def7f161726e7bff88f69c0840cb391b50c2f7f0f89e8",
+            "bytes": 13648
+          }
+        },
+        "split": "all",
+        "partition_rule": "r2f-independent-v1:2026-11-24:sha256 first 32 bits mod 5 == 0"
+      },
+      "documents": 42269,
+      "queries": 652,
+      "k": 10,
+      "methods": {
+        "precision_field4": {
+          "mrr@10": 0.32070247833284643,
+          "ndcg@10": 0.3224929496497752,
+          "recall@10": 0.3860235793518002,
+          "hit@10": 0.4233128834355828,
+          "build_ms": 45923.97566,
+          "query_p50_ms": 40.3492125,
+          "query_p95_ms": 113.571719,
+          "total_query_ms": 31746.882082
+        },
+        "sqlite_unicode4": {
+          "mrr@10": 0.28416289317362936,
+          "ndcg@10": 0.2892613785344513,
+          "recall@10": 0.35999256367354526,
+          "hit@10": 0.3987730061349693,
+          "build_ms": 4678.015537,
+          "query_p50_ms": 42.543808999999996,
+          "query_p95_ms": 90.417783,
+          "total_query_ms": 28825.47877
+        },
+        "v1_contextual": {
+          "mrr@10": 0.3177652400428474,
+          "ndcg@10": 0.32587728796420357,
+          "recall@10": 0.40196664276418875,
+          "hit@10": 0.4386503067484663,
+          "build_ms": 30434.039844,
+          "query_p50_ms": 35.2795775,
+          "query_p95_ms": 88.751294,
+          "total_query_ms": 27292.687585
+        },
+        "v1_bm25": {
+          "mrr@10": 0.2825567241211413,
+          "ndcg@10": 0.2877072562570232,
+          "recall@10": 0.3587996529714321,
+          "hit@10": 0.4003067484662577,
+          "build_ms": 7977.606128,
+          "query_p50_ms": 25.487171,
+          "query_p95_ms": 93.374124,
+          "total_query_ms": 21232.756037
+        },
+        "sqlite_unicode": {
+          "mrr@10": 0.2847526536176843,
+          "ndcg@10": 0.28978424017066234,
+          "recall@10": 0.36050381111730806,
+          "hit@10": 0.401840490797546,
+          "build_ms": 4504.629366,
+          "query_p50_ms": 42.590091,
+          "query_p95_ms": 88.839863,
+          "total_query_ms": 28819.822767
+        },
+        "sqlite_porter": {
+          "mrr@10": 0.28460171389619243,
+          "ndcg@10": 0.2935348316824205,
+          "recall@10": 0.37420214414079445,
+          "hit@10": 0.41411042944785276,
+          "build_ms": 4581.855057,
+          "query_p50_ms": 51.092225,
+          "query_p95_ms": 94.890078,
+          "total_query_ms": 33436.243386
+        }
+      },
+      "paired_ndcg": {
+        "precision_field4_vs_sqlite_porter": {
+          "mean_delta": 0.028958117967354684,
+          "ci95_low": 0.015445776682987153,
+          "ci95_high": 0.042688436313917215,
+          "win": 95,
+          "tie": 506,
+          "loss": 51,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode": {
+          "mean_delta": 0.03270870947911287,
+          "ci95_low": 0.020600036730281174,
+          "ci95_high": 0.04524009135126997,
+          "win": 92,
+          "tie": 518,
+          "loss": 42,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode4": {
+          "mean_delta": 0.03323157111532392,
+          "ci95_low": 0.020629154700001432,
+          "ci95_high": 0.0464174125857473,
+          "win": 92,
+          "tie": 514,
+          "loss": 46,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_v1_contextual": {
+          "mean_delta": -0.0033843383144283676,
+          "ci95_low": -0.013660137674441266,
+          "ci95_high": 0.007202965697701535,
+          "win": 57,
+          "tie": 534,
+          "loss": 61,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_porter": {
+          "mean_delta": -0.004273453147969233,
+          "ci95_low": -0.01739007551958064,
+          "ci95_high": 0.0085596378624383,
+          "win": 76,
+          "tie": 511,
+          "loss": 65,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_unicode": {
+          "mean_delta": -0.0005228616362110508,
+          "ci95_low": -0.005622828762456784,
+          "ci95_high": 0.004604922625132453,
+          "win": 44,
+          "tie": 562,
+          "loss": 46,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_v1_contextual": {
+          "mean_delta": -0.036615909429752284,
+          "ci95_low": -0.05257760638194956,
+          "ci95_high": -0.021105037750389747,
+          "win": 62,
+          "tie": 488,
+          "loss": 102,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_porter": {
+          "mean_delta": 0.032342456281783054,
+          "ci95_low": 0.01981339261210003,
+          "ci95_high": 0.04509256084063336,
+          "win": 97,
+          "tie": 502,
+          "loss": 53,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode": {
+          "mean_delta": 0.036093047793541236,
+          "ci95_low": 0.020671487872309935,
+          "ci95_high": 0.0520386235663471,
+          "win": 104,
+          "tie": 489,
+          "loss": 59,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode4": {
+          "mean_delta": 0.036615909429752284,
+          "ci95_low": 0.02107814316169736,
+          "ci95_high": 0.0525645829737151,
+          "win": 102,
+          "tie": 488,
+          "loss": 62,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_porter": {
+          "mean_delta": -0.0058275754253973066,
+          "ci95_low": -0.0193666205052245,
+          "ci95_high": 0.0074973911539285365,
+          "win": 73,
+          "tie": 508,
+          "loss": 71,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode": {
+          "mean_delta": -0.0020769839136391246,
+          "ci95_low": -0.010201674419439087,
+          "ci95_high": 0.00634122521975733,
+          "win": 45,
+          "tie": 553,
+          "loss": 54,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode4": {
+          "mean_delta": -0.0015541222774280736,
+          "ci95_low": -0.01159040036446756,
+          "ci95_high": 0.008024150581814743,
+          "win": 61,
+          "tie": 529,
+          "loss": 62,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_v1_contextual": {
+          "mean_delta": -0.03817003170718036,
+          "ci95_low": -0.054007259232323995,
+          "ci95_high": -0.022384059679630884,
+          "win": 52,
+          "tie": 489,
+          "loss": 111,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_porter": {
+          "mean_delta": -0.0037505915117581824,
+          "ci95_low": -0.016639336321829967,
+          "ci95_high": 0.00826085032698907,
+          "win": 75,
+          "tie": 523,
+          "loss": 54,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_unicode4": {
+          "mean_delta": 0.0005228616362110508,
+          "ci95_low": -0.004622615431881146,
+          "ci95_high": 0.0055332288427541836,
+          "win": 46,
+          "tie": 562,
+          "loss": 44,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_v1_contextual": {
+          "mean_delta": -0.036093047793541236,
+          "ci95_low": -0.05204569733694124,
+          "ci95_high": -0.020829747151265142,
+          "win": 59,
+          "tie": 489,
+          "loss": 104,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode": {
+          "mean_delta": 0.0037505915117581824,
+          "ci95_low": -0.008396258582727323,
+          "ci95_high": 0.01658266744701259,
+          "win": 54,
+          "tie": 523,
+          "loss": 75,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode4": {
+          "mean_delta": 0.004273453147969233,
+          "ci95_low": -0.008628617451140014,
+          "ci95_high": 0.01726429940693432,
+          "win": 65,
+          "tie": 511,
+          "loss": 76,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_v1_contextual": {
+          "mean_delta": -0.032342456281783054,
+          "ci95_low": -0.04515328281617576,
+          "ci95_high": -0.01983247789760969,
+          "win": 53,
+          "tie": 502,
+          "loss": 97,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        }
+      },
+      "environment": {
+        "python": "3.13.18",
+        "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+        "sqlite": "3.46.1"
+      },
+      "scope": "Full external corpus, binary official qrels, self-ID excluded, same capped document fields. Ranking only; not end-to-end repair or live-search accuracy.",
+      "timing_notice": "v1_* preserves the v1.0.0 scoring/token sequence; later runs use the parity-tested faster tokenizer. Separate same-run tokenizer comparison measures old vs new implementation."
+    },
+    "scifact": {
+      "dataset": {
+        "dataset": "scifact",
+        "license": "CC-BY-SA-4.0",
+        "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+        "expected_documents": 5183,
+        "expected_test_queries": 300,
+        "files": {
+          "corpus.jsonl": {
+            "sha256": "be43af4cbb73b9e44c4f43138c8bbd63afd9ce328870ce223467a408eb349355",
+            "rows": 5183
+          },
+          "queries.jsonl": {
+            "sha256": "f88984d1fcb9862c1af67c53485718b30f749b8527685907096d696d2ed6245a",
+            "rows": 300
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029/test.tsv",
+            "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c",
+            "bytes": 5389
+          }
+        },
+        "original_downloads": {
+          "corpus.jsonl.gz": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/scifact.jsonl.gz",
+            "sha256": "8dd268826be9694e5e369bcc426551e1ae8cc6651a8fa69186475e20effae841",
+            "bytes": 2753754
+          },
+          "queries.jsonl": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/scifact.jsonl",
+            "sha256": "6066e4eae863e603cca3379f2da04812b092c2b689b321c80a0491c02a37647d",
+            "bytes": 36513
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029/test.tsv",
+            "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c",
+            "bytes": 5389
+          }
+        },
+        "split": "all",
+        "partition_rule": "r2f-independent-v1:2026-11-24:sha256 first 32 bits mod 5 == 0"
+      },
+      "documents": 5183,
+      "queries": 300,
+      "k": 10,
+      "methods": {
+        "precision_field4": {
+          "mrr@10": 0.6396084656084656,
+          "ndcg@10": 0.6771288481365139,
+          "recall@10": 0.8171666666666667,
+          "hit@10": 0.84,
+          "build_ms": 8576.354827,
+          "query_p50_ms": 2.9607935000000003,
+          "query_p95_ms": 6.170191,
+          "total_query_ms": 938.689481
+        },
+        "sqlite_unicode4": {
+          "mrr@10": 0.6416124338624338,
+          "ndcg@10": 0.674135916867367,
+          "recall@10": 0.7949444444444445,
+          "hit@10": 0.8166666666666667,
+          "build_ms": 933.390825,
+          "query_p50_ms": 5.7538845,
+          "query_p95_ms": 11.034116,
+          "total_query_ms": 1720.724009
+        },
+        "v1_contextual": {
+          "mrr@10": 0.6528214285714286,
+          "ndcg@10": 0.6919443563605927,
+          "recall@10": 0.8365,
+          "hit@10": 0.8566666666666667,
+          "build_ms": 5623.097444,
+          "query_p50_ms": 2.414349,
+          "query_p95_ms": 4.880775,
+          "total_query_ms": 771.558383
+        },
+        "v1_bm25": {
+          "mrr@10": 0.6333068783068783,
+          "ndcg@10": 0.6646043398457164,
+          "recall@10": 0.7822777777777777,
+          "hit@10": 0.8033333333333333,
+          "build_ms": 1480.559583,
+          "query_p50_ms": 1.6942154999999999,
+          "query_p95_ms": 3.993611,
+          "total_query_ms": 560.466186
+        },
+        "sqlite_unicode": {
+          "mrr@10": 0.6400026455026455,
+          "ndcg@10": 0.6725566639218289,
+          "recall@10": 0.7922777777777777,
+          "hit@10": 0.8133333333333334,
+          "build_ms": 918.059309,
+          "query_p50_ms": 5.648628,
+          "query_p95_ms": 11.028404,
+          "total_query_ms": 1702.912523
+        },
+        "sqlite_porter": {
+          "mrr@10": 0.657681216931217,
+          "ndcg@10": 0.6933237892946892,
+          "recall@10": 0.8261666666666667,
+          "hit@10": 0.8466666666666667,
+          "build_ms": 931.275525,
+          "query_p50_ms": 7.275118,
+          "query_p95_ms": 12.224015,
+          "total_query_ms": 2196.325122
+        }
+      },
+      "paired_ndcg": {
+        "precision_field4_vs_sqlite_porter": {
+          "mean_delta": -0.01619494115817531,
+          "ci95_low": -0.0386289325030839,
+          "ci95_high": 0.0035683949504952536,
+          "win": 39,
+          "tie": 212,
+          "loss": 49,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode": {
+          "mean_delta": 0.004572184214684929,
+          "ci95_low": -0.0169201665256301,
+          "ci95_high": 0.025647664345496243,
+          "win": 43,
+          "tie": 216,
+          "loss": 41,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode4": {
+          "mean_delta": 0.0029929312691469047,
+          "ci95_low": -0.01764984448544488,
+          "ci95_high": 0.023342062244441363,
+          "win": 42,
+          "tie": 221,
+          "loss": 37,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_v1_contextual": {
+          "mean_delta": -0.014815508224078849,
+          "ci95_low": -0.03116215903357975,
+          "ci95_high": 0.0009361807653054902,
+          "win": 33,
+          "tie": 220,
+          "loss": 47,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_porter": {
+          "mean_delta": -0.019187872427322214,
+          "ci95_low": -0.038863250148499034,
+          "ci95_high": -0.0001844065441568273,
+          "win": 34,
+          "tie": 221,
+          "loss": 45,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_unicode": {
+          "mean_delta": 0.0015792529455380237,
+          "ci95_low": -0.005182038653875202,
+          "ci95_high": 0.008744992844218865,
+          "win": 16,
+          "tie": 268,
+          "loss": 16,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_v1_contextual": {
+          "mean_delta": -0.017808439493225754,
+          "ci95_low": -0.039504305437208884,
+          "ci95_high": 0.002505486720022546,
+          "win": 37,
+          "tie": 215,
+          "loss": 48,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_porter": {
+          "mean_delta": -0.0013794329340964613,
+          "ci95_low": -0.01811448084534586,
+          "ci95_high": 0.014071959896007276,
+          "win": 33,
+          "tie": 233,
+          "loss": 34,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode": {
+          "mean_delta": 0.019387692438763777,
+          "ci95_low": -0.0018705396478367131,
+          "ci95_high": 0.042543132142173146,
+          "win": 51,
+          "tie": 211,
+          "loss": 38,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode4": {
+          "mean_delta": 0.017808439493225754,
+          "ci95_low": -0.002693627932678524,
+          "ci95_high": 0.03949874905941929,
+          "win": 48,
+          "tie": 215,
+          "loss": 37,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_porter": {
+          "mean_delta": -0.028719449448972752,
+          "ci95_low": -0.049097054043466246,
+          "ci95_high": -0.008996481391615465,
+          "win": 33,
+          "tie": 221,
+          "loss": 46,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode": {
+          "mean_delta": -0.007952324076112514,
+          "ci95_low": -0.018728556393220307,
+          "ci95_high": 0.0018171097122466073,
+          "win": 23,
+          "tie": 254,
+          "loss": 23,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode4": {
+          "mean_delta": -0.009531577021650537,
+          "ci95_low": -0.022717030781125965,
+          "ci95_high": 0.0030860762631100655,
+          "win": 30,
+          "tie": 239,
+          "loss": 31,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_v1_contextual": {
+          "mean_delta": -0.027340016514876293,
+          "ci95_low": -0.04983366121942827,
+          "ci95_high": -0.005640510538549343,
+          "win": 40,
+          "tie": 210,
+          "loss": 50,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_porter": {
+          "mean_delta": -0.02076712537286024,
+          "ci95_low": -0.04088312083970305,
+          "ci95_high": -0.00195957292740541,
+          "win": 34,
+          "tie": 224,
+          "loss": 42,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_unicode4": {
+          "mean_delta": -0.0015792529455380237,
+          "ci95_low": -0.008750947380036567,
+          "ci95_high": 0.005174943539478168,
+          "win": 16,
+          "tie": 268,
+          "loss": 16,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_v1_contextual": {
+          "mean_delta": -0.019387692438763777,
+          "ci95_low": -0.042645728588172616,
+          "ci95_high": 0.0018334827326824143,
+          "win": 38,
+          "tie": 211,
+          "loss": 51,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode": {
+          "mean_delta": 0.02076712537286024,
+          "ci95_low": 0.0019411783438273312,
+          "ci95_high": 0.04077406635133126,
+          "win": 42,
+          "tie": 224,
+          "loss": 34,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode4": {
+          "mean_delta": 0.019187872427322214,
+          "ci95_low": -0.00001389019308210282,
+          "ci95_high": 0.038857165342418565,
+          "win": 45,
+          "tie": 221,
+          "loss": 34,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_v1_contextual": {
+          "mean_delta": 0.0013794329340964613,
+          "ci95_low": -0.014155276815104362,
+          "ci95_high": 0.018109923660893645,
+          "win": 34,
+          "tie": 233,
+          "loss": 33,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        }
+      },
+      "environment": {
+        "python": "3.13.18",
+        "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+        "sqlite": "3.46.1"
+      },
+      "scope": "Full external corpus, binary official qrels, self-ID excluded, same capped document fields. Ranking only; not end-to-end repair or live-search accuracy.",
+      "timing_notice": "v1_* preserves the v1.0.0 scoring/token sequence; later runs use the parity-tested faster tokenizer. Separate same-run tokenizer comparison measures old vs new implementation."
+    },
+    "nasa": {
+      "dataset": {
+        "dataset": "nasa",
+        "source": "NASA IMPACT Science Repos SME Benchmark",
+        "license": "Dataset card: Apache-2.0; source repository content retains its own terms",
+        "revision": "f26b9c9a4060d759b0ae44354059b37387dd414e",
+        "expected_documents": 5264,
+        "expected_test_queries": 212,
+        "published_queries": 219,
+        "unjudged_queries": 7,
+        "fields": "title/name and text (README); no query metadata, qrel URLs or enriched context",
+        "files": {
+          "corpus.jsonl": {
+            "sha256": "2cf10b0dcdc835212449748f5d4cd5c99c0626aac5812dc036dcf3c1b4af69b2",
+            "rows": 5264
+          },
+          "queries.jsonl": {
+            "sha256": "9b0b172bb9805588b5b0463b1e74aef1d50f8de49daec5aef7bbbce2e9944fec",
+            "rows": 219
+          },
+          "test.tsv": {
+            "sha256": "cea871e1672b41263e68b49567d40a3d0d5547e28ebf10bb25f3ae0b4ee61105",
+            "rows": 258
+          }
+        },
+        "original_downloads": {
+          "corpus.jsonl": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/corpus.jsonl",
+            "sha256": "71a4ef9604bf18db1d26a4157398385722275ca3fb1e3cf458e5d0b2ecf730b9",
+            "bytes": 72155484
+          },
+          "queries.jsonl": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/queries.jsonl",
+            "sha256": "650607e351752ce6dac4332b559685e100f26bf649a4df25f93bea2a683e7c34",
+            "bytes": 37924
+          },
+          "qrels/earth.tsv": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/qrels/earth.tsv",
+            "sha256": "bfc015079220b380c2f12fd864adf4ff70a5ea30c43f4dbe7fbc7479f3118ff0",
+            "bytes": 1556
+          },
+          "qrels/astro.tsv": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/qrels/astro.tsv",
+            "sha256": "7a78b8883eec837bb52b8b498e7ff219d5c483a215fbcc8415b5e4c939a5c275",
+            "bytes": 532
+          },
+          "qrels/planetary.tsv": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/qrels/planetary.tsv",
+            "sha256": "c8e7b82e92f79c7810529ceb5f30ecdacd5922fd170c9e55d103113dceb1eba6",
+            "bytes": 361
+          }
+        },
+        "split": "all",
+        "partition_rule": "r2f-independent-v1:2026-11-24:sha256 first 32 bits mod 5 == 0"
+      },
+      "documents": 5264,
+      "queries": 212,
+      "k": 10,
+      "methods": {
+        "precision_field4": {
+          "mrr@10": 0.4331498951781971,
+          "ndcg@10": 0.46647384028231254,
+          "recall@10": 0.5993317610062893,
+          "hit@10": 0.6179245283018868,
+          "build_ms": 22662.689095,
+          "query_p50_ms": 7.1612054999999994,
+          "query_p95_ms": 11.726838,
+          "total_query_ms": 1593.759395
+        },
+        "sqlite_unicode4": {
+          "mrr@10": 0.39576781970649894,
+          "ndcg@10": 0.4306568227201444,
+          "recall@10": 0.5511006289308176,
+          "hit@10": 0.5707547169811321,
+          "build_ms": 3195.765909,
+          "query_p50_ms": 14.448034,
+          "query_p95_ms": 18.048161,
+          "total_query_ms": 3025.79677
+        },
+        "v1_contextual": {
+          "mrr@10": 0.4160489667565139,
+          "ndcg@10": 0.451072052879052,
+          "recall@10": 0.5847091194968553,
+          "hit@10": 0.6037735849056604,
+          "build_ms": 14955.124539,
+          "query_p50_ms": 5.5290315,
+          "query_p95_ms": 8.727836,
+          "total_query_ms": 1193.942534
+        },
+        "v1_bm25": {
+          "mrr@10": 0.3764843516022761,
+          "ndcg@10": 0.4143383783409831,
+          "recall@10": 0.5548349056603774,
+          "hit@10": 0.5707547169811321,
+          "build_ms": 4014.468217,
+          "query_p50_ms": 4.074782,
+          "query_p95_ms": 6.249675,
+          "total_query_ms": 930.833432
+        },
+        "sqlite_unicode": {
+          "mrr@10": 0.3900288259958071,
+          "ndcg@10": 0.42620341290720454,
+          "recall@10": 0.5511006289308176,
+          "hit@10": 0.5707547169811321,
+          "build_ms": 3217.638956,
+          "query_p50_ms": 14.7672005,
+          "query_p95_ms": 18.55666,
+          "total_query_ms": 3092.7961530000002
+        },
+        "sqlite_porter": {
+          "mrr@10": 0.41074797843665767,
+          "ndcg@10": 0.4468961311164222,
+          "recall@10": 0.5825078616352202,
+          "hit@10": 0.6037735849056604,
+          "build_ms": 3256.612688,
+          "query_p50_ms": 16.241673,
+          "query_p95_ms": 20.911926,
+          "total_query_ms": 3441.352844
+        }
+      },
+      "paired_ndcg": {
+        "precision_field4_vs_sqlite_porter": {
+          "mean_delta": 0.019577709165890363,
+          "ci95_low": -0.004604428172444803,
+          "ci95_high": 0.045295710181787435,
+          "win": 39,
+          "tie": 150,
+          "loss": 23,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode": {
+          "mean_delta": 0.04027042737510801,
+          "ci95_low": 0.01705845939120795,
+          "ci95_high": 0.06270259662101131,
+          "win": 40,
+          "tie": 158,
+          "loss": 14,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_sqlite_unicode4": {
+          "mean_delta": 0.035817017562168145,
+          "ci95_low": 0.01168962942336522,
+          "ci95_high": 0.05875364877310638,
+          "win": 40,
+          "tie": 154,
+          "loss": 18,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_v1_contextual": {
+          "mean_delta": 0.01540178740326055,
+          "ci95_low": -0.00029115631278050374,
+          "ci95_high": 0.031769255763919486,
+          "win": 29,
+          "tie": 165,
+          "loss": 18,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_porter": {
+          "mean_delta": -0.016239308396277782,
+          "ci95_low": -0.044158925493337324,
+          "ci95_high": 0.011460647201896115,
+          "win": 27,
+          "tie": 151,
+          "loss": 34,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_sqlite_unicode": {
+          "mean_delta": 0.0044534098129398675,
+          "ci95_low": 0.0005337131734219734,
+          "ci95_high": 0.009796383541116203,
+          "win": 6,
+          "tie": 206,
+          "loss": 0,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode4_vs_v1_contextual": {
+          "mean_delta": -0.020415230158907595,
+          "ci95_low": -0.048305883349786985,
+          "ci95_high": 0.006920406628879919,
+          "win": 32,
+          "tie": 144,
+          "loss": 36,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_porter": {
+          "mean_delta": 0.004175921762629811,
+          "ci95_low": -0.014436622238649367,
+          "ci95_high": 0.022042801244981074,
+          "win": 29,
+          "tie": 155,
+          "loss": 28,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode": {
+          "mean_delta": 0.02486863997184746,
+          "ci95_low": -0.001782339995595184,
+          "ci95_high": 0.05168694452837129,
+          "win": 37,
+          "tie": 147,
+          "loss": 28,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_sqlite_unicode4": {
+          "mean_delta": 0.020415230158907595,
+          "ci95_low": -0.006948289804398988,
+          "ci95_high": 0.04794400901720692,
+          "win": 36,
+          "tie": 144,
+          "loss": 32,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_porter": {
+          "mean_delta": -0.03255775277543912,
+          "ci95_low": -0.06439383281053611,
+          "ci95_high": -0.003155083376781178,
+          "win": 26,
+          "tie": 141,
+          "loss": 45,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode": {
+          "mean_delta": -0.011865034566221469,
+          "ci95_low": -0.03168195060722702,
+          "ci95_high": 0.0035308714929164014,
+          "win": 23,
+          "tie": 161,
+          "loss": 28,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_sqlite_unicode4": {
+          "mean_delta": -0.016318444379161336,
+          "ci95_low": -0.03705160761981953,
+          "ci95_high": -0.00027718350492782597,
+          "win": 23,
+          "tie": 160,
+          "loss": 29,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_bm25_vs_v1_contextual": {
+          "mean_delta": -0.03673367453806893,
+          "ci95_low": -0.0669050528370988,
+          "ci95_high": -0.008001718788659134,
+          "win": 27,
+          "tie": 137,
+          "loss": 48,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_porter": {
+          "mean_delta": -0.020692718209217652,
+          "ci95_low": -0.04889237761500634,
+          "ci95_high": 0.007861631939538321,
+          "win": 25,
+          "tie": 149,
+          "loss": 38,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_sqlite_unicode4": {
+          "mean_delta": -0.0044534098129398675,
+          "ci95_low": -0.00987344071780225,
+          "ci95_high": -0.0005337131734219734,
+          "win": 0,
+          "tie": 206,
+          "loss": 6,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_unicode_vs_v1_contextual": {
+          "mean_delta": -0.02486863997184746,
+          "ci95_low": -0.051732077992737935,
+          "ci95_high": 0.0017613272932021392,
+          "win": 28,
+          "tie": 147,
+          "loss": 37,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode": {
+          "mean_delta": 0.020692718209217652,
+          "ci95_low": -0.00790966190785208,
+          "ci95_high": 0.048843521362323686,
+          "win": 38,
+          "tie": 149,
+          "loss": 25,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_sqlite_unicode4": {
+          "mean_delta": 0.016239308396277782,
+          "ci95_low": -0.011584123473207603,
+          "ci95_high": 0.04405292701713583,
+          "win": 34,
+          "tie": 151,
+          "loss": 27,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "sqlite_porter_vs_v1_contextual": {
+          "mean_delta": -0.004175921762629811,
+          "ci95_low": -0.02209930320740498,
+          "ci95_high": 0.014409493882485325,
+          "win": 28,
+          "tie": 155,
+          "loss": 29,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        }
+      },
+      "environment": {
+        "python": "3.13.18",
+        "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+        "sqlite": "3.46.1"
+      },
+      "scope": "Full external corpus, binary official qrels, self-ID excluded, same capped document fields. Ranking only; not end-to-end repair or live-search accuracy.",
+      "timing_notice": "v1_* preserves the v1.0.0 scoring/token sequence; later runs use the parity-tested faster tokenizer. Separate same-run tokenizer comparison measures old vs new implementation."
+    }
+  },
+  "tokenizer": {
+    "documents": 4096,
+    "tokens": 543739,
+    "repetitions": 5,
+    "exact_token_sequence_parity": true,
+    "v1_median_ms": 711.672397,
+    "optimized_median_ms": 157.608139,
+    "speedup": 4.515454604790429,
+    "scope": "Tokenization only, paired same-run timings; excludes I/O, index construction and retrieval.",
+    "precision_feature_parity": {
+      "documents": 4096,
+      "tokens": 1498281,
+      "repetitions": 5,
+      "exact_token_sequence_parity": true,
+      "v1_median_ms": 1374.371629,
+      "optimized_median_ms": 930.143969,
+      "speedup": 1.477590217004353,
+      "scope": "Precision feature extraction only; frozen feature sequence parity."
+    },
+    "data_sha256": {
+      "corpus.jsonl": "4e39fcc5f440806ad643aee67cad2d17c227fa29c81c121a079ee398a8d64f3e",
+      "queries.jsonl": "f80e8c3b7aadd8c17f573571093713e9877f7d54a1c73a4b32de9edd92eff0f0",
+      "test.tsv": "ed69afa873c64d34298792d694c82c4293e4b7e3c6ea3edc7a73662d4b0cba76"
+    }
+  }
+}

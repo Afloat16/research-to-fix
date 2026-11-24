@@ -41,6 +41,7 @@ jobs:
           node docs/figures/render.cjs --check
           node docs/figures/render-research.cjs --check
           node docs/figures/render-v1.cjs --check
+          node docs/figures/render-independent.cjs --check
       - name: Smoke-test committed skill package
         if: runner.os == 'Linux' && matrix.python == '3.13'
         shell: bash

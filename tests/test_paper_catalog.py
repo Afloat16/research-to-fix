@@ -53,6 +53,22 @@ class CatalogTests(unittest.TestCase):
             self.assertEqual(catalog.search("efficient attention")[0]["id"], paper["id"])
             self.assertIsNone(catalog.lookup("2307.08691"))
 
+    def test_exact_title_and_reverse_lookup(self):
+        pc.build_catalog(self.input, self.database)
+        plan = w.make_plan(PROBLEM, 1, ["paperswithcode"], "comprehensive")
+        with pc.Catalog(self.database) as db:
+            rows = db.lookup_title("Ｍｅｍｏｒｙ   EFFICIENT exact attention")
+            self.assertEqual([row["id"] for row in rows], ["arxiv:2205.14135"])
+            reverse = db.papers_for_repository("https://github.com/Dao-AILab/flash-attention")
+            self.assertEqual([row["id"] for row in reverse], ["arxiv:2205.14135"])
+            result = db.observations(plan, plan["queries"][0]["id"],
+                                     repository="https://github.com/Dao-AILab/flash-attention")
+            self.assertEqual(result["local_mode"], "repository_reverse")
+            self.assertEqual(result["papers_returned"], 1)
+            with self.assertRaises(w.WorkflowError):
+                db.observations(plan, plan["queries"][0]["id"], paper_ids=["2205.14135"],
+                                exact_title="Memory efficient exact attention")
+
     def test_local_results_bound_to_plan_and_metadata_only(self):
         pc.build_catalog(self.input, self.database)
         plan = w.make_plan(PROBLEM, 1, ["paperswithcode"], "comprehensive")

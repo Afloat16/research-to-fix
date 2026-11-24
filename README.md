@@ -43,7 +43,7 @@ Use a host supporting the Agent Skills format. Verify your host's installation t
 npx skills add Afloat16/research-to-fix --skill research-to-fix
 ```
 
-Or clone this repository and copy `skills/research-to-fix/` into your host's skills directory. The helper commands require **Python 3.10+**. The host must provide its own search, browsing and execution capabilities; the skill itself does not provide a crawler, credentials or model API.
+Or clone this repository and copy `skills/research-to-fix/` into your host's skills directory. The helper commands require **Python 3.10+**. The host must provide its own search, browsing and execution capabilities (or explicitly authorize the optional fixed public-metadata adapter for discovery); the skill itself does not provide a crawler, credentials or model API.
 
 ## Usage
 
@@ -62,6 +62,32 @@ Check the original paper, author code, model/dataset configuration and
 reproductions. Compare candidate approaches with identical data splits,
 seeds and resource budgets, then test the best-supported change.
 ```
+
+## Research-led algorithm optimization
+
+**Find papers and real implementations, then compare repair routes instead of guessing.** For difficult algorithm, reproduction and performance problems, the new research-decision workflow plans mechanism, code, paper, verification, alternative and counterevidence searches. Host search is preferred; an optional explicitly approved public-metadata adapter supports GitHub, arXiv, Crossref and Hugging Face without keys. Duplicate identities are collapsed, source and access provenance is retained, and explicit paper–code links and missing coverage guide the next search. Nothing in the ranking proves applicability.
+
+```text
+Use $research-to-fix to investigate this algorithmic bottleneck.
+Identify relevant papers, author implementations and issue/PR history;
+compare at least two distinct viable mechanisms if available.
+Freeze the same dataset, seeds, metrics, hardware and acceptance checks.
+Run authorized experiments, present the Pareto frontier and tradeoffs,
+implement the best justified option, then verify and record the repair.
+```
+
+| Step | Helper |
+| --- | --- |
+| Public research plan | `research_workflow.py plan` |
+| Optional approved public metadata discovery | `public_discovery.py` |
+| Deduplicate, rank, link evidence and identify gaps | `research_workflow.py triage` |
+| Compare comparable measured alternatives | `solution_compare.py` |
+
+![Research decision: architecture, source retrieval comparison and measured Pareto candidates](docs/figures/research-decision.svg)
+
+*Source-linked development replay: 32 identities, 44 observations, 16 queries. The default evidence shortlist matches the stemmed BM25 baseline in Recall@6 (92.19%) and complete pair recall (87.5%); both achieve 100% paper-and-code coverage on this fixture. The standalone facet rank is weaker overall, so it remains optional. The five-replicate local variance experiment produces two eligible Pareto options, centered two-pass and online recurrence. [Measured CI run](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [Frozen report](docs/figures/research-snapshot.json). Not an independent evaluation of live APIs or general agent repair success.*
+
+See the [complete workflow and JSON examples](skills/research-to-fix/references/research-decision.md), the [public paper/code benchmark](benchmarks/README.md#algorithm-discovery-and-decision), and the [reproducible numerical variance experiment](examples/numerical-variance/README.md). Network access remains opt-in; execution depends on the host and authorization. A result can be partial or blocked; no guarantee of universal repair success.
 
 ## Performance & evaluation
 

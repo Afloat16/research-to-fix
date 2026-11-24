@@ -10,3 +10,7 @@ These local SVGs are original vector figures for the English and Chinese landing
 Regenerate from the repository root with `node docs/figures/render.cjs`. Check committed figures with `node docs/figures/render.cjs --check`. To publish new measured values, first retain the exact CI job reports, update the snapshot and source metadata, rerender, and update the surrounding README text and performance report. Do not replace data with desired or projected results. The development fixtures are not independent held-out evaluations, and none of the charts measures agent repair success.
 
 中文：SVG 为本项目原创矢量图；两张架构图是工作流与检索实现示意，三张实验图均由上述 CI 真实报告生成。中英文共享同一冻结数据，避免数字漂移。Node.js 仅用于维护图表，不是 Skill 运行时依赖。
+
+## Research-decision figure
+
+`research-decision*.svg` visualizes the workflow plus measured discovery replay and numerical variance comparison from [CI run 45343672697](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697), job 138272992882, commit `8d5d2aee6631cb165216069d51792ad8df7aafbb`. Both languages use [research-snapshot.json](research-snapshot.json) and `render-research.cjs`. Regenerate with `node docs/figures/render-research.cjs`; CI uses `--check`. The snapshot is the actual printed report; the diagram distinguishes development ranking from local measured repairs.

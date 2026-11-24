@@ -6,11 +6,12 @@ This checklist is a review contract, not a claim that every item has passed. Kee
 | --- | --- |
 | Scope and compatibility | Review the diff against the previous default-branch commit; schema v1 compatibility tests and documented intentional changes. |
 | Behavior | All supported CI jobs complete successfully; no disabled, weakened or removed baseline tests except justified platform-specific constraints. |
-| Offline safety | No new external dependencies, implicit scanning, network calls, or execution of case commands; adversarial inputs and diagnostics tested. |
+| Offline safety | Default helpers and CI remain offline; no implicit scanning, network calls or execution of case commands. Optional public metadata adapter requires approval; fixed endpoint, timeout, response size, request budget, error and redaction tests. |
 | Evidence lifecycle | Reproduce the synthetic streaming case, validate it, review its declared gaps, recall it, seal explicitly selected snapshots/logs and verify its manifest. Retain CI artifacts. |
 | Documentation | Both READMEs, SKILL.md, CLI help, reference files and changelog agree on behavior and limits. |
 | Open source operations | Issue/PR templates, contribution instructions and security reporting channel are usable. Review license and attributions. |
 | Retrieval performance | Fixed benchmark data fingerprints match; legacy and compact-index top-k parity, batch parity, bounded memory regression, quality floors and timing warnings reviewed. |
+| Research and decision | Review fixed public-source replay metrics against lexical baselines, identity collapse, paper-code graph provenance and actual numerical comparison gates. No live-provider or general repair claim from offline fixtures. |
 | Real-world efficacy | New workflow success claims require independent cases with reproducible before/after checks and explicit scope. Synthetic examples alone are not a general benchmark. |
 
 ## Before merging

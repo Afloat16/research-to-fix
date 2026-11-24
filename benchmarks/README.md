@@ -52,3 +52,16 @@ The attempted external Actions workflows in this iteration were rejected before 
 For a future independent evaluation, freeze the R2F version and candidate selection first. Use a held-out collection of real duplicate issues for retrieval, then compare one fixed agent with and without the skill on the same SWE-bench split. Record valid patches, fail-to-pass and pass-to-pass test outcomes, blocked cases, runtime, tool/token cost, source attribution, and confidence intervals. Prevent access to gold patches and post-fix data when evaluating repair. Report any inaccessible cases and failures; no general superiority claim without matched experiments.
 
 中文：本目录提供固定双语合成数据、带公开 issue 重复链接的真实小样本、SQLite 对照、端到端批处理及内存测量和 BEIR 本地适配。数据规模、真实标签来源、性能指标、未执行的公开大数据评测均明确记录。检索指标不等于自动修复成功率，不能直接与 SWE-bench 的解决率相比较。
+
+## Algorithm discovery and decision
+
+[algorithm_discovery_v1.json](datasets/algorithm_discovery_v1.json) contains 32 public source identities (papers, repository and documentation links), 44 observations including publisher/DOI and synthetic tracking aliases, eight authored algorithm tasks, two query formulations per task, topic-based relevance judgments and explicit paper/code pair labels. Topics cover attention, finetuning, diffusion, graph learning, approximate nearest neighbors, distributed training, contrastive learning and boosted trees. Descriptions are independently summarized; source URLs and relationships are retained. Unjudged sources are not proven irrelevant. This is a small development fixture, not a live search evaluation or proof of code applicability. Compare the same corpus with deterministic fixed order, stemmed BM25, SQLite FTS5 Porter, facet ranking and the evidence-aware shortlist.
+
+```bash
+python benchmarks/discovery.py --output /tmp/r2f-discovery.json
+python examples/numerical-variance/compare_methods.py --output /tmp/r2f-variance
+```
+
+The variance example actually runs a raw-moment baseline and three alternatives with five fixed seeds and an exact integer oracle. It checks every replicate against a fixed accuracy threshold and regression criteria, then compares latency, relative error and traced allocations. It is a small local experiment, not a general GPU or NumPy benchmark. See [the decision guide](../skills/research-to-fix/references/research-decision.md) and [example methodology](../examples/numerical-variance/README.md).
+
+Measured snapshot: [CI 45343672697](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [frozen discovery and variance reports](../docs/figures/research-snapshot.json). The final shortlist achieves 92.19% recall@6, 100% MRR@6, 100% paper-and-code coverage and 87.5% complete pair recall; stemmed BM25 matches these metrics and has slightly higher nDCG (0.941939 vs 0.939178). Mechanism-formulated queries achieve 96.875% recall vs 87.5% for symptom-only queries, both on the fixed development set. The initial facet-only approach and forced family coverage were not selected as defaults after comparison. Do not infer superiority from these small development samples.

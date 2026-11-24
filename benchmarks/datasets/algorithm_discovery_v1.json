@@ -1,0 +1,808 @@
+{
+  "name": "algorithm-paper-code-discovery-v1",
+  "kind": "source_linked_development_reranking",
+  "collected_at": "2026-11-24",
+  "description": "Eight authored algorithm-engineering problems, two query formulations per task, 32 real public source identities, 4 observed publisher/DOI aliases and 8 synthetic tracking aliases. Paper titles, repository names and source URLs are public bibliographic metadata; snippets are independently authored short descriptions based on public abstracts and repository pages. Relevance judgments were assigned by task topic, not repair effectiveness; other sources are unjudged. Linked pairs reflect explicit source references, not proof of applicability or code quality. This is a fixed development fixture, not a live search result set or held-out leaderboard.",
+  "documents": [
+    {
+      "id": "flash-p",
+      "kind": "paper",
+      "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness",
+      "url": "https://arxiv.org/abs/2205.14135",
+      "snippet": "Tiled exact self-attention reduces traffic to GPU memory for long sequences.",
+      "access": "metadata",
+      "doi": "10.52202/068431-1189"
+    },
+    {
+      "id": "flash-c",
+      "kind": "repository",
+      "title": "Dao-AILab/flash-attention",
+      "url": "https://github.com/Dao-AILab/flash-attention",
+      "snippet": "Optimized GPU attention kernels for exact attention with lower memory cost.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2205.14135",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "rabe-p",
+      "kind": "paper",
+      "title": "Self-attention Does Not Need O(n^2) Memory",
+      "url": "https://arxiv.org/abs/2112.05682",
+      "snippet": "Memory-efficient computation and differentiation of self-attention without storing the whole score matrix.",
+      "access": "metadata"
+    },
+    {
+      "id": "xformers-c",
+      "kind": "repository",
+      "title": "facebookresearch/xformers",
+      "url": "https://github.com/facebookresearch/xformers",
+      "snippet": "Transformer building blocks including exact memory-efficient multi-head attention and sparse kernels.",
+      "access": "metadata"
+    },
+    {
+      "id": "lora-p",
+      "kind": "paper",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "url": "https://arxiv.org/abs/2106.09685",
+      "snippet": "Freeze pretrained weights and train small rank-decomposition matrices to reduce fine-tuning parameters.",
+      "access": "metadata"
+    },
+    {
+      "id": "lora-c",
+      "kind": "repository",
+      "title": "microsoft/LoRA",
+      "url": "https://github.com/microsoft/LoRA",
+      "snippet": "PyTorch low-rank adaptation library and model integration examples.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2106.09685",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "qlora-p",
+      "kind": "paper",
+      "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+      "url": "https://arxiv.org/abs/2305.14314",
+      "snippet": "Backpropagate into low-rank adapters through frozen four-bit weights to lower fine-tuning memory.",
+      "access": "metadata"
+    },
+    {
+      "id": "qlora-c",
+      "kind": "repository",
+      "title": "artidoro/qlora",
+      "url": "https://github.com/artidoro/qlora",
+      "snippet": "Quantized language-model fine-tuning with bitsandbytes and PEFT; four-bit training.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2305.14314",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "dpm-p",
+      "kind": "paper",
+      "title": "DPM-Solver: A Fast ODE Solver for Diffusion Probabilistic Model Sampling in Around 10 Steps",
+      "url": "https://arxiv.org/abs/2206.00927",
+      "snippet": "High-order dedicated ODE integration reduces diffusion sampling function evaluations without retraining.",
+      "access": "metadata"
+    },
+    {
+      "id": "dpm-c",
+      "kind": "repository",
+      "title": "LuChengTHU/dpm-solver",
+      "url": "https://github.com/LuChengTHU/dpm-solver",
+      "snippet": "PyTorch and JAX fast diffusion ODE samplers including DPM-Solver++.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2206.00927",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "ddim-p",
+      "kind": "paper",
+      "title": "Denoising Diffusion Implicit Models",
+      "url": "https://arxiv.org/abs/2010.02502",
+      "snippet": "Non-Markovian reverse processes allow fewer denoising steps with the original training objective.",
+      "access": "metadata"
+    },
+    {
+      "id": "ddim-c",
+      "kind": "repository",
+      "title": "ermongroup/ddim",
+      "url": "https://github.com/ermongroup/ddim",
+      "snippet": "Reference denoising diffusion implicit model sampling and image generation code.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2010.02502",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "sage-p",
+      "kind": "paper",
+      "title": "Inductive Representation Learning on Large Graphs",
+      "url": "https://arxiv.org/abs/1706.02216",
+      "snippet": "GraphSAGE samples and aggregates local neighborhoods to embed previously unseen nodes.",
+      "access": "metadata"
+    },
+    {
+      "id": "sage-c",
+      "kind": "repository",
+      "title": "williamleif/GraphSAGE",
+      "url": "https://github.com/williamleif/GraphSAGE",
+      "snippet": "Stochastic graph convolutions and neighborhood aggregation for dynamic large graphs.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1706.02216",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "saint-p",
+      "kind": "paper",
+      "title": "GraphSAINT: Graph Sampling Based Inductive Learning Method",
+      "url": "https://arxiv.org/abs/1907.04931",
+      "snippet": "Sample training subgraphs rather than expanding neighbors across layers; normalization reduces sampling bias.",
+      "access": "metadata"
+    },
+    {
+      "id": "saint-c",
+      "kind": "repository",
+      "title": "GraphSAINT/GraphSAINT",
+      "url": "https://github.com/GraphSAINT/GraphSAINT",
+      "snippet": "Graph minibatch sampling for large GNNs with TensorFlow and PyTorch implementations.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1907.04931",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "hnsw-p",
+      "kind": "paper",
+      "title": "Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs",
+      "url": "https://arxiv.org/abs/1603.09320",
+      "snippet": "Hierarchical proximity graph search supports high-recall approximate vector neighbors.",
+      "access": "metadata",
+      "doi": "10.1109/TPAMI.2018.2889473"
+    },
+    {
+      "id": "hnsw-c",
+      "kind": "repository",
+      "title": "nmslib/hnswlib",
+      "url": "https://github.com/nmslib/hnswlib",
+      "snippet": "C++ graph-based approximate nearest-neighbor index with Python bindings and incremental updates.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1603.09320",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "faiss-p",
+      "kind": "paper",
+      "title": "Billion-scale similarity search with GPUs",
+      "url": "https://arxiv.org/abs/1702.08734",
+      "snippet": "GPU k-selection and product quantization for exact and compressed approximate vector search.",
+      "access": "metadata"
+    },
+    {
+      "id": "faiss-c",
+      "kind": "repository",
+      "title": "facebookresearch/faiss",
+      "url": "https://github.com/facebookresearch/faiss",
+      "snippet": "Dense vector similarity search indexes with memory, recall and latency tradeoffs on CPU and GPU.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1702.08734",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "zero-p",
+      "kind": "paper",
+      "title": "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models",
+      "url": "https://arxiv.org/abs/1910.02054",
+      "snippet": "Eliminate redundant model-training states across devices by optimizer state, gradient and parameter partitioning.",
+      "access": "metadata",
+      "doi": "10.1109/SC41405.2020.00024"
+    },
+    {
+      "id": "zero-c",
+      "kind": "repository",
+      "title": "deepspeedai/DeepSpeed",
+      "url": "https://github.com/deepspeedai/DeepSpeed",
+      "snippet": "Distributed deep learning optimization library including ZeRO state partitioning.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1910.02054",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "fsdp-p",
+      "kind": "paper",
+      "title": "PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel",
+      "url": "https://arxiv.org/abs/2304.11277",
+      "snippet": "Fully sharded data parallel training coordinates parameter gathering and frees redundant states.",
+      "access": "metadata"
+    },
+    {
+      "id": "fsdp-d",
+      "kind": "documentation",
+      "title": "FullyShardedDataParallel",
+      "url": "https://docs.pytorch.org/docs/main/fsdp.html",
+      "snippet": "PyTorch wrapper shards module parameters over data-parallel workers; supports CPU offload and mixed precision.",
+      "access": "metadata"
+    },
+    {
+      "id": "simclr-p",
+      "kind": "paper",
+      "title": "A Simple Framework for Contrastive Learning of Visual Representations",
+      "url": "https://proceedings.mlr.press/v119/chen20j.html",
+      "snippet": "Contrastive self-supervised visual representation learning using augmented image pairs and nonlinear projection.",
+      "access": "metadata"
+    },
+    {
+      "id": "simclr-c",
+      "kind": "repository",
+      "title": "google-research/simclr",
+      "url": "https://github.com/google-research/simclr",
+      "snippet": "SimCLR contrastive vision pretraining reference implementation and checkpoints.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://proceedings.mlr.press/v119/chen20j.html",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "maintenance_hint": "archived; historical implementation"
+    },
+    {
+      "id": "moco-p",
+      "kind": "paper",
+      "title": "Momentum Contrast for Unsupervised Visual Representation Learning",
+      "url": "https://arxiv.org/abs/1911.05722",
+      "snippet": "Moving-average key encoder and queue build a consistent dictionary for contrastive learning.",
+      "access": "metadata"
+    },
+    {
+      "id": "moco-c",
+      "kind": "repository",
+      "title": "facebookresearch/moco",
+      "url": "https://github.com/facebookresearch/moco",
+      "snippet": "PyTorch implementation of momentum contrast self-supervised image representation learning.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1911.05722",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "xgb-p",
+      "kind": "paper",
+      "title": "XGBoost: A Scalable Tree Boosting System",
+      "url": "https://arxiv.org/abs/1603.02754",
+      "snippet": "Sparsity-aware split finding and weighted quantile sketch for scalable gradient-boosted trees.",
+      "access": "metadata",
+      "doi": "10.1145/2939672.2939785"
+    },
+    {
+      "id": "xgb-c",
+      "kind": "repository",
+      "title": "dmlc/xgboost",
+      "url": "https://github.com/dmlc/xgboost",
+      "snippet": "Distributed gradient boosting library with sparse data support and efficient tree training.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1603.02754",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "lgbm-p",
+      "kind": "paper",
+      "title": "LightGBM: A Highly Efficient Gradient Boosting Decision Tree",
+      "url": "https://papers.neurips.cc/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html",
+      "snippet": "Gradient-based one-side sampling and exclusive feature bundling for large high-dimensional tabular datasets.",
+      "access": "metadata"
+    },
+    {
+      "id": "lgbm-c",
+      "kind": "repository",
+      "title": "lightgbm-org/LightGBM",
+      "url": "https://github.com/lightgbm-org/LightGBM",
+      "snippet": "Efficient distributed decision tree gradient boosting with GPU support and large-data training.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://papers.neurips.cc/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ]
+    },
+    {
+      "id": "flash-p",
+      "kind": "paper",
+      "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness",
+      "url": "https://proceedings.neurips.cc/paper/2022/hash/67d57c32e20fd0a7a302cb81d36e40d5-Abstract.html",
+      "snippet": "Tiled exact self-attention reduces traffic to GPU memory for long sequences.",
+      "access": "metadata",
+      "doi": "10.52202/068431-1189",
+      "arxiv_id": "2205.14135",
+      "duplicate_type": "actual_publisher_alias"
+    },
+    {
+      "id": "hnsw-p",
+      "kind": "paper",
+      "title": "Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs",
+      "url": "https://doi.org/10.1109/TPAMI.2018.2889473",
+      "snippet": "Hierarchical proximity graph search supports high-recall approximate vector neighbors.",
+      "access": "metadata",
+      "doi": "10.1109/TPAMI.2018.2889473",
+      "duplicate_type": "actual_doi_alias"
+    },
+    {
+      "id": "zero-p",
+      "kind": "paper",
+      "title": "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models",
+      "url": "https://doi.org/10.1109/sc41405.2020.00024",
+      "snippet": "Eliminate redundant model-training states across devices by optimizer state, gradient and parameter partitioning.",
+      "access": "metadata",
+      "doi": "10.1109/SC41405.2020.00024",
+      "duplicate_type": "actual_doi_alias"
+    },
+    {
+      "id": "xgb-p",
+      "kind": "paper",
+      "title": "XGBoost: A Scalable Tree Boosting System",
+      "url": "https://doi.org/10.1145/2939672.2939785",
+      "snippet": "Sparsity-aware split finding and weighted quantile sketch for scalable gradient-boosted trees.",
+      "access": "metadata",
+      "doi": "10.1145/2939672.2939785",
+      "duplicate_type": "actual_doi_alias"
+    },
+    {
+      "id": "flash-c",
+      "kind": "repository",
+      "title": "Dao-AILab/flash-attention",
+      "url": "https://github.com/Dao-AILab/flash-attention/?utm_source=fixture",
+      "snippet": "Optimized GPU attention kernels for exact attention with lower memory cost.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2205.14135",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "xformers-c",
+      "kind": "repository",
+      "title": "facebookresearch/xformers",
+      "url": "https://github.com/facebookresearch/xformers/?utm_source=fixture",
+      "snippet": "Transformer building blocks including exact memory-efficient multi-head attention and sparse kernels.",
+      "access": "metadata",
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "lora-c",
+      "kind": "repository",
+      "title": "microsoft/LoRA",
+      "url": "https://github.com/microsoft/LoRA/?utm_source=fixture",
+      "snippet": "PyTorch low-rank adaptation library and model integration examples.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2106.09685",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "qlora-c",
+      "kind": "repository",
+      "title": "artidoro/qlora",
+      "url": "https://github.com/artidoro/qlora/?utm_source=fixture",
+      "snippet": "Quantized language-model fine-tuning with bitsandbytes and PEFT; four-bit training.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2305.14314",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "dpm-c",
+      "kind": "repository",
+      "title": "LuChengTHU/dpm-solver",
+      "url": "https://github.com/LuChengTHU/dpm-solver/?utm_source=fixture",
+      "snippet": "PyTorch and JAX fast diffusion ODE samplers including DPM-Solver++.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2206.00927",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "ddim-c",
+      "kind": "repository",
+      "title": "ermongroup/ddim",
+      "url": "https://github.com/ermongroup/ddim/?utm_source=fixture",
+      "snippet": "Reference denoising diffusion implicit model sampling and image generation code.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2010.02502",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "sage-c",
+      "kind": "repository",
+      "title": "williamleif/GraphSAGE",
+      "url": "https://github.com/williamleif/GraphSAGE/?utm_source=fixture",
+      "snippet": "Stochastic graph convolutions and neighborhood aggregation for dynamic large graphs.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1706.02216",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    },
+    {
+      "id": "saint-c",
+      "kind": "repository",
+      "title": "GraphSAINT/GraphSAINT",
+      "url": "https://github.com/GraphSAINT/GraphSAINT/?utm_source=fixture",
+      "snippet": "Graph minibatch sampling for large GNNs with TensorFlow and PyTorch implementations.",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1907.04931",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Repository description or reference links the paper."
+        }
+      ],
+      "duplicate_type": "synthetic_tracking_alias"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "attention",
+      "problem": {
+        "task": "long sequence attention",
+        "symptom": "GPU memory explodes when storing the attention score matrix",
+        "concepts": [
+          "exact attention",
+          "memory efficient attention"
+        ],
+        "alternative_concepts": [
+          "tiling",
+          "recomputation"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "flash-p",
+        "flash-c",
+        "rabe-p",
+        "xformers-c"
+      ],
+      "pairs": [
+        [
+          "flash-p",
+          "flash-c"
+        ]
+      ]
+    },
+    {
+      "id": "adaptation",
+      "problem": {
+        "task": "language model finetuning",
+        "symptom": "Training all pretrained weights exceeds available accelerator memory",
+        "concepts": [
+          "parameter efficient finetuning",
+          "low rank adaptation"
+        ],
+        "alternative_concepts": [
+          "quantized finetuning",
+          "four bit weights"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "lora-p",
+        "lora-c",
+        "qlora-p",
+        "qlora-c"
+      ],
+      "pairs": [
+        [
+          "lora-p",
+          "lora-c"
+        ],
+        [
+          "qlora-p",
+          "qlora-c"
+        ]
+      ]
+    },
+    {
+      "id": "diffusion",
+      "problem": {
+        "task": "diffusion image sampling",
+        "symptom": "Generating one image takes hundreds of neural network evaluations",
+        "concepts": [
+          "fast diffusion sampling",
+          "ODE solver"
+        ],
+        "alternative_concepts": [
+          "implicit denoising sampling",
+          "fewer denoising steps"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "dpm-p",
+        "dpm-c",
+        "ddim-p",
+        "ddim-c"
+      ],
+      "pairs": [
+        [
+          "dpm-p",
+          "dpm-c"
+        ],
+        [
+          "ddim-p",
+          "ddim-c"
+        ]
+      ]
+    },
+    {
+      "id": "graphs",
+      "problem": {
+        "task": "large graph node representation",
+        "symptom": "Neighbor expansion causes graph minibatches to exceed GPU memory",
+        "concepts": [
+          "neighborhood sampling",
+          "graph convolution minibatch"
+        ],
+        "alternative_concepts": [
+          "subgraph sampling",
+          "inductive graph learning"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "sage-p",
+        "sage-c",
+        "saint-p",
+        "saint-c"
+      ],
+      "pairs": [
+        [
+          "sage-p",
+          "sage-c"
+        ],
+        [
+          "saint-p",
+          "saint-c"
+        ]
+      ]
+    },
+    {
+      "id": "neighbors",
+      "problem": {
+        "task": "approximate nearest neighbor search",
+        "symptom": "Brute force dense vector similarity is too slow as the collection grows",
+        "concepts": [
+          "hierarchical proximity graph",
+          "approximate vector search"
+        ],
+        "alternative_concepts": [
+          "product quantization",
+          "GPU similarity search"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "hnsw-p",
+        "hnsw-c",
+        "faiss-p",
+        "faiss-c"
+      ],
+      "pairs": [
+        [
+          "hnsw-p",
+          "hnsw-c"
+        ],
+        [
+          "faiss-p",
+          "faiss-c"
+        ]
+      ]
+    },
+    {
+      "id": "distributed",
+      "problem": {
+        "task": "distributed large model training",
+        "symptom": "Replicated optimizer states and weights fill accelerator memory",
+        "concepts": [
+          "optimizer state partitioning",
+          "data parallel sharding"
+        ],
+        "alternative_concepts": [
+          "fully sharded data parallel",
+          "parameter offload"
+        ],
+        "component": "PyTorch",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "zero-p",
+        "zero-c",
+        "fsdp-p",
+        "fsdp-d"
+      ],
+      "pairs": [
+        [
+          "zero-p",
+          "zero-c"
+        ]
+      ]
+    },
+    {
+      "id": "contrastive",
+      "problem": {
+        "task": "self supervised visual representation learning",
+        "symptom": "Image encoder needs useful representations without manual class labels",
+        "concepts": [
+          "contrastive learning",
+          "augmented image pairs"
+        ],
+        "alternative_concepts": [
+          "momentum encoder",
+          "dictionary queue"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "simclr-p",
+        "simclr-c",
+        "moco-p",
+        "moco-c"
+      ],
+      "pairs": [
+        [
+          "simclr-p",
+          "simclr-c"
+        ],
+        [
+          "moco-p",
+          "moco-c"
+        ]
+      ]
+    },
+    {
+      "id": "trees",
+      "problem": {
+        "task": "scalable gradient boosting decision trees",
+        "symptom": "Training on high dimensional sparse tabular data takes too long",
+        "concepts": [
+          "tree boosting",
+          "sparsity aware splits"
+        ],
+        "alternative_concepts": [
+          "gradient based sampling",
+          "feature bundling"
+        ],
+        "component": "",
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "xgb-p",
+        "xgb-c",
+        "lgbm-p",
+        "lgbm-c"
+      ],
+      "pairs": [
+        [
+          "xgb-p",
+          "xgb-c"
+        ],
+        [
+          "lgbm-p",
+          "lgbm-c"
+        ]
+      ]
+    }
+  ]
+}

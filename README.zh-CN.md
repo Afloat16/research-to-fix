@@ -43,7 +43,7 @@
 npx skills add Afloat16/research-to-fix --skill research-to-fix
 ```
 
-也可克隆仓库，将 `skills/research-to-fix/` 完整复制到宿主的 Skill 目录。辅助工具要求 **Python 3.10+**。搜索、浏览和执行能力由宿主提供；本项目不捆绑爬虫、登录凭据或模型 API。
+也可克隆仓库，将 `skills/research-to-fix/` 完整复制到宿主的 Skill 目录。辅助工具要求 **Python 3.10+**。搜索、浏览和执行能力主要由宿主提供；可选公开元数据检索需明确授权，本项目不捆绑爬虫、登录凭据或模型 API。
 
 ## 使用
 
@@ -62,6 +62,32 @@ npx skills add Afloat16/research-to-fix --skill research-to-fix
 在相同数据切分、随机种子和资源预算下比较候选方案，
 最后验证最有证据支持的改动。
 ```
+
+## 面向算法研究者的研究—决策引擎
+
+**找论文、找原始开源实现、找替代机制，再用同条件实验选方案。** 针对算法瓶颈、复现失败和性能退化，新增研究计划、可选的公开 API 元数据发现、跨来源去重排序、论文—代码关联图、证据缺口诊断以及实测多方案决策。优先使用宿主真实联网搜索；只在脱敏查询获授权后启用固定公开 API。
+
+```text
+使用 $research-to-fix 优化这个算法瓶颈。
+调研相关论文、作者开源实现、Issue/PR 和失败案例。
+至少比较两个不同机制的可行方案（如有）。
+固定数据集、随机种子、硬件、指标和验收阈值，实际进行同条件实验。
+展示 Pareto 最优方案、精度/耗时/资源取舍，实施最合适的方案，
+最后运行原始故障与回归测试并保存证据。
+```
+
+| 环节 | 工具 |
+| --- | --- |
+| 公开问题指纹与查询规划 | `research_workflow.py plan` |
+| 明确授权后检索公开元数据 | `public_discovery.py` |
+| 去重、排序、证据关联与缺口发现 | `research_workflow.py triage` |
+| 同条件实测多方案比较 | `solution_compare.py` |
+
+![研究决策架构、论文开源来源检索对照和实测多方案 Pareto 结果](docs/figures/research-decision.zh-CN.svg)
+
+*来源关联开发回放：32 个真实来源身份、44 条观测、16 条查询。默认短名单的 Recall@6 为 92.19%、完整论文—代码配对召回 87.5%，与 Stemmed BM25 基线相同；本样本论文+代码覆盖 100%。纯分面排序整体较弱，故作为可选策略。五次本地方差配对实测保留中心化两遍、在线递推两个非支配方案。[实测 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [冻结实验报告](docs/figures/research-snapshot.json)。不是实时 API 的独立评测，也不代表 Agent 修复成功率。*
+
+查看[完整用法与 JSON 格式](skills/research-to-fix/references/research-decision.md)、[论文/开源来源基准](benchmarks/README.md#algorithm-discovery-and-decision)及[真实数值方差修复实验](examples/numerical-variance/README.md)。联网与执行依赖宿主能力及授权；不能保证任何算法问题必定解决。
 
 ## 性能与实验
 
@@ -154,7 +180,7 @@ python skills/research-to-fix/scripts/case_bundle.py verify --directory /tmp/r2f
 ## 项目结构
 
 ```text
-skills/research-to-fix/    Agent Skill、参考资料与离线 Python 工具
+skills/research-to-fix/    Agent Skill、参考资料、离线工具与可选公开检索
 examples/                 可复现修复实例
 benchmarks/               标签数据集、基线算法与性能门禁
 docs/figures/             可再生成矢量图与原始实测数据

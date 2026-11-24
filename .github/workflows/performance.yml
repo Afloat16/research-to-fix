@@ -3,12 +3,14 @@ on:
   push:
     paths:
       - 'benchmarks/**'
-      - 'skills/research-to-fix/scripts/research_case.py'
+      - 'skills/research-to-fix/scripts/**'
+      - 'examples/numerical-variance/**'
       - '.github/workflows/performance.yml'
   pull_request:
     paths:
       - 'benchmarks/**'
-      - 'skills/research-to-fix/scripts/research_case.py'
+      - 'skills/research-to-fix/scripts/**'
+      - 'examples/numerical-variance/**'
       - '.github/workflows/performance.yml'
   workflow_dispatch:
 permissions:
@@ -37,6 +39,10 @@ jobs:
         run: python benchmarks/scale.py --output "$RUNNER_TEMP/scale.json"
       - name: Check deterministic retrieval and memory regressions
         run: python benchmarks/regression.py --synthetic "$RUNNER_TEMP/retrieval.json" --github "$RUNNER_TEMP/github-titles.json" --scale "$RUNNER_TEMP/scale.json" --output "$RUNNER_TEMP/regression.json"
+      - name: Evaluate paper and code evidence reranking
+        run: python benchmarks/discovery.py --output "$RUNNER_TEMP/discovery.json"
+      - name: Compare actual numerical repair candidates
+        run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -46,5 +52,7 @@ jobs:
             ${{ runner.temp }}/github-titles.json
             ${{ runner.temp }}/scale.json
             ${{ runner.temp }}/regression.json
+            ${{ runner.temp }}/discovery.json
+            ${{ runner.temp }}/variance-comparison/
           retention-days: 14
           if-no-files-found: warn

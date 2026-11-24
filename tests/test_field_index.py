@@ -47,9 +47,14 @@ class FieldIndexTests(unittest.TestCase):
 
     def test_title_normalization_and_no_match(self):
         docs = [("a", *rc.field_counts("attention kernel", "unrelated " * 200)),
-                ("b", *rc.field_counts("other title", "attention kernel " * 10))]
+                ("b", *rc.field_counts("attention kernel", "unrelated " * 10))]
         index = rc.FieldIndex(docs, 8, 1)
-        self.assertEqual(index.rank(["attent", "kernel"])[0][1], "a")
+        # Exact independent-field normalization: unrelated body length cannot
+        # change the contribution from an otherwise identical title.
+        ranked = index.rank(["attent", "kernel"])
+        self.assertEqual(len(ranked), 2)
+        self.assertEqual(ranked[0][0], ranked[1][0])
+        self.assertEqual([row[1] for row in ranked], ["a", "b"])
         self.assertEqual(index.rank(["unseen"]), [])
         with self.assertRaises(ValueError):
             rc.FieldIndex([docs[0], docs[0]])

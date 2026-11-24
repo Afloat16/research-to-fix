@@ -1163,10 +1163,10 @@ class PostingIndex:
                 for index in order]
 
 
-def field_counts(primary, secondary):
+def field_counts(primary, secondary, mode="stemmed"):
     """Separate title/symptom and body/mechanism fields with the same tokenizer."""
-    return (Counter(ranking_tokens(primary, "stemmed")),
-            Counter(ranking_tokens(secondary, "stemmed")))
+    return (Counter(ranking_tokens(primary, mode)),
+            Counter(ranking_tokens(secondary, mode)))
 
 
 class FieldIndex(PostingIndex):
@@ -1201,7 +1201,7 @@ class FieldIndex(PostingIndex):
                 frequency = title_weight * title.get(term, 0) / title_norm + body_weight * body.get(term, 0) / body_norm
                 if frequency <= 0:
                     continue
-                contribution = inverse[term] * 2.5 * frequency / (frequency + 1.5)
+                contribution = inverse[term] * 2.5 * frequency / (frequency + 1.5) * _term_weight(term)
                 if term not in self.postings:
                     self.postings[term] = (array("I"), array("d"))
                 ids, values = self.postings[term]

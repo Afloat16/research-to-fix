@@ -21,7 +21,9 @@ from retrieval import load_beir, text_fields, SQLiteBaseline, metrics, percentil
 import research_case as rc
 
 METHODS = ("v1_bm25", "v1_technical", "v1_stemmed", "v1_hybrid", "v1_contextual",
-           "sqlite_unicode", "sqlite_porter", "field2", "field4", "field8", "title_only")
+           "sqlite_unicode", "sqlite_porter", "field2", "field4", "field8", "title_only",
+           "context_field2", "context_field4", "context_field8",
+           "sqlite_unicode4", "sqlite_unicode8", "sqlite_porter4", "sqlite_porter8")
 K = 10
 SEED = "r2f-independent-v1:2026-11-24:"
 BOOTSTRAPS = 2000
@@ -54,16 +56,27 @@ def paired_interval(left, right, resamples=BOOTSTRAPS):
 
 def build(corpus, method):
     if method.startswith("sqlite_"):
-        sqlite = SQLiteBaseline(corpus, porter=method == "sqlite_porter")
-        return sqlite.search, sqlite.db.close
-    if method in ("field2", "field4", "field8", "title_only"):
-        weights = {"field2": (2., 1.), "field4": (4., 1.), "field8": (8., 1.), "title_only": (1., 0.)}
+        sqlite = SQLiteBaseline(corpus, porter=method.startswith("sqlite_porter"))
+        weight = float(method[-1]) if method[-1].isdigit() else 2.0
+        def search(text, k):
+            import re
+            tokens = sorted(set(re.findall(r"[^\W_]+", text.casefold())) - rc.RECALL_STOPWORDS)
+            if not tokens:
+                return []
+            expression = " OR ".join('"' + token.replace('"', '""') + '"' for token in tokens)
+            return [row[0] for row in sqlite.db.execute(
+                "SELECT id FROM docs WHERE docs MATCH ? ORDER BY bm25(docs,0.0,?,1.0), id LIMIT ?",
+                (expression, weight, k))]
+        return search, sqlite.db.close
+    if method.startswith(("field", "context_field")) or method == "title_only":
+        mode = "contextual" if method.startswith("context_") else "stemmed"
+        weights = (1., 0.) if method == "title_only" else (float(method[-1]), 1.)
         docs = [(row["id"], *rc.field_counts(rc._recall_excerpt(row["title"], 1000),
-                                             rc._recall_excerpt(row["text"], 9000))) for row in corpus]
-        index = rc.FieldIndex(docs, *weights[method])
+                                             rc._recall_excerpt(row["text"], 9000), mode)) for row in corpus]
+        index = rc.FieldIndex(docs, *weights)
         del docs
         def search(text, k):
-            return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, "stemmed"), k, False)]
+            return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, mode), k, False)]
         return search, lambda: None
     mode = method.removeprefix("v1_")
     if mode not in rc.RANKING_MODES:
@@ -101,11 +114,13 @@ def evaluate(corpus, queries, metadata, methods=METHODS):
         print("METHOD", method, json.dumps(results[method]), flush=True)
     comparisons = {}
     for method in methods:
-        if method == "sqlite_porter" or "sqlite_porter" not in per_method:
-            continue
-        comparisons[method + "_vs_sqlite_porter"] = paired_interval(
-            [s["ndcg"] for s in per_method[method]["scores"]],
-            [s["ndcg"] for s in per_method["sqlite_porter"]["scores"]])
+        for baseline in ("sqlite_porter", "sqlite_unicode", "sqlite_unicode4", "sqlite_unicode8",
+                         "sqlite_porter4", "sqlite_porter8", "v1_contextual"):
+            if method == baseline or baseline not in per_method:
+                continue
+            comparisons[method + "_vs_" + baseline] = paired_interval(
+                [s["ndcg"] for s in per_method[method]["scores"]],
+                [s["ndcg"] for s in per_method[baseline]["scores"]])
     return {"dataset": metadata, "documents": len(corpus), "queries": len(queries),
             "k": K, "methods": results, "paired_ndcg": comparisons,
             "environment": {"python": platform.python_version(), "platform": platform.platform(),

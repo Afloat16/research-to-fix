@@ -159,7 +159,7 @@ def live_lookup(queries):
     return rows
 
 
-def exact_lookup(queries):
+def exact_lookup(queries, archive_fallback=False):
     # This is a different information condition from title-only search:
     # the paper identifier is known. Never pool the results as if equally hard.
     rows = []
@@ -170,7 +170,7 @@ def exact_lookup(queries):
     if not selected:
         return []
     result = discovery.resolve_papers(plan, [row["id"] for row in selected],
-                                      plan["queries"][0]["id"], True)
+                                      plan["queries"][0]["id"], True, archive_fallback=archive_fallback, max_requests=8)
     by_id = defaultdict(set)
     for row in result["results"]:
         if row["kind"] != "repository":
@@ -180,13 +180,15 @@ def exact_lookup(queries):
             if match.startswith("https://arxiv.org/abs/"):
                 by_id[match.split("/abs/", 1)[1]].add(w.canonical_url(row["url"]))
     labels = {row["id"]: row["relevant"] for row in selected}
-    for lookup in result["lookups"]:
-        key = lookup["arxiv_id"]
+    for key in labels:
+        attempts = [row for row in result["lookups"] if row["arxiv_id"] == key]
         found = sorted(by_id[key])
-        rows.append({"paper_id": key, "status": lookup["status"], "returned_codes": len(found),
-                     "metrics": metric(found, labels[key]) if lookup["status"] in ("completed", "partial") else None,
+        success = any(row["status"] in ("completed", "partial") for row in attempts)
+        rows.append({"paper_id": key, "status": "completed" if success else "unavailable",
+                     "returned_codes": len(found), "attempts": attempts,
+                     "metrics": metric(found, labels[key]) if success else None,
                      "gold_repositories": labels[key], "returned_repositories": found,
-                     "elapsed_ms": lookup.get("elapsed_ms")})
+                     "elapsed_ms": sum(row.get("elapsed_ms", 0) for row in attempts)})
     return rows
 
 
@@ -196,9 +198,10 @@ def main():
     parser.add_argument("--input", type=Path, help="Replay a previously saved archive JSON; no network")
     parser.add_argument("--live", action="store_true", help="Also evaluate up to four public title queries via fixed APIs")
     parser.add_argument("--exact", action="store_true", help="Also evaluate up to four known arXiv IDs (different information condition)")
+    parser.add_argument("--archive-fallback", action="store_true", help="Evaluate exact-ID catalog plus historical archive fallback")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    if (not args.input or args.live or args.exact) and not args.approve_public:
+    if (not args.input or args.live or args.exact or args.archive_fallback) and not args.approve_public:
         parser.error("explicit public approval required")
     args.output.mkdir(parents=True, exist_ok=False)
     archive = w.read_json(args.input) if args.input else fetch_archive()
@@ -214,7 +217,8 @@ def main():
                        "Live catalog may share this archive; the online evaluation is not independent of that provider.",
               "offline_slug_methods": slug_benchmark(queries, repos) if queries and repos else None,
               "live": live_lookup(queries) if args.live and queries else [],
-              "known_id_lookup": exact_lookup(queries) if args.exact and queries else [],
+              "known_id_lookup": exact_lookup(queries, args.archive_fallback) if args.exact and queries else [],
+              "known_id_archive_fallback": args.archive_fallback,
               "sample_selection": "fixed row offsets; all valid official arXiv labels; SHA-256 order for at most four live lookups"}
     w.write_json(result, args.output / "report.json")
     # The archive itself is not printed to logs.

@@ -24,6 +24,10 @@ TIMEOUT_SECONDS = 10
 MAX_PER_QUERY = 10
 MAX_PAPER_LOOKUPS = 4
 PAPER_DETAIL = "https://paperswithcode.co/api/v1/papers/arxiv/"
+ARCHIVE_DETAIL = "https://datasets-server.huggingface.co/filter"
+ARCHIVE_DATASET = "pwc-archive/links-between-paper-and-code"
+ARCHIVE_SNAPSHOT = "2025-07-28"
+ARCHIVE_LICENSE = "CC-BY-SA-4.0"
 USER_AGENT = "Research-to-Fix/1.0 (+https://github.com/Afloat16/research-to-fix)"
 API = {
     "github_repositories": "https://api.github.com/search/repositories",
@@ -101,7 +105,17 @@ def make_request(query, limit):
 def request_metadata(url, provider):
     # The only caller constructs this URL from an allowlisted endpoint. Reject
     # redirects, avoid environment proxy credentials, and send no cookies/auth.
-    if provider == "paperswithcode_detail":
+    if provider == "pwc_archive":
+        parsed = urllib.parse.urlsplit(url)
+        params = urllib.parse.parse_qs(parsed.query)
+        predicate = params.get("where", [""])[0]
+        match = re.fullmatch(r'"paper_arxiv_id"=\'([a-zA-Z0-9./-]+)\'', predicate)
+        if (parsed.scheme != "https" or parsed.netloc != "datasets-server.huggingface.co"
+                or parsed.path != "/filter" or parsed.fragment or not match
+                or not w.normalized_arxiv(match.group(1))
+                or params != archive_params(match.group(1), parsed=True)):
+            raise ProviderError("unavailable")
+    elif provider == "paperswithcode_detail":
         parsed = urllib.parse.urlsplit(url)
         # The exact identifier path is the only non-search request allowed.
         if (parsed.scheme != "https" or parsed.netloc != "paperswithcode.co"
@@ -572,10 +586,71 @@ def paper_detail_request(value):
     return PAPER_DETAIL + urllib.parse.quote(identifier, safe="") + "?include_resources=true"
 
 
-def resolve_papers(plan, paper_ids, query_id, approve_public=False, transport=request_metadata):
+def archive_params(arxiv_id, parsed=False):
+    params = {"dataset": ARCHIVE_DATASET, "config": "default", "split": "train",
+              "where": '"paper_arxiv_id"=\'' + arxiv_id + "'", "offset": "0", "length": "20"}
+    return {key: [value] for key, value in params.items()} if parsed else params
+
+
+def archive_detail_request(value):
+    paper_detail_request(value)  # Reuse strict explicit-ID validation.
+    identity = w.normalized_arxiv(value)
+    return ARCHIVE_DETAIL + "?" + urllib.parse.urlencode(archive_params(identity))
+
+
+def parse_archive_links(query, payload, identity):
+    if not isinstance(payload, dict) or not isinstance(payload.get("rows"), list):
+        raise ProviderError("invalid_response")
+    raw_rows = payload["rows"][:20]
+    records = []
+    for wrapped in raw_rows:
+        row = wrapped.get("row") if isinstance(wrapped, dict) else None
+        if not isinstance(row, dict) or w.normalized_arxiv(row.get("paper_arxiv_id")) != identity:
+            continue
+        url = github_repo_url(row.get("repo_url"))
+        if not url:
+            continue
+        records.append((row, url))
+    if raw_rows and not records:
+        raise ProviderError("invalid_response")
+    records.sort(key=lambda pair: (pair[0].get("is_official") is not True,
+                                   pair[0].get("mentioned_in_paper") is not True, pair[1]))
+    if not records:
+        return []
+    paper_url_ = "https://arxiv.org/abs/" + identity
+    title = records[0][0].get("paper_title")
+    hint = "PWC archive (2025-07-28); historical association, inspect current source"
+    paper = base_row(query, paper_url_, title, "", origin="pwc_archive", arxiv_id=identity,
+                     publication_hint=hint, catalog_snapshot=ARCHIVE_SNAPSHOT, catalog_license=ARCHIVE_LICENSE)
+    if not paper:
+        raise ProviderError("invalid_response")
+    results, seen = [paper], set()
+    for row, url in records:
+        if url in seen:
+            continue
+        seen.add(url)
+        note = ("Archive official flag; verify current author/code relationship" if row.get("is_official") is True
+                else "Archive linked repository; verify relationship")
+        candidate = base_row(query, url, url.removeprefix("https://github.com/"), title,
+                             origin="pwc_archive", kind="repository", publication_hint=note,
+                             catalog_snapshot=ARCHIVE_SNAPSHOT, catalog_license=ARCHIVE_LICENSE,
+                             links=[{"url": paper_url_, "relation": "implements" if row.get("is_official") is True else "describes",
+                                     "basis": "metadata", "note": note}])
+        if candidate:
+            results.append(candidate)
+        if len(results) == 4:
+            break
+    return results
+
+
+def resolve_papers(plan, paper_ids, query_id, approve_public=False, transport=request_metadata,
+                   archive_fallback=False, max_requests=8):
     if approve_public is not True:
         w.fail("explicit_public_approval_required")
     plan = w.validate_plan(plan)
+    w.integer(max_requests, 1, MAX_REQUESTS)
+    if type(archive_fallback) is not bool:
+        w.fail("invalid_archive_fallback")
     if not isinstance(paper_ids, list) or not 1 <= len(paper_ids) <= MAX_PAPER_LOOKUPS:
         w.fail("invalid_paper_lookup_count")
     queries = {row["id"]: row for row in plan["queries"]}
@@ -586,42 +661,68 @@ def resolve_papers(plan, paper_ids, query_id, approve_public=False, transport=re
     urls = [paper_detail_request(value) for value in paper_ids]
     if len(set(urls)) != len(urls):
         w.fail("duplicate_paper_lookup")
-    results, lookups, stopped = [], [], None
-    for value, url in zip(paper_ids, urls):
+    results, lookups, stopped, requests = [], [], set(), 0
+
+    def attempt(value, provider, url):
+        nonlocal requests
         identity = w.normalized_arxiv(value)
-        if stopped:
-            lookups.append({"arxiv_id": identity, "status": "skipped_budget",
-                            "reason": "provider_stopped_after_" + stopped, "returned": 0})
-            continue
+        row = {"arxiv_id": identity, "provider": provider, "status": "unavailable", "returned": 0}
+        if provider in stopped or requests >= max_requests:
+            row.update(status="skipped_budget", reason="provider_or_request_limit")
+            return [], row
+        requests += 1
         start = time.monotonic()
-        row = {"arxiv_id": identity, "status": "unavailable", "returned": 0,
-               "searched_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        row["searched_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         try:
-            raw = transport(url, "paperswithcode_detail")
+            raw = transport(url, provider)
             if not isinstance(raw, bytes) or not raw or len(raw) > MAX_RESPONSE_BYTES:
                 raise ProviderError("invalid_response")
             payload, _ = core.decode_case_bytes(raw)
-            if not isinstance(payload, dict) or w.normalized_arxiv(payload.get("arxiv_id")) != identity:
-                raise ProviderError("invalid_response")
-            found, partial = parse_paperswithcode(q, {"results": [payload]}, 1)
-            results.extend(found)
+            if provider == "pwc_archive":
+                found = parse_archive_links(q, payload, identity)
+                partial = False
+            else:
+                if not isinstance(payload, dict) or w.normalized_arxiv(payload.get("arxiv_id")) != identity:
+                    raise ProviderError("invalid_response")
+                found, partial = parse_paperswithcode(q, {"results": [payload]}, 1)
             row.update(status="partial" if partial else "completed", returned=len(found))
         except ProviderError as error:
+            found = []
             row["status"] = error.code
             if error.code in ("rate_limited", "access_blocked"):
-                stopped = error.code
+                stopped.add(provider)
         except (ValueError, TypeError, RecursionError, KeyError, OverflowError):
+            found = []
             row["status"] = "invalid_response"
         row["elapsed_ms"] = round((time.monotonic() - start) * 1000, 3)
+        return found, row
+
+    # Allocate one catalog attempt per ID first. Only missing code relations
+    # use the separately authorized historical archive fallback.
+    misses = []
+    for value, url in zip(paper_ids, urls):
+        found, row = attempt(value, "paperswithcode_detail", url)
+        results.extend(found)
         lookups.append(row)
-    statuses = {row["status"] for row in lookups}
-    completed = statuses == {"completed"}
-    # Lookup is not evidence that the original broad search ran. Keep its
-    # status separate and bind results to the reviewed query for triage.
+        if not any(item["kind"] == "repository" for item in found):
+            misses.append(value)
+    if archive_fallback:
+        for value in misses:
+            found, row = attempt(value, "pwc_archive", archive_detail_request(value))
+            results.extend(found)
+            lookups.append(row)
+    by_id = {w.normalized_arxiv(value): [] for value in paper_ids}
+    for row in lookups:
+        by_id[row["arxiv_id"]].append(row)
+    # Completion indicates at least one successful response for each ID,
+    # not that every paper has code or the associated code still works.
+    completed = all(any(row["status"] == "completed" for row in attempts)
+                    for attempts in by_id.values())
     return {"schema_version": 1, "scope": "public_paper_link_resolution",
             "plan_id": w.plan_fingerprint(plan), "query_id": query_id,
             "notice": DISCOVERY_NOTICE, "lookups": lookups, "results": results, "searches": [],
-            "requests": sum("searched_at" in row for row in lookups), "complete": completed}
+            "requests": requests, "archive_fallback": archive_fallback, "complete": completed}
+
 
 
 def main(argv=None):
@@ -633,6 +734,8 @@ def main(argv=None):
     parser.add_argument("--per-query", type=int, default=8)
     parser.add_argument("--workers", type=int, default=1, help="Independent provider groups only (1–4)")
     parser.add_argument("--query-id", action="append")
+    parser.add_argument("--archive-fallback", action="store_true",
+                        help="Also permit exact lookup in the frozen CC-BY-SA PWC archive when current catalog lacks code")
     parser.add_argument("--resolve-paper-id", action="append",
                         help="Resolve explicitly reviewed arXiv IDs via the catalog (max 4); requires one catalog query ID")
     parser.add_argument("--output", required=True, type=Path)
@@ -648,8 +751,11 @@ def main(argv=None):
                 w.fail("paper_lookup_requires_catalog_query")
             if len(args.resolve_paper_id) > args.max_requests:
                 w.fail("invalid_paper_lookup_count")
-            report = resolve_papers(plan, args.resolve_paper_id, args.query_id[0], args.approve_public)
+            report = resolve_papers(plan, args.resolve_paper_id, args.query_id[0], args.approve_public,
+                                    archive_fallback=args.archive_fallback, max_requests=args.max_requests)
         else:
+            if args.archive_fallback:
+                w.fail("archive_fallback_requires_paper_lookup")
             report = discover(plan, args.approve_public, args.max_requests,
                               args.per_query, args.query_id, workers=args.workers)
         w.write_json(report, args.output)

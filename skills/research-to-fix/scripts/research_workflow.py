@@ -519,7 +519,10 @@ def normalize_result(row, queries):
         provider_rank = None
     retraction = "retracted" if row.get("retraction_hint") == "retracted" else ""
     origin = row.get("origin", "host")
-    if origin not in ("host", q["provider"]):
+    allowed_origins = {"host", q["provider"]}
+    if q["provider"] == "paperswithcode":
+        allowed_origins.update(("pwc_archive", "local_catalog"))
+    if not isinstance(origin, str) or origin not in allowed_origins:
         fail("invalid_origin")
     if origin != "host" and access == "read":
         fail("metadata_origin_cannot_claim_read")
@@ -549,6 +552,8 @@ def normalize_result(row, queries):
             "url": url, "original_url": original_url, "title": title, "snippet": snippet,
             "access": access, "origin": origin, "keys": keys, "links": links,
             "year": year, "provider_rank": provider_rank, "retraction_hint": retraction,
+            "catalog_snapshot": _safe_excerpt(row.get("catalog_snapshot"), 80),
+            "catalog_license": _safe_excerpt(row.get("catalog_license"), 80),
             "revision": _safe_excerpt(row.get("revision"), 100),
             "publication_hint": _safe_excerpt(row.get("publication_hint"), 120),
             "license_hint": _safe_excerpt(row.get("license_hint"), 120),
@@ -743,10 +748,12 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
         ids = sorted(set().union(*(row["keys"] for row in group)))
         stable_id = "S-" + hashlib.sha256("\n".join(ids).encode()).hexdigest()[:16]
         provenance = sorted({(row["query_id"], row["source"], row["origin"], row["original_url"],
-                              row["access"], row["revision"], row["provider_rank"] or 0) for row in group})
+                              row["access"], row["revision"], row["provider_rank"] or 0,
+                              row["catalog_snapshot"], row["catalog_license"]) for row in group})
         sources = [{"query_id": qid, "source": src, "origin": origin, "url": url,
-                    "access": access, "revision": revision, "provider_rank": rank or None}
-                   for qid, src, origin, url, access, revision, rank in provenance[:12]]
+                    "access": access, "revision": revision, "provider_rank": rank or None,
+                    "catalog_snapshot": snapshot, "catalog_license": license_}
+                   for qid, src, origin, url, access, revision, rank, snapshot, license_ in provenance[:12]]
         # Multiple queries from one provider do not multiply the rank prior.
         provider_ranks = {}
         for observation in group:

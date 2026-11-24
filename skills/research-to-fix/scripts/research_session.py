@@ -34,6 +34,7 @@ def aggregate(rounds, limit=12, ranking="bm25"):
     observed = []
     all_requested = set()
     input_count = 0
+    seen_payloads = set()
     total_observations = 0
     for idx, entry in enumerate(rounds, 1):
         entry = w.object_(entry)
@@ -41,8 +42,6 @@ def aggregate(rounds, limit=12, ranking="bm25"):
         if plans and any(plan["problem"][field] != plans[0]["problem"][field]
                          for field in INTENT_FIELDS):
             w.fail("session_intent_changed")
-        if any(w.plan_fingerprint(plan) == w.plan_fingerprint(old) for old in plans):
-            w.fail("repeat_plan_use_one_round")
         plans.append(plan)
         all_requested.update(plan["requested_sources"])
         binding = w.plan_fingerprint(plan)
@@ -61,11 +60,16 @@ def aggregate(rounds, limit=12, ranking="bm25"):
             else:
                 repeated += 1
             mapping[query["id"]] = unique_queries[key]
-        round_results, round_searches = [], []
+        round_results, round_searches, digests = [], [], []
         for payload in inputs:
             payload = w.object_(payload)
             if payload.get("plan_id") != binding:
                 w.fail("results_plan_mismatch")
+            fingerprint = w.plan_fingerprint({"payload": payload})
+            if fingerprint in seen_payloads:
+                w.fail("duplicate_round_payload")
+            seen_payloads.add(fingerprint)
+            digests.append(fingerprint)
             results = payload.get("results", [])
             searches = payload.get("searches", [])
             if not isinstance(results, list) or not isinstance(searches, list) or len(searches) > w.MAX_QUERIES:
@@ -97,7 +101,8 @@ def aggregate(rounds, limit=12, ranking="bm25"):
         payloads.append({"results": round_results,
                          "searches": [{"query_id": key, "status": status}
                                       for key, status in sorted(seen_status)]})
-        stats.append({"round": idx, "plan_id": binding, "planned_queries": len(plan["queries"]),
+        stats.append({"round": idx, "plan_id": binding, "payload_fingerprints": digests,
+                      "planned_queries": len(plan["queries"]),
                       "repeated_query_definitions": repeated,
                       "attempted_unique_queries": len({key for key, status in seen_status if status in ATTEMPTED}),
                       "successful_queries": len({key for key, status in seen_status if status in {"completed", "partial"}}),
@@ -135,7 +140,7 @@ def aggregate(rounds, limit=12, ranking="bm25"):
             continue
         score = (0 if query["family"] in report["family_gaps"] else 1,
                  stage_order[query["stage"]], query["id"])
-        followup.append((score, {k: v for k, v in query.items() if k != "id"}))
+        followup.append((score, query))
     followup.sort(key=lambda pair: pair[0])
     read_families = sorted({row["family"] for row in report["shortlist"]
                             if any(source["access"] == "read" for source in row["provenance"])})
@@ -150,37 +155,40 @@ def aggregate(rounds, limit=12, ranking="bm25"):
     else:
         action = "review_alternatives_and_counterevidence"
     return {"schema_version": 1, "scope": "research_session", "notice": NOTICE,
-            "session_id": w.plan_fingerprint({"plan_ids": [row["plan_id"] for row in stats]}),
+            "session_id": w.plan_fingerprint({"rounds": [{"plan_id": row["plan_id"],
+                "payload_fingerprints": row["payload_fingerprints"]} for row in stats]}),
             "rounds": stats, "unique_queries": len(queries), "attempted_queries": len(attempted),
             "successful_or_partial_queries": len(successful),
             "incomplete_queries": incomplete,
             "read_shortlist_families": read_families,
             "two_round_novelty_saturation": saturated,
             "suggested_action": action, "next_query_candidates": [row for _, row in followup[:12]],
+            "next_plan": candidate_plan,
+            "next_query_ids": [row["id"] for _, row in followup[:12]],
             "review_required": True, "triage": report}
 
 
-def load_rounds(pairs):
-    if not 1 <= len(pairs) <= MAX_FILES:
-        w.fail("invalid_round_inputs")
-    # Multiple explicit result files for the same reviewed plan are one round.
-    rounds, by_id = [], {}
-    for plan_path, result_path in pairs:
+def load_rounds(groups):
+    if not 1 <= len(groups) <= MAX_ROUNDS:
+        w.fail("invalid_round_count")
+    rounds = []
+    count = 0
+    for group in groups:
+        if len(group) < 2:
+            w.fail("invalid_round_inputs")
+        plan_path, *result_paths = group
+        count += len(result_paths)
+        if count > MAX_FILES:
+            w.fail("invalid_round_inputs")
         plan = w.validate_plan(w.read_json(plan_path))
-        key = w.plan_fingerprint(plan)
-        if key not in by_id:
-            by_id[key] = {"plan": plan, "inputs": []}
-            rounds.append(by_id[key])
-        elif rounds[-1]["plan"] != plan:
-            w.fail("noncontiguous_round")
-        by_id[key]["inputs"].append(w.read_json(result_path))
+        rounds.append({"plan": plan, "inputs": [w.read_json(path) for path in result_paths]})
     return rounds
 
 
 def main(argv=None):
     parser = core.SafeArgumentParser(description=__doc__)
-    parser.add_argument("--round", action="append", nargs=2, metavar=("PLAN", "RESULTS"),
-                        required=True, help="Explicit reviewed plan and bound result file; repeat")
+    parser.add_argument("--round", action="append", nargs="+", metavar="PLAN_OR_RESULTS",
+                        required=True, help="One plan followed by one or more result files; repeat per round")
     parser.add_argument("--limit", type=int, default=12)
     parser.add_argument("--ranking", choices=("bm25", "facet", "fusion"), default="bm25")
     parser.add_argument("--output", type=Path)

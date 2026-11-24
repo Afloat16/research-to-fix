@@ -56,6 +56,18 @@ class ResearchSessionTests(unittest.TestCase):
         c["inputs"][0]["searches"][0]["status"] = "skipped_budget"
         self.assertFalse(session.aggregate([a,b,c])["two_round_novelty_saturation"])
 
+    def test_followup_plan_is_executable_and_new_payload_can_reuse_plan(self):
+        a = make_round(PROBLEM, "arxiv", "https://arxiv.org/abs/2205.14135", "attention")
+        b = copy.deepcopy(a)
+        b["inputs"][0]["results"][0]["url"] = "https://arxiv.org/abs/2307.08691"
+        report = session.aggregate([a, b])
+        self.assertEqual(report["unique_queries"], 1)
+        self.assertEqual(report["rounds"][1]["first_seen_identities"], 1)
+        self.assertEqual(w.validate_plan(report["next_plan"]), report["next_plan"])
+        self.assertTrue(set(report["next_query_ids"]) <=
+                        {q["id"] for q in report["next_plan"]["queries"]})
+        self.assertNotEqual(report["session_id"], session.aggregate([a])["session_id"])
+
     def test_repeated_query_definitions_count_once(self):
         a = make_round(PROBLEM, "arxiv", "https://arxiv.org/abs/2205.14135", "attention")
         plan = w.make_plan(PROBLEM, 3, ["arxiv", "crossref"], "comprehensive")

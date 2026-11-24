@@ -2,14 +2,14 @@
 
 ## What is measured
 
-These are fixed development fixtures, not a general repair-success benchmark, not a leaderboard, and not a held-out estimate of field performance. Compare the same inputs, relevance judgments, top-k and environment. The production CLI additionally requires valid solved case declarations and applies a relative score threshold; raw ranking evaluations deliberately omit that threshold and evaluate top-k.
+The original small fixtures below are fixed development fixtures, not a general repair-success benchmark, not a leaderboard, and not a held-out estimate of field performance. A separate external retrieval evaluation is defined in [INDEPENDENT_PROTOCOL.md](INDEPENDENT_PROTOCOL.md). Compare the same inputs, relevance judgments, top-k and environment. The production CLI additionally requires valid solved case declarations and applies a relative score threshold; raw ranking evaluations deliberately omit that threshold and evaluate top-k.
 
 | Dataset / workload | Scope | Ground truth |
 | --- | --- | --- |
 | [retrieval_v1.json](datasets/retrieval_v1.json) | 40 authored diagnostic descriptions; 80 positive and 3 unrelated bilingual queries | Synthetic one-target relevance labels; not real repairs |
 | [github_duplicate_titles_v1.json](datasets/github_duplicate_titles_v1.json) | 44 actual GitHub issue titles, 18 actual duplicate issue titles | Explicit public duplicate-link comments, 14 canonical targets + 30 unjudged closed bug titles; all source and judgment links retained |
 | Scale workload | 120 generated structurally valid synthetic case files / 32 queries; 5,000 sparse generated documents / 64 queries | Exact report and score equality, not semantic relevance |
-| [BEIR CQADupStack programmers](https://huggingface.co/datasets/BeIR/cqadupstack) | External English duplicate-question retrieval corpus | Published [qrels](https://huggingface.co/datasets/BeIR/cqadupstack-qrels), CC BY-SA 4.0; optional local data, no external run claimed in this upgrade |
+| [BEIR CQADupStack programmers](https://huggingface.co/datasets/BeIR/cqadupstack) | External English duplicate-question retrieval corpus | Published [qrels](https://huggingface.co/datasets/BeIR/cqadupstack-qrels), CC BY-SA 4.0; revision-pinned external data; separate independent evaluation |
 
 The public issue sample is a small convenience sample of explicitly linked duplicates (some canonical targets remain open). The 30 distractors are unjudged, not established irrelevant. No issue bodies, comments, author details, private information, code or attached logs are included in ranked text. Dataset source links and attribution are retained in the JSON; original issue titles retain their source rights. The sample was used during algorithm development, so results are not independent test results. Do not tune repeatedly on this set and claim generalized superiority.
 
@@ -81,3 +81,15 @@ python examples/exact-attention/compare_attention.py --output /tmp/r2f-attention
 [Offline CI 45355977079](https://github.com/Afloat16/research-to-fix/actions/runs/45355977079) · [frozen snapshot](../docs/figures/v1-snapshot.json). The paired method achieves Recall@6 of 98.44% and 95.83%, complete pair recall 100% and 94.44%, respectively. Fusion and facet were retained as optional, not selected as defaults. The scheduling experiment uses fixed 40 ms mock delays, not measured internet speed. The attention experiment tests exact forward results and allocation/time tradeoffs, not GPU acceleration.
 
 The separate explicitly approved public known-item probe ran six requests in [CI 45355435962](https://github.com/Afloat16/research-to-fix/actions/runs/45355435962). Three completed; three had provider errors. Fifteen observations, 14 unique identities, target paper DOI and repository found. This single known item is not a quality benchmark. Reproduce only with explicit network consent: `python benchmarks/live_probe.py --approve-public --output /tmp/r2f-live-probe.json`. Normal CI does not invoke it.
+
+## External protocol and paired agent evaluation
+
+See [INDEPENDENT_PROTOCOL.md](INDEPENDENT_PROTOCOL.md) and [independent_selection.json](independent_selection.json) for development selection and frozen external datasets, scoring rules and exact measured development results. Use `python benchmarks/independent_suite.py --selection benchmarks/independent_selection.json --output /path/to/new-output` only when authorized to download those public datasets. The suite records failures without inventing scores. Ordinary CI remains offline. Run `python benchmarks/tokenizer_benchmark.py --data /path/to/downloaded/programmers --output tokenizer.json` for paired exact-token parity and timing.
+
+[AGENT_TRIAL_PROTOCOL.md](AGENT_TRIAL_PROTOCOL.md) defines a distinct same-model, same-scaffold, same-budget SWE-bench evaluation. Its offline result importer does not run models or repairs and its synthetic tests are not repair success measurements.
+
+[Completed independent holdout results](INDEPENDENT_RESULTS.md) include all four datasets and six frozen methods, full uncertainty and cost tradeoffs, plus actual CI provenance.
+
+## Specialized competitor and optional vector scoring
+
+See [COMPETITOR_RESULTS.md](COMPETITOR_RESULTS.md) and [BM25S_PROTOCOL.md](BM25S_PROTOCOL.md) for actual pinned BM25S comparisons, matched corpus and relevance labels, and the optional vector parity benchmark. These are post-holdout diagnostics, not blind or agent trials. Dependency installation is benchmark-only and explicit; ordinary CI remains offline.

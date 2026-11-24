@@ -728,20 +728,37 @@ class RecallInputError(ValueError):
     """A fixed error code, never a caller's path, query, or file contents."""
 
 
+RECALL_WORD = re.compile(r"[^\W_]+(?:_[^\W_]+)*")
+HAN_RUN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]+")
+HAN_SEGMENTS = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]+|[^\u3400-\u4dbf\u4e00-\u9fff]+")
+
+
 def recall_tokens(text):
     """Keep technical word tokens; split Han runs into overlapping bigrams."""
     text = unicodedata.normalize("NFKC", text).casefold()
+    words = RECALL_WORD.findall(text)
+    # The overwhelmingly common ASCII technical corpus needs no per-word
+    # Han detection, segmentation or extra regex calls. For Unicode words
+    # without Han, the old inner segmentation produced precisely that word.
+    if text.isascii():
+        return [word for word in words if word not in RECALL_STOPWORDS]
     tokens = []
-    for word in re.findall(r"[^\W_]+(?:_[^\W_]+)*", text):
-        for part in re.findall(r"[\u3400-\u4dbf\u4e00-\u9fff]+|[^\u3400-\u4dbf\u4e00-\u9fff]+", word):
-            if re.fullmatch(r"[\u3400-\u4dbf\u4e00-\u9fff]+", part):
+    for word in words:
+        if not HAN_RUN.search(word):
+            if word not in RECALL_STOPWORDS:
+                tokens.append(word)
+            continue
+        for part in HAN_SEGMENTS.findall(word):
+            if HAN_RUN.fullmatch(part):
                 tokens.extend(part[index:index + 2] for index in range(max(1, len(part) - 1)))
             elif part not in RECALL_STOPWORDS:
                 tokens.append(part)
     return tokens
 
 
-RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual")
+RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual", "precision_field")
+PRECISION_TITLE_WEIGHT = 4.0
+PRECISION_BODY_WEIGHT = 1.0
 TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
 ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
 CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
@@ -873,7 +890,21 @@ def _english_stem(word):
     return word
 
 
+def _phrase_tokens(text):
+    # Keep the old contextual phrase ordering and field boundary behavior.
+    phrases = []
+    for line in text.splitlines():
+        ordered = [english_stem(token) for token in recall_tokens(line)]
+        phrases.extend("phrase:" + left + ":" + right for left, right in zip(ordered, ordered[1:])
+                       if 2 <= len(left) <= 64 and 2 <= len(right) <= 64
+                       and left.isascii() and right.isascii()
+                       and left.isalpha() and right.isalpha())
+    return phrases
+
+
 def ranking_tokens(text, mode):
+    if mode == "precision_field":
+        return precision_tokens(text)
     if mode == "bm25":
         return recall_tokens(text)
     tokens = technical_tokens(text)
@@ -884,12 +915,7 @@ def ranking_tokens(text, mode):
         if mode == "contextual":
             # Phrase features are independent of English identifier expansion.
             # Do not manufacture cross-field phrases or double-count Han pairs.
-            for line in text.splitlines():
-                ordered = [english_stem(token) for token in recall_tokens(line)]
-                stems.extend("phrase:" + left + ":" + right for left, right in zip(ordered, ordered[1:])
-                             if 2 <= len(left) <= 64 and 2 <= len(right) <= 64
-                             and left.isascii() and right.isascii()
-                             and left.isalpha() and right.isalpha())
+            stems.extend(_phrase_tokens(text))
         return stems
     if mode == "hybrid":
         # Separate namespaces avoid collisions between exact terms and stems.
@@ -935,11 +961,11 @@ def _recall_excerpt(text, maximum=500):
     return "".join(result)
 
 
-def _recall_document(case):
+def _recall_document(case, include_problem=True):
     # Search problem/mechanism descriptions, never raw commands, output logs,
     # unrelated search-query lists, or filesystem paths.
     problem = case["problem"]
-    fields = [problem["summary"], problem["component"], *problem["symptoms"][:12]]
+    fields = [problem["summary"], problem["component"], *problem["symptoms"][:12]] if include_problem else []
     for mapping in case["mapping"][:8]:
         fields.extend((mapping["symbol"], mapping["similarities"], mapping["hypothesis"]))
     solution = case.get("solution", {})
@@ -1091,6 +1117,14 @@ def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
             skipped["duplicate"] += 1
             continue
         seen.add(fingerprint)
+        if ranking == "precision_field":
+            problem = case["problem"]
+            primary = "\n".join(_recall_excerpt(field, 1000) for field in
+                                [problem["summary"], problem["component"], *problem["symptoms"][:12]])[:1000]
+            secondary = _recall_document(case, include_problem=False)[:9000]
+            documents.append(field_counts(primary, secondary, "precision"))
+            summaries.append(_recall_summary(case, entry.name, version))
+            continue
         document = _recall_document(case)
         if ranking != "bm25":
             problem = case["problem"]
@@ -1163,6 +1197,58 @@ class PostingIndex:
                 for index in order]
 
 
+def precision_tokens(text):
+    """Exact/stem channels plus separately namespaced ordered phrase evidence."""
+    # Keep the original hybrid and contextual algorithms unchanged.
+    return ranking_tokens(text, "hybrid") + _phrase_tokens(text)
+
+
+def field_counts(primary, secondary, mode="stemmed"):
+    """Separate title/symptom and body/mechanism fields with the same tokenizer."""
+    tokenize = precision_tokens if mode == "precision" else lambda value: ranking_tokens(value, mode)
+    return Counter(tokenize(primary)), Counter(tokenize(secondary))
+
+
+class FieldIndex(PostingIndex):
+    """Compact BM25F: field normalization before saturation, union document IDF.
+
+    Fields contain nonnegative term counts. The query is the same stemmed
+    token set as v1.0.0. No network, labels, learned model or external package.
+    """
+
+    def __init__(self, documents, title_weight=4.0, body_weight=1.0):
+        if not 0 < title_weight <= 16 or not 0 <= body_weight <= 4:
+            raise ValueError("invalid field weights")
+        documents = list(documents)
+        self.ids = tuple(identifier for identifier, _, _ in documents)
+        if len(set(self.ids)) != len(self.ids):
+            raise ValueError("duplicate document ID")
+        n = len(documents)
+        title_lengths = [sum(title.values()) for _, title, _ in documents]
+        body_lengths = [sum(body.values()) for _, _, body in documents]
+        title_mean = sum(title_lengths) / n if n else 1.0
+        body_mean = sum(body_lengths) / n if n else 1.0
+        df = Counter(term for _, title, body in documents
+                     for term in (title.keys() | body.keys()) if body_weight or term in title)
+        inverse = {term: math.log1p((n - count + .5) / (count + .5)) for term, count in df.items()}
+        self.postings = {}
+        for i, (_, title, body) in enumerate(documents):
+            title_norm = .7 + .3 * title_lengths[i] / (title_mean or 1.0)
+            body_norm = .25 + .75 * body_lengths[i] / (body_mean or 1.0)
+            # Body and title lengths are normalized independently. Repeating a
+            # description in a long body does not alter the title normalization.
+            for term in (title.keys() | body.keys()) if body_weight else title:
+                frequency = title_weight * title.get(term, 0) / title_norm + body_weight * body.get(term, 0) / body_norm
+                if frequency <= 0:
+                    continue
+                contribution = inverse[term] * 2.5 * frequency / (frequency + 1.5) * _term_weight(term)
+                if term not in self.postings:
+                    self.postings[term] = (array("I"), array("d"))
+                ids, values = self.postings[term]
+                ids.append(i)
+                values.append(contribution)
+
+
 def scan_rank(documents, query_terms):
     """One-shot scan avoids building postings for never-queried vocabulary."""
     query_terms = set(query_terms)
@@ -1201,8 +1287,15 @@ class RecallSnapshot:
             cases_dir, component, version, ranking)
         self.summaries = {row["file"]: row for row in summaries}
         pairs = list(zip(self.summaries, documents))
-        self.index = PostingIndex(pairs) if indexed else None
-        self.documents = None if indexed else pairs
+        if ranking == "precision_field":
+            # Field normalization requires corpus statistics; both paths use
+            # the same index for exact one-shot/batch semantics.
+            self.index = FieldIndex([(identifier, *counts) for identifier, counts in pairs],
+                                    PRECISION_TITLE_WEIGHT, PRECISION_BODY_WEIGHT)
+            self.documents = None
+        else:
+            self.index = PostingIndex(pairs) if indexed else None
+            self.documents = None if indexed else pairs
 
     def search(self, error, limit=5):
         terms = _check_recall_query(error, self.component, self.version, limit)

@@ -63,6 +63,18 @@ class IndexTests(unittest.TestCase):
                 self.assertEqual(reader.call_count, 3)
             self.assertEqual(result["results"], expected)
 
+    def test_precision_field_recall_preserves_one_shot_batch_parity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for i, summary in enumerate(("Tensor dtype mismatch", "Iterator consumption", "Chinese 缓存")):
+                (path / f"{i}.json").write_text(json.dumps(recall_case(summary), ensure_ascii=False), encoding="utf-8")
+            errors = ["dtype", "iterator", "缓存", "nothing"]
+            expected = [rc.recall_cases(path, error, ranking="precision_field") for error in errors]
+            report = rc.recall_batch(path, errors, ranking="precision_field")
+            self.assertEqual(report["results"], expected)
+            self.assertTrue(expected[0]["matches"])
+            self.assertEqual(expected[-1]["matches"], [])
+
     def test_invalid_batch_does_not_open_directory(self):
         for errors in ([], ["good", ""], ["good", 4], ["a"] * 129, "bad"):
             with self.subTest(errors=type(errors)):

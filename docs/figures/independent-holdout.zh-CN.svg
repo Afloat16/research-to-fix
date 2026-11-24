@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 1120 750">
+<title id="title">外部保留集：排序质量与竞争基线</title><desc id="desc">开发集选型后冻结参数 · 同语料、同查询、同 Top-10 · 0–1 坐标</desc>
+<rect width="1120" height="750" rx="16" fill="#F7FAFC"/>
+<text x="30" y="42" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="28" font-weight="700" fill="#243B53" text-anchor="start">外部保留集：排序质量与竞争基线</text>
+<text x="30" y="72" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" font-weight="400" fill="#526577" text-anchor="start">开发集选型后冻结参数 · 同语料、同查询、同 Top-10 · 0–1 坐标</text>
+<rect x="24" y="96" width="525" height="250" rx="12" fill="#FFFFFF" stroke="#D9E3EB"/>
+<text x="42" y="127" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="700" fill="#243B53" text-anchor="start">Programmers</text>
+<text x="42" y="152" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#526577" text-anchor="start">32,176 文档 · 700 查询</text>
+<text x="42" y="192" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="start">R2F Precision Field</text>
+<rect x="208" y="178" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="programmers" data-method="precision_field4" data-metric="ndcg@10" data-value="0.32029192938539375" x="208" y="178" width="80.07298234634844" height="16" rx="4" fill="#007F83"/>
+<text x="529" y="192" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.3203</text>
+<text x="42" y="228" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">R2F v1 Contextual</text>
+<rect x="208" y="214" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="programmers" data-method="v1_contextual" data-metric="ndcg@10" data-value="0.3189527747732166" x="208" y="214" width="79.73819369330415" height="16" rx="4" fill="#466B89"/>
+<text x="529" y="228" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.3190</text>
+<text x="42" y="264" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">SQLite Unicode (4:1)</text>
+<rect x="208" y="250" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="programmers" data-method="sqlite_unicode4" data-metric="ndcg@10" data-value="0.28721731702529474" x="208" y="250" width="71.80432925632368" height="16" rx="4" fill="#9A6B32"/>
+<text x="529" y="264" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.2872</text>
+<text x="42" y="301" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" font-weight="700" fill="#007F83" text-anchor="start">相对 SQLite 的差值：+0.0331</text>
+<text x="42" y="326" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#007F83" text-anchor="start">95% CI [+0.0216, +0.0449]</text>
+<rect x="576" y="96" width="525" height="250" rx="12" fill="#FFFFFF" stroke="#D9E3EB"/>
+<text x="594" y="127" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="700" fill="#243B53" text-anchor="start">Stats</text>
+<text x="594" y="152" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#526577" text-anchor="start">42,269 文档 · 652 查询</text>
+<text x="594" y="192" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="start">R2F Precision Field</text>
+<rect x="760" y="178" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="stats" data-method="precision_field4" data-metric="ndcg@10" data-value="0.3224929496497752" x="760" y="178" width="80.6232374124438" height="16" rx="4" fill="#007F83"/>
+<text x="1081" y="192" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.3225</text>
+<text x="594" y="228" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">R2F v1 Contextual</text>
+<rect x="760" y="214" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="stats" data-method="v1_contextual" data-metric="ndcg@10" data-value="0.32587728796420357" x="760" y="214" width="81.46932199105089" height="16" rx="4" fill="#466B89"/>
+<text x="1081" y="228" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.3259</text>
+<text x="594" y="264" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">SQLite Unicode (4:1)</text>
+<rect x="760" y="250" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="stats" data-method="sqlite_unicode4" data-metric="ndcg@10" data-value="0.2892613785344513" x="760" y="250" width="72.31534463361282" height="16" rx="4" fill="#9A6B32"/>
+<text x="1081" y="264" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.2893</text>
+<text x="594" y="301" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" font-weight="700" fill="#007F83" text-anchor="start">相对 SQLite 的差值：+0.0332</text>
+<text x="594" y="326" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#007F83" text-anchor="start">95% CI [+0.0206, +0.0464]</text>
+<rect x="24" y="360" width="525" height="250" rx="12" fill="#FFFFFF" stroke="#D9E3EB"/>
+<text x="42" y="391" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="700" fill="#243B53" text-anchor="start">SciFact</text>
+<text x="42" y="416" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#526577" text-anchor="start">5,183 文档 · 300 查询</text>
+<text x="42" y="456" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="start">R2F Precision Field</text>
+<rect x="208" y="442" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="scifact" data-method="precision_field4" data-metric="ndcg@10" data-value="0.6771288481365139" x="208" y="442" width="169.28221203412846" height="16" rx="4" fill="#007F83"/>
+<text x="529" y="456" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.6771</text>
+<text x="42" y="492" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">R2F v1 Contextual</text>
+<rect x="208" y="478" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="scifact" data-method="v1_contextual" data-metric="ndcg@10" data-value="0.6919443563605927" x="208" y="478" width="172.98608909014817" height="16" rx="4" fill="#466B89"/>
+<text x="529" y="492" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.6919</text>
+<text x="42" y="528" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">SQLite Unicode (4:1)</text>
+<rect x="208" y="514" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="scifact" data-method="sqlite_unicode4" data-metric="ndcg@10" data-value="0.674135916867367" x="208" y="514" width="168.53397921684174" height="16" rx="4" fill="#9A6B32"/>
+<text x="529" y="528" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.6741</text>
+<text x="42" y="565" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" font-weight="700" fill="#526577" text-anchor="start">相对 SQLite 的差值：+0.0030</text>
+<text x="42" y="590" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#526577" text-anchor="start">95% CI [-0.0176, +0.0233]</text>
+<rect x="576" y="360" width="525" height="250" rx="12" fill="#FFFFFF" stroke="#D9E3EB"/>
+<text x="594" y="391" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" font-weight="700" fill="#243B53" text-anchor="start">NASA Science Repos</text>
+<text x="594" y="416" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#526577" text-anchor="start">5,264 文档 · 212 查询</text>
+<text x="594" y="456" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="start">R2F Precision Field</text>
+<rect x="760" y="442" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="nasa" data-method="precision_field4" data-metric="ndcg@10" data-value="0.46647384028231254" x="760" y="442" width="116.61846007057814" height="16" rx="4" fill="#007F83"/>
+<text x="1081" y="456" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.4665</text>
+<text x="594" y="492" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">R2F v1 Contextual</text>
+<rect x="760" y="478" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="nasa" data-method="v1_contextual" data-metric="ndcg@10" data-value="0.451072052879052" x="760" y="478" width="112.768013219763" height="16" rx="4" fill="#466B89"/>
+<text x="1081" y="492" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.4511</text>
+<text x="594" y="528" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#243B53" text-anchor="start">SQLite Unicode (4:1)</text>
+<rect x="760" y="514" width="250" height="16" rx="4" fill="#E9EFF3"/>
+<rect data-dataset="nasa" data-method="sqlite_unicode4" data-metric="ndcg@10" data-value="0.4306568227201444" x="760" y="514" width="107.66420568003609" height="16" rx="4" fill="#9A6B32"/>
+<text x="1081" y="528" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="700" fill="#243B53" text-anchor="end">0.4307</text>
+<text x="594" y="565" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" font-weight="700" fill="#007F83" text-anchor="start">相对 SQLite 的差值：+0.0358</text>
+<text x="594" y="590" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#007F83" text-anchor="start">95% CI [+0.0117, +0.0588]</text>
+<rect x="24" y="638" width="1072" height="65" rx="10" fill="#E7F3F2"/>
+<text x="40" y="664" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="19" font-weight="700" fill="#00696B" text-anchor="start">基础分词：4.52×  |  精确特征提取：1.48×</text>
+<text x="40" y="686" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="400" fill="#526577" text-anchor="start">4,096 篇真实文档、五次配对重复、词项序列完全一致；不是整个修复流程加速。</text>
+<text x="24" y="727" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="400" fill="#526577" text-anchor="start">置信区间为逐数据集配对 Bootstrap，未做多重比较校正；不是 Agent 修复率或排行榜。</text>
+</svg>

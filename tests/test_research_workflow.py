@@ -96,6 +96,19 @@ class TriageTests(unittest.TestCase):
         self.assertEqual(report["skipped"]["no_relevance"], 2)
         self.assertEqual({row["family"] for row in report["shortlist"]}, {"code", "paper"})
 
+    def test_precision_field_is_deduplicated_and_abstains(self):
+        code = self.row("github_repositories", "https://github.com/example/attn",
+                        "FlashAttention efficient attention", snippet="Reduce GPU memory")
+        mirror = dict(code, url=code["url"] + "?utm_source=x")
+        unrelated = self.row("arxiv", "https://arxiv.org/abs/2101.00001", "Completely unrelated astronomy")
+        initial = w.rank_results(self.plan, [{"results": [code, unrelated]}], 5, "precision_field")
+        repeated = w.rank_results(self.plan, [{"results": [mirror, unrelated, code]}], 5, "precision_field")
+        self.assertEqual(len(initial["shortlist"]), 1)
+        self.assertEqual(initial["shortlist"][0]["id"], repeated["shortlist"][0]["id"])
+        self.assertEqual(initial["shortlist"][0]["precision_score"], repeated["shortlist"][0]["precision_score"])
+        self.assertEqual(repeated["duplicates_collapsed"], 1)
+        self.assertEqual(w.rank_results(self.plan, [{"results": [unrelated]}], 5, "precision_field")["shortlist"], [])
+
     def test_coverage_and_blocked_results_are_not_promoted(self):
         rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention",
                          access="access_blocked")]
@@ -226,7 +239,7 @@ class TriageTests(unittest.TestCase):
                            publication_flag="retracted_or_withdrawn", publication_hint="provider flag")
         code = self.row("github_repositories", "https://github.com/example/attention", "FlashAttention attention",
                         links=[{"url": flagged["url"], "relation": "implements", "basis": "metadata"}])
-        for mode in ("bm25", "facet", "fusion", "paired"):
+        for mode in ("bm25", "facet", "fusion", "paired", "precision_field"):
             result = w.rank_results(self.plan, [{"results": [flagged, code]}], 5, mode)
             self.assertNotIn(flagged["url"], {row["url"] for row in result["shortlist"]})
             self.assertEqual(result["publication_review"][0]["url"], flagged["url"])

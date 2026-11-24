@@ -17,6 +17,19 @@
 
 创意与工作流设计：[Afloat16](https://github.com/Afloat16)。MIT 开源。**不要求 Python 第三方运行时依赖、托管搜索服务或向量模型。**
 
+
+## v1.1.0 — 外部保留集与精准检索
+
+![外部保留集排序性能与配对区间](docs/figures/independent-holdout.zh-CN.svg)
+
+**84,892 篇文档 · 1,864 条有标签保留查询 · 四套公开语料。** 可选 `precision_field` 融合精确词、词干、有序短语及独立字段归一。在程序设计（+11.52%）、统计学（+11.49%）和 NASA（+8.32%）中，相对开发集预选的 SQLite 对照，nDCG@10 的逐数据集配对 95% 区间为正。SciFact 未证明确切优势，SQLite Porter 的实测分数最高；统计学的旧 Contextual 仍最高。相对旧 Contextual 的四组区间均跨零，因此不替换默认模式。索引构建仍较慢。[实测 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45359141496) · [完整证据与复现实验](benchmarks/INDEPENDENT_RESULTS.md) · [冻结报告](docs/figures/independent-snapshot.json)。
+
+### 专用开源检索对照与精确评分加速
+
+![BM25S 对照及可选精确评分加速](docs/figures/competitor-diagnostic.zh-CN.svg)
+
+保留集公开后，对真实 BM25S 0.2.14、R2F 和 SQLite 进行同语料诊断。NASA 上 Precision Field 实测最高（nDCG@10 0.4665 vs BM25S Matched 0.4389，+6.27%，点态配对 95% 区间 [0.0036, 0.0525]）；SciFact 未证实 R2F 优势。BM25S 原始查询与索引构建更快。可选 NumPy 评分适配器使同索引预分词评分中位耗时加速 5.22× / 6.70×，512 条真实查询 Top-11 文档 ID 与分数完全一致，不含额外适配器初始化、内存和建索引成本。默认工具无强制依赖；不是 Agent 修复率。[完整对照与代价](benchmarks/COMPETITOR_RESULTS.md) · [真实 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45361899401)。
+
 ## v1.0.0 — 多轮研究与可核验决策
 
 ![v1.0.0 论文—代码配对排序、模拟调度和精确注意力实测](docs/figures/release-v1.zh-CN.svg)
@@ -50,7 +63,7 @@
 
 ## 安装
 
-正式版安装包：[v1.0.0 与 SHA-256 校验文件](https://github.com/Afloat16/research-to-fix/releases/tag/v1.0.0)。解压后将 `research-to-fix/` 目录放入宿主 Skill 目录；安装包只包含提交的 Skill、许可与版本，不包含实验日志或本地用户数据。
+正式版安装包：[v1.1.0 与 SHA-256 校验文件](https://github.com/Afloat16/research-to-fix/releases/tag/v1.1.0)。解压后将 `research-to-fix/` 目录放入宿主 Skill 目录；安装包只包含提交的 Skill、许可与版本，不包含实验日志或本地用户数据。
 
 使用支持 Agent Skills 格式的宿主。核对安装工具后运行：
 
@@ -135,7 +148,7 @@ npx skills add Afloat16/research-to-fix --skill research-to-fix
 
 **可复现性。** 图 3–5 的数字来自同一次已完成的 [GitHub Actions 性能实验](https://github.com/Afloat16/research-to-fix/actions/runs/45339912941)，环境为 Linux / Python 3.13.18。参阅[原始 JSON 快照](docs/figures/benchmark-snapshot.json)、[性能技术报告](docs/PERFORMANCE.md)、[数据集来源和复现命令](benchmarks/README.md)及[图表生成源码](docs/figures/README.md)。该实验对应代码运行了 166 项辅助工具测试和 6 项示例测试，七个操作系统/Python CI 组合均通过（[测试记录](https://github.com/Afloat16/research-to-fix/actions/runs/45339912917)）。
 
-> 检索和资源开销指标不等于 Agent 修复成功率。两套排名样本均用于开发迭代，不能据此宣称全面领先。BEIR 适配器已经实现，但尚未完成外部 BEIR 评测及同条件 SWE-bench 修复对比。
+> 检索和资源开销指标不等于 Agent 修复成功率。两套排名样本均用于开发迭代，不能据此宣称全面领先。外部 BEIR 与 NASA 实测见上文；同条件 SWE-bench Agent 修复对比尚未完成。
 
 ## 记录案例并检索复用
 
@@ -166,6 +179,7 @@ python skills/research-to-fix/scripts/research_case.py recall-batch \
 | `stemmed` | 英文词形变化影响相似问题匹配 |
 | `hybrid` | 同时保留精确技术词与词干特征 |
 | `contextual` | 尝试有序短语信号 |
+| `precision_field` | 精确词、词干、短语与独立字段归一（可选） |
 
 具体限制、评分解释及快照行为见[本地案例复用指南](skills/research-to-fix/references/case-reuse.md)。任何排序均不证明修复正确性。
 

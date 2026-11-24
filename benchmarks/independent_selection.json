@@ -1,0 +1,1065 @@
+{
+  "schema": 1,
+  "selection_rule": "development nDCG@10 descending; Recall@10 then query p50 as tie breakers",
+  "development_run": 45358476313,
+  "development_commit": "5c92f598246350e174ff7fda7fc03bf48cf47b98",
+  "development_queries": 176,
+  "r2f": "precision_field4",
+  "sqlite": "sqlite_unicode4",
+  "methods": [
+    "precision_field4",
+    "sqlite_unicode4",
+    "v1_contextual",
+    "v1_bm25",
+    "sqlite_unicode",
+    "sqlite_porter"
+  ],
+  "datasets": [
+    "programmers",
+    "stats",
+    "scifact",
+    "nasa"
+  ],
+  "development": {
+    "dataset": {
+      "dataset": "programmers",
+      "license": "CC-BY-SA-4.0",
+      "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+      "expected_documents": 32176,
+      "expected_test_queries": 876,
+      "files": {
+        "corpus.jsonl": {
+          "sha256": "4e39fcc5f440806ad643aee67cad2d17c227fa29c81c121a079ee398a8d64f3e",
+          "rows": 32176
+        },
+        "queries.jsonl": {
+          "sha256": "f80e8c3b7aadd8c17f573571093713e9877f7d54a1c73a4b32de9edd92eff0f0",
+          "rows": 876
+        },
+        "test.tsv": {
+          "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/programmers/test.tsv",
+          "sha256": "ed69afa873c64d34298792d694c82c4293e4b7e3c6ea3edc7a73662d4b0cba76",
+          "bytes": 27053
+        }
+      },
+      "original_downloads": {
+        "corpus.jsonl.gz": {
+          "url": "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/cqadupstack-programmers.jsonl.gz",
+          "sha256": "2779027fdaaa5f578d9b8fe6488937bc3a042e387e927f20dbd0135ac1edf90d",
+          "bytes": 12668400
+        },
+        "queries.jsonl": {
+          "url": "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/cqadupstack-programmers.jsonl",
+          "sha256": "fcecbac2e3f7d86be8cc463f1bb49fa35d276f35e3a294bbec84c79c1f7a3065",
+          "bytes": 77881
+        },
+        "test.tsv": {
+          "url": "https://huggingface.co/datasets/BeIR/cqadupstack-qrels/resolve/2b9f5791698b5be7bc5e10535c8690f20043c3db/programmers/test.tsv",
+          "sha256": "ed69afa873c64d34298792d694c82c4293e4b7e3c6ea3edc7a73662d4b0cba76",
+          "bytes": 27053
+        }
+      },
+      "split": "development",
+      "partition_rule": "r2f-independent-v1:2026-11-24:sha256 first 32 bits mod 5 == 0"
+    },
+    "documents": 32176,
+    "queries": 176,
+    "k": 10,
+    "methods": {
+      "v1_contextual": {
+        "mrr@10": 0.32848800505050507,
+        "ndcg@10": 0.33687465144797496,
+        "recall@10": 0.4213778409090909,
+        "hit@10": 0.48295454545454547,
+        "build_ms": 17228.086368,
+        "query_p50_ms": 17.902618500000003,
+        "query_p95_ms": 51.795006,
+        "total_query_ms": 4412.702946
+      },
+      "field4": {
+        "mrr@10": 0.3055149711399711,
+        "ndcg@10": 0.31637806030966964,
+        "recall@10": 0.4110152867965368,
+        "hit@10": 0.4659090909090909,
+        "build_ms": 6051.206389,
+        "query_p50_ms": 18.500344,
+        "query_p95_ms": 59.548587,
+        "total_query_ms": 4163.46691
+      },
+      "context_field2": {
+        "mrr@10": 0.331707702020202,
+        "ndcg@10": 0.33778214983687016,
+        "recall@10": 0.4204308712121212,
+        "hit@10": 0.4772727272727273,
+        "build_ms": 17581.480554,
+        "query_p50_ms": 9.8720715,
+        "query_p95_ms": 28.958392,
+        "total_query_ms": 2868.263444
+      },
+      "context_field4": {
+        "mrr@10": 0.34050550144300146,
+        "ndcg@10": 0.34685894834934355,
+        "recall@10": 0.4230823863636364,
+        "hit@10": 0.4772727272727273,
+        "build_ms": 16797.894341,
+        "query_p50_ms": 25.733912,
+        "query_p95_ms": 68.174769,
+        "total_query_ms": 5592.400539
+      },
+      "context_field8": {
+        "mrr@10": 0.3426429473304473,
+        "ndcg@10": 0.3488949725420858,
+        "recall@10": 0.4230823863636364,
+        "hit@10": 0.4772727272727273,
+        "build_ms": 17836.427483,
+        "query_p50_ms": 10.0239305,
+        "query_p95_ms": 27.181036,
+        "total_query_ms": 2550.201541
+      },
+      "precision_flat": {
+        "mrr@10": 0.3418222402597403,
+        "ndcg@10": 0.34903751293989493,
+        "recall@10": 0.42800662878787876,
+        "hit@10": 0.4772727272727273,
+        "build_ms": 23658.101952,
+        "query_p50_ms": 15.07281,
+        "query_p95_ms": 54.902907,
+        "total_query_ms": 3728.294072
+      },
+      "precision_field4": {
+        "mrr@10": 0.35054788961038963,
+        "ndcg@10": 0.3625731863495064,
+        "recall@10": 0.4507339015151515,
+        "hit@10": 0.5,
+        "build_ms": 24563.564281,
+        "query_p50_ms": 11.387001999999999,
+        "query_p95_ms": 35.584495,
+        "total_query_ms": 3087.9859890000002
+      },
+      "sqlite_unicode": {
+        "mrr@10": 0.31383703102453103,
+        "ndcg@10": 0.3200410923431317,
+        "recall@10": 0.4062263257575758,
+        "hit@10": 0.4602272727272727,
+        "build_ms": 1640.120006,
+        "query_p50_ms": 26.3721815,
+        "query_p95_ms": 48.817369,
+        "total_query_ms": 4728.9447979999995
+      },
+      "sqlite_unicode4": {
+        "mrr@10": 0.31605790043290044,
+        "ndcg@10": 0.321461100071134,
+        "recall@10": 0.39675662878787876,
+        "hit@10": 0.4431818181818182,
+        "build_ms": 1616.089785,
+        "query_p50_ms": 26.5138235,
+        "query_p95_ms": 49.896719,
+        "total_query_ms": 4798.810238
+      },
+      "sqlite_unicode8": {
+        "mrr@10": 0.314549512987013,
+        "ndcg@10": 0.3186267001246528,
+        "recall@10": 0.39296875,
+        "hit@10": 0.4375,
+        "build_ms": 1578.241141,
+        "query_p50_ms": 26.2596935,
+        "query_p95_ms": 48.62001,
+        "total_query_ms": 4721.825229
+      },
+      "sqlite_porter": {
+        "mrr@10": 0.29356511544011543,
+        "ndcg@10": 0.3039704861434898,
+        "recall@10": 0.3997869318181818,
+        "hit@10": 0.4602272727272727,
+        "build_ms": 1681.451472,
+        "query_p50_ms": 29.166657999999998,
+        "query_p95_ms": 48.296758,
+        "total_query_ms": 5134.633293
+      },
+      "sqlite_porter4": {
+        "mrr@10": 0.3038870851370851,
+        "ndcg@10": 0.3132428125747076,
+        "recall@10": 0.4062804383116883,
+        "hit@10": 0.4715909090909091,
+        "build_ms": 1644.249953,
+        "query_p50_ms": 29.0741825,
+        "query_p95_ms": 48.40337,
+        "total_query_ms": 5076.272
+      },
+      "sqlite_porter8": {
+        "mrr@10": 0.30089060245310245,
+        "ndcg@10": 0.31256841364712135,
+        "recall@10": 0.40795454545454546,
+        "hit@10": 0.44886363636363635,
+        "build_ms": 1583.656508,
+        "query_p50_ms": 29.501494,
+        "query_p95_ms": 49.406025,
+        "total_query_ms": 5140.845723
+      }
+    },
+    "paired_ndcg": {
+      "v1_contextual_vs_sqlite_porter": {
+        "mean_delta": 0.032904165304485186,
+        "ci95_low": 0.009204911938968337,
+        "ci95_high": 0.0579127242659555,
+        "win": 30,
+        "tie": 127,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "v1_contextual_vs_sqlite_unicode": {
+        "mean_delta": 0.016833559104843243,
+        "ci95_low": -0.014893054733500692,
+        "ci95_high": 0.04853206455451483,
+        "win": 29,
+        "tie": 120,
+        "loss": 27,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "v1_contextual_vs_sqlite_unicode4": {
+        "mean_delta": 0.015413551376840992,
+        "ci95_low": -0.01739562085221766,
+        "ci95_high": 0.04949641333089077,
+        "win": 30,
+        "tie": 124,
+        "loss": 22,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "v1_contextual_vs_sqlite_unicode8": {
+        "mean_delta": 0.01824795132332219,
+        "ci95_low": -0.017278160670407546,
+        "ci95_high": 0.05467484268034616,
+        "win": 33,
+        "tie": 124,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "v1_contextual_vs_sqlite_porter4": {
+        "mean_delta": 0.023631838873267377,
+        "ci95_low": -0.006071607216612816,
+        "ci95_high": 0.053244011424329094,
+        "win": 33,
+        "tie": 123,
+        "loss": 20,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "v1_contextual_vs_sqlite_porter8": {
+        "mean_delta": 0.02430623780085365,
+        "ci95_low": -0.007781349182125375,
+        "ci95_high": 0.05502724194456713,
+        "win": 34,
+        "tie": 123,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_sqlite_porter": {
+        "mean_delta": 0.01240757416617985,
+        "ci95_low": -0.0055587523612124655,
+        "ci95_high": 0.0322337235362965,
+        "win": 18,
+        "tie": 139,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_sqlite_unicode": {
+        "mean_delta": -0.003663032033462091,
+        "ci95_low": -0.02920462981457521,
+        "ci95_high": 0.02289786234422261,
+        "win": 22,
+        "tie": 122,
+        "loss": 32,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_sqlite_unicode4": {
+        "mean_delta": -0.005083039761464344,
+        "ci95_low": -0.030184488989312554,
+        "ci95_high": 0.021058224254566056,
+        "win": 21,
+        "tie": 129,
+        "loss": 26,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_sqlite_unicode8": {
+        "mean_delta": -0.0022486398149831454,
+        "ci95_low": -0.02762598627219541,
+        "ci95_high": 0.023256864504007053,
+        "win": 25,
+        "tie": 129,
+        "loss": 22,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_sqlite_porter4": {
+        "mean_delta": 0.003135247734962042,
+        "ci95_low": -0.0183950384939874,
+        "ci95_high": 0.026208120349201863,
+        "win": 21,
+        "tie": 136,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_sqlite_porter8": {
+        "mean_delta": 0.003809646662548313,
+        "ci95_low": -0.01577556120362257,
+        "ci95_high": 0.024176803272612738,
+        "win": 24,
+        "tie": 137,
+        "loss": 15,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "field4_vs_v1_contextual": {
+        "mean_delta": -0.020496591138305334,
+        "ci95_low": -0.051304006494025514,
+        "ci95_high": 0.010776334835239874,
+        "win": 24,
+        "tie": 120,
+        "loss": 32,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_sqlite_porter": {
+        "mean_delta": 0.03381166369338038,
+        "ci95_low": 0.007865780573706104,
+        "ci95_high": 0.060252831593284206,
+        "win": 35,
+        "tie": 125,
+        "loss": 16,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_sqlite_unicode": {
+        "mean_delta": 0.01774105749373844,
+        "ci95_low": -0.013907115755951834,
+        "ci95_high": 0.04762567942158537,
+        "win": 31,
+        "tie": 120,
+        "loss": 25,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_sqlite_unicode4": {
+        "mean_delta": 0.016321049765736187,
+        "ci95_low": -0.016310564363586598,
+        "ci95_high": 0.04913975719622343,
+        "win": 29,
+        "tie": 126,
+        "loss": 21,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_sqlite_unicode8": {
+        "mean_delta": 0.019155449712217387,
+        "ci95_low": -0.01692510179881895,
+        "ci95_high": 0.05433906511374543,
+        "win": 31,
+        "tie": 125,
+        "loss": 20,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_sqlite_porter4": {
+        "mean_delta": 0.024539337262162574,
+        "ci95_low": -0.006883889286014329,
+        "ci95_high": 0.05573349253267771,
+        "win": 33,
+        "tie": 123,
+        "loss": 20,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_sqlite_porter8": {
+        "mean_delta": 0.025213736189748846,
+        "ci95_low": -0.006138871186029303,
+        "ci95_high": 0.055321989400501544,
+        "win": 34,
+        "tie": 127,
+        "loss": 15,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field2_vs_v1_contextual": {
+        "mean_delta": 0.0009074983888951968,
+        "ci95_low": -0.009451935935859043,
+        "ci95_high": 0.011449828321332081,
+        "win": 14,
+        "tie": 148,
+        "loss": 14,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_sqlite_porter": {
+        "mean_delta": 0.04288846220585373,
+        "ci95_low": 0.014610389664215708,
+        "ci95_high": 0.07241387653380676,
+        "win": 36,
+        "tie": 120,
+        "loss": 20,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_sqlite_unicode": {
+        "mean_delta": 0.026817856006211793,
+        "ci95_low": -0.007139389757258559,
+        "ci95_high": 0.05890733450049768,
+        "win": 33,
+        "tie": 121,
+        "loss": 22,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_sqlite_unicode4": {
+        "mean_delta": 0.02539784827820954,
+        "ci95_low": -0.009169480082106348,
+        "ci95_high": 0.06020631791020996,
+        "win": 33,
+        "tie": 124,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_sqlite_unicode8": {
+        "mean_delta": 0.02823224822469074,
+        "ci95_low": -0.006907988940855294,
+        "ci95_high": 0.06262411729549304,
+        "win": 33,
+        "tie": 126,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_sqlite_porter4": {
+        "mean_delta": 0.03361613577463592,
+        "ci95_low": 0.002138244031037826,
+        "ci95_high": 0.06674618515917802,
+        "win": 36,
+        "tie": 118,
+        "loss": 22,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_sqlite_porter8": {
+        "mean_delta": 0.034290534702222195,
+        "ci95_low": 0.004224477140163519,
+        "ci95_high": 0.06581495589710856,
+        "win": 36,
+        "tie": 122,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field4_vs_v1_contextual": {
+        "mean_delta": 0.00998429690136855,
+        "ci95_low": -0.0037269607902358126,
+        "ci95_high": 0.024878645065987828,
+        "win": 16,
+        "tie": 145,
+        "loss": 15,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_sqlite_porter": {
+        "mean_delta": 0.044924486398595996,
+        "ci95_low": 0.015814885089557577,
+        "ci95_high": 0.07454467945149955,
+        "win": 34,
+        "tie": 119,
+        "loss": 23,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_sqlite_unicode": {
+        "mean_delta": 0.028853880198954053,
+        "ci95_low": -0.006852878768724081,
+        "ci95_high": 0.06323064696328509,
+        "win": 34,
+        "tie": 119,
+        "loss": 23,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_sqlite_unicode4": {
+        "mean_delta": 0.027433872470951803,
+        "ci95_low": -0.007384804509280081,
+        "ci95_high": 0.06208497470230249,
+        "win": 31,
+        "tie": 124,
+        "loss": 21,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_sqlite_unicode8": {
+        "mean_delta": 0.030268272417433,
+        "ci95_low": -0.003920529268886786,
+        "ci95_high": 0.06409334637484247,
+        "win": 33,
+        "tie": 126,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_sqlite_porter4": {
+        "mean_delta": 0.03565215996737819,
+        "ci95_low": 0.004163837467753325,
+        "ci95_high": 0.06815389932435334,
+        "win": 35,
+        "tie": 118,
+        "loss": 23,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_sqlite_porter8": {
+        "mean_delta": 0.03632655889496446,
+        "ci95_low": 0.006399492849405966,
+        "ci95_high": 0.06696658299511571,
+        "win": 34,
+        "tie": 124,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "context_field8_vs_v1_contextual": {
+        "mean_delta": 0.01202032109411081,
+        "ci95_low": -0.005255181900771883,
+        "ci95_high": 0.030559740486016656,
+        "win": 19,
+        "tie": 140,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_sqlite_porter": {
+        "mean_delta": 0.04506702679640512,
+        "ci95_low": 0.018191542552960224,
+        "ci95_high": 0.0712788131709158,
+        "win": 38,
+        "tie": 124,
+        "loss": 14,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_sqlite_unicode": {
+        "mean_delta": 0.02899642059676318,
+        "ci95_low": 0.0044323121633946,
+        "ci95_high": 0.05317398512062679,
+        "win": 33,
+        "tie": 129,
+        "loss": 14,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_sqlite_unicode4": {
+        "mean_delta": 0.027576412868760926,
+        "ci95_low": 0.0018516158073768544,
+        "ci95_high": 0.054228871921459074,
+        "win": 32,
+        "tie": 131,
+        "loss": 13,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_sqlite_unicode8": {
+        "mean_delta": 0.030410812815242123,
+        "ci95_low": 0.00040813305867889603,
+        "ci95_high": 0.06071238505424661,
+        "win": 36,
+        "tie": 126,
+        "loss": 14,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_sqlite_porter4": {
+        "mean_delta": 0.03579470036518731,
+        "ci95_low": 0.00436939352865166,
+        "ci95_high": 0.06600684140228784,
+        "win": 38,
+        "tie": 120,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_sqlite_porter8": {
+        "mean_delta": 0.03646909929277358,
+        "ci95_low": 0.00469483431801731,
+        "ci95_high": 0.06960856242639711,
+        "win": 36,
+        "tie": 125,
+        "loss": 15,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_flat_vs_v1_contextual": {
+        "mean_delta": 0.012162861491919934,
+        "ci95_low": -0.0043701772887175,
+        "ci95_high": 0.02961134501892482,
+        "win": 24,
+        "tie": 137,
+        "loss": 15,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_sqlite_porter": {
+        "mean_delta": 0.05860270020601662,
+        "ci95_low": 0.028091805399066742,
+        "ci95_high": 0.08921205235008153,
+        "win": 40,
+        "tie": 119,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_sqlite_unicode": {
+        "mean_delta": 0.04253209400637468,
+        "ci95_low": 0.01641322854112203,
+        "ci95_high": 0.06855351527240891,
+        "win": 33,
+        "tie": 124,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_sqlite_unicode4": {
+        "mean_delta": 0.04111208627837242,
+        "ci95_low": 0.01673664835398964,
+        "ci95_high": 0.06708687526683026,
+        "win": 33,
+        "tie": 129,
+        "loss": 14,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_sqlite_unicode8": {
+        "mean_delta": 0.04394648622485362,
+        "ci95_low": 0.01919097883844746,
+        "ci95_high": 0.06985144560009608,
+        "win": 35,
+        "tie": 131,
+        "loss": 10,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_sqlite_porter4": {
+        "mean_delta": 0.04933037377479881,
+        "ci95_low": 0.016849388212609066,
+        "ci95_high": 0.08254998203711335,
+        "win": 40,
+        "tie": 119,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_sqlite_porter8": {
+        "mean_delta": 0.050004772702385084,
+        "ci95_low": 0.019263496070234132,
+        "ci95_high": 0.08157439231072712,
+        "win": 39,
+        "tie": 123,
+        "loss": 14,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "precision_field4_vs_v1_contextual": {
+        "mean_delta": 0.025698534901531435,
+        "ci95_low": 0.0003048063633583564,
+        "ci95_high": 0.05315845938713216,
+        "win": 28,
+        "tie": 130,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode_vs_sqlite_porter": {
+        "mean_delta": 0.016070606199641943,
+        "ci95_low": -0.007711987951539199,
+        "ci95_high": 0.04024564999629648,
+        "win": 31,
+        "tie": 129,
+        "loss": 16,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode_vs_sqlite_unicode4": {
+        "mean_delta": -0.001420007728002253,
+        "ci95_low": -0.016159682870190362,
+        "ci95_high": 0.013314421912978167,
+        "win": 18,
+        "tie": 143,
+        "loss": 15,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode_vs_sqlite_unicode8": {
+        "mean_delta": 0.001414392218478946,
+        "ci95_low": -0.019742111259206867,
+        "ci95_high": 0.02063754911348096,
+        "win": 23,
+        "tie": 136,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode_vs_sqlite_porter4": {
+        "mean_delta": 0.0067982797684241324,
+        "ci95_low": -0.022571675940818953,
+        "ci95_high": 0.03599226687885629,
+        "win": 34,
+        "tie": 120,
+        "loss": 22,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode_vs_sqlite_porter8": {
+        "mean_delta": 0.007472678696010404,
+        "ci95_low": -0.02305401651409892,
+        "ci95_high": 0.037188583950489976,
+        "win": 34,
+        "tie": 118,
+        "loss": 24,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode_vs_v1_contextual": {
+        "mean_delta": -0.016833559104843243,
+        "ci95_low": -0.04880100523233442,
+        "ci95_high": 0.014840526356285893,
+        "win": 27,
+        "tie": 120,
+        "loss": 29,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4_vs_sqlite_porter": {
+        "mean_delta": 0.017490613927644196,
+        "ci95_low": -0.008335391986644217,
+        "ci95_high": 0.043419654937923234,
+        "win": 27,
+        "tie": 131,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4_vs_sqlite_unicode": {
+        "mean_delta": 0.001420007728002253,
+        "ci95_low": -0.01332433998069825,
+        "ci95_high": 0.01609608782033603,
+        "win": 15,
+        "tie": 143,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4_vs_sqlite_unicode8": {
+        "mean_delta": 0.0028343999464811986,
+        "ci95_low": -0.00924414245225311,
+        "ci95_high": 0.01372633543933361,
+        "win": 18,
+        "tie": 151,
+        "loss": 7,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4_vs_sqlite_porter4": {
+        "mean_delta": 0.008218287496426386,
+        "ci95_low": -0.01972450840707067,
+        "ci95_high": 0.03553094003972247,
+        "win": 26,
+        "tie": 131,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4_vs_sqlite_porter8": {
+        "mean_delta": 0.008892686424012657,
+        "ci95_low": -0.01850401718141067,
+        "ci95_high": 0.03529798165293602,
+        "win": 30,
+        "tie": 127,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode4_vs_v1_contextual": {
+        "mean_delta": -0.015413551376840992,
+        "ci95_low": -0.0495992075841028,
+        "ci95_high": 0.017259500346903385,
+        "win": 22,
+        "tie": 124,
+        "loss": 30,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode8_vs_sqlite_porter": {
+        "mean_delta": 0.014656213981162996,
+        "ci95_low": -0.01531780967140083,
+        "ci95_high": 0.044235288625086196,
+        "win": 27,
+        "tie": 125,
+        "loss": 24,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode8_vs_sqlite_unicode": {
+        "mean_delta": -0.001414392218478946,
+        "ci95_low": -0.02072512474075505,
+        "ci95_high": 0.019599679159407624,
+        "win": 17,
+        "tie": 136,
+        "loss": 23,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode8_vs_sqlite_unicode4": {
+        "mean_delta": -0.0028343999464811986,
+        "ci95_low": -0.013852373613336166,
+        "ci95_high": 0.009243094072992598,
+        "win": 7,
+        "tie": 151,
+        "loss": 18,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode8_vs_sqlite_porter4": {
+        "mean_delta": 0.005383887549945187,
+        "ci95_low": -0.02247549631189379,
+        "ci95_high": 0.035261059435402434,
+        "win": 25,
+        "tie": 127,
+        "loss": 24,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode8_vs_sqlite_porter8": {
+        "mean_delta": 0.006058286477531458,
+        "ci95_low": -0.021006877561883616,
+        "ci95_high": 0.03225524618360265,
+        "win": 26,
+        "tie": 131,
+        "loss": 19,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_unicode8_vs_v1_contextual": {
+        "mean_delta": -0.01824795132332219,
+        "ci95_low": -0.05491858715442501,
+        "ci95_high": 0.017153471481094817,
+        "win": 19,
+        "tie": 124,
+        "loss": 33,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter_vs_sqlite_unicode": {
+        "mean_delta": -0.016070606199641943,
+        "ci95_low": -0.040265322784499215,
+        "ci95_high": 0.007639599461811903,
+        "win": 16,
+        "tie": 129,
+        "loss": 31,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter_vs_sqlite_unicode4": {
+        "mean_delta": -0.017490613927644196,
+        "ci95_low": -0.043442661674897694,
+        "ci95_high": 0.00824544020691434,
+        "win": 18,
+        "tie": 131,
+        "loss": 27,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter_vs_sqlite_unicode8": {
+        "mean_delta": -0.014656213981162996,
+        "ci95_low": -0.04434991235190993,
+        "ci95_high": 0.015004204559241735,
+        "win": 24,
+        "tie": 125,
+        "loss": 27,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter_vs_sqlite_porter4": {
+        "mean_delta": -0.009272326431217809,
+        "ci95_low": -0.023683163177746776,
+        "ci95_high": 0.004186888807689635,
+        "win": 16,
+        "tie": 143,
+        "loss": 17,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter_vs_sqlite_porter8": {
+        "mean_delta": -0.008597927503631538,
+        "ci95_low": -0.028371248014961322,
+        "ci95_high": 0.009678453680456844,
+        "win": 23,
+        "tie": 131,
+        "loss": 22,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter_vs_v1_contextual": {
+        "mean_delta": -0.032904165304485186,
+        "ci95_low": -0.057935190502792035,
+        "ci95_high": -0.009270945772490524,
+        "win": 19,
+        "tie": 127,
+        "loss": 30,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter4_vs_sqlite_porter": {
+        "mean_delta": 0.009272326431217809,
+        "ci95_low": -0.0042422070299540085,
+        "ci95_high": 0.023614682923248934,
+        "win": 17,
+        "tie": 143,
+        "loss": 16,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter4_vs_sqlite_unicode": {
+        "mean_delta": -0.0067982797684241324,
+        "ci95_low": -0.036024565496557956,
+        "ci95_high": 0.022412477152157568,
+        "win": 22,
+        "tie": 120,
+        "loss": 34,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter4_vs_sqlite_unicode4": {
+        "mean_delta": -0.008218287496426386,
+        "ci95_low": -0.03557978983971634,
+        "ci95_high": 0.019676175877086702,
+        "win": 19,
+        "tie": 131,
+        "loss": 26,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter4_vs_sqlite_unicode8": {
+        "mean_delta": -0.005383887549945187,
+        "ci95_low": -0.03565046670894975,
+        "ci95_high": 0.022441280184201152,
+        "win": 24,
+        "tie": 127,
+        "loss": 25,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter4_vs_sqlite_porter8": {
+        "mean_delta": 0.0006743989275862709,
+        "ci95_low": -0.01270357271113982,
+        "ci95_high": 0.013047635811122615,
+        "win": 20,
+        "tie": 145,
+        "loss": 11,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter4_vs_v1_contextual": {
+        "mean_delta": -0.023631838873267377,
+        "ci95_low": -0.0533625973837756,
+        "ci95_high": 0.006034588984337105,
+        "win": 20,
+        "tie": 123,
+        "loss": 33,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter8_vs_sqlite_porter": {
+        "mean_delta": 0.008597927503631538,
+        "ci95_low": -0.009717142267967318,
+        "ci95_high": 0.028143086596542254,
+        "win": 22,
+        "tie": 131,
+        "loss": 23,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter8_vs_sqlite_unicode": {
+        "mean_delta": -0.007472678696010404,
+        "ci95_low": -0.03743791247628942,
+        "ci95_high": 0.02290250233903238,
+        "win": 24,
+        "tie": 118,
+        "loss": 34,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter8_vs_sqlite_unicode4": {
+        "mean_delta": -0.008892686424012657,
+        "ci95_low": -0.03545948287533671,
+        "ci95_high": 0.018464065996563597,
+        "win": 19,
+        "tie": 127,
+        "loss": 30,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter8_vs_sqlite_unicode8": {
+        "mean_delta": -0.006058286477531458,
+        "ci95_low": -0.03226690775863288,
+        "ci95_high": 0.020904248344352897,
+        "win": 19,
+        "tie": 131,
+        "loss": 26,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter8_vs_sqlite_porter4": {
+        "mean_delta": -0.0006743989275862709,
+        "ci95_low": -0.01305682353283164,
+        "ci95_high": 0.012650103260909207,
+        "win": 11,
+        "tie": 145,
+        "loss": 20,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      },
+      "sqlite_porter8_vs_v1_contextual": {
+        "mean_delta": -0.02430623780085365,
+        "ci95_low": -0.05548372221891374,
+        "ci95_high": 0.007727969625692368,
+        "win": 19,
+        "tie": 123,
+        "loss": 34,
+        "resamples": 2000,
+        "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+      }
+    },
+    "environment": {
+      "python": "3.13.18",
+      "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+      "sqlite": "3.46.1"
+    },
+    "scope": "Full external corpus, binary official qrels, self-ID excluded, same capped document fields. Ranking only; not end-to-end repair or live-search accuracy.",
+    "timing_notice": "v1_* preserves the v1.0.0 scoring/token sequence; later runs use the parity-tested faster tokenizer. Separate same-run tokenizer comparison measures old vs new implementation."
+  },
+  "tokenizer": {
+    "documents": 4096,
+    "tokens": 543739,
+    "repetitions": 5,
+    "exact_token_sequence_parity": true,
+    "v1_median_ms": 624.716628,
+    "optimized_median_ms": 118.366463,
+    "speedup": 5.277817822435059,
+    "scope": "Tokenization only, paired same-run timings; excludes I/O, index construction and retrieval.",
+    "data_sha256": {
+      "corpus.jsonl": "4e39fcc5f440806ad643aee67cad2d17c227fa29c81c121a079ee398a8d64f3e",
+      "queries.jsonl": "f80e8c3b7aadd8c17f573571093713e9877f7d54a1c73a4b32de9edd92eff0f0",
+      "test.tsv": "ed69afa873c64d34298792d694c82c4293e4b7e3c6ea3edc7a73662d4b0cba76"
+    }
+  }
+}

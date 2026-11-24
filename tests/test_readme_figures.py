@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FIGURES = ROOT / "docs" / "figures"
 NS = {"svg": "http://www.w3.org/2000/svg"}
-NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1")
+NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1", "independent-holdout", "competitor-diagnostic")
 
 
 class ReadmeFiguresTest(unittest.TestCase):
@@ -48,6 +48,25 @@ class ReadmeFiguresTest(unittest.TestCase):
                                             for corpus in ("original", "transfer")
                                             for method in ("stemmed_bm25", "sqlite_porter", "paired_rank")
                                             for metric in ("recall", "complete_pair_recall")})
+                if name == "competitor-diagnostic":
+                    snap = json.loads((FIGURES / "competitor-snapshot.json").read_text(encoding="utf-8"))
+                    bars = {(e.get("data-dataset"), e.get("data-method")): float(e.get("data-value"))
+                            for e in document.iter() if e.get("data-dataset")}
+                    expected = {(ds, method): snap["diagnostics"][ds]["methods"][method]["ndcg@10"]
+                                for ds in ("scifact", "nasa")
+                                for method in ("precision_field4", "v1_contextual", "bm25s_native", "bm25s_matched", "sqlite_porter")}
+                    self.assertEqual(bars, expected)
+                    self.assertTrue(all(row["exact_top11_scores_and_ids"] for row in snap["vector"].values()))
+                if name == "independent-holdout":
+                    snapshot = json.loads((FIGURES / "independent-snapshot.json").read_text(encoding="utf-8"))
+                    bars = {(e.get("data-dataset"), e.get("data-method"), e.get("data-metric")): float(e.get("data-value"))
+                            for e in document.iter() if e.get("data-dataset")}
+                    expected = {(dataset, method, "ndcg@10"): report["methods"][method]["ndcg@10"]
+                                for dataset, report in snapshot["reports"].items()
+                                for method in ("precision_field4", "v1_contextual", "sqlite_unicode4")}
+                    self.assertEqual(bars, expected)
+                    self.assertTrue(all(v["status"] == "completed" for v in snapshot["status"]["datasets"].values()))
+                    self.assertTrue(snapshot["tokenizer"]["precision_feature_parity"]["exact_token_sequence_parity"])
                 if name not in ("synthetic-ranking", "github-ranking"):
                     continue
                 expected = data["synthetic" if name.startswith("synthetic") else "github"]["methods"]

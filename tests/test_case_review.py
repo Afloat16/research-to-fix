@@ -68,6 +68,20 @@ class ReviewTests(unittest.TestCase):
         case["validation"]["runs"][1]["comparison_context"] = {"input": "different"}
         self.assertIn("final_pass_without_matching_declared_context", rc.review_case(case)["findings"])
 
+    def test_partial_review_detects_changed_acceptance_and_dropped_tests(self):
+        case = rc.new_case()
+        case["validation"]["status"] = "partial"
+        case["validation"]["runs"] = [
+            run("V1", "before", "fail", test_results={"a": "fail", "b": "pass"}),
+            run("V2", "after", "pass", test_results={"a": "pass"})]
+        case["validation"]["runs"][1]["criteria"] = "weaker requirement"
+        report = rc.review_case(case)
+        self.assertTrue(report["valid"], report)
+        self.assertIn("paired_checks_with_changed_acceptance", report["findings"])
+        self.assertIn("baseline_test_ids_missing_or_not_passing", report["findings"])
+        self.assertEqual(report["checks"]["paired_with_changed_acceptance"], 1)
+        self.assertEqual(report["checks"]["paired_with_test_detail_regressions"], 1)
+
     def test_unread_evidence_is_not_read_support(self):
         case = rc.new_case()
         case["evidence"] = [{

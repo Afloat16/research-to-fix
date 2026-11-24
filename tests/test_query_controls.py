@@ -63,6 +63,39 @@ class QueryControlTests(unittest.TestCase):
                 self.assertEqual(plan["total_candidates"], 2)
                 self.assertFalse(plan["truncated"])
 
+    def test_balanced_budget_covers_both_stages_and_distinct_sources(self):
+        plan = research_case.make_queries("IndexError", concepts=["boundary"],
+                                          max_queries=4, strategy="balanced")
+        self.assertEqual(plan["strategy"], "balanced")
+        self.assertEqual([q["stage"] for q in plan["queries"]],
+                         ["error_match", "mechanism", "error_match", "mechanism"])
+        self.assertEqual(len({q["source"] for q in plan["queries"]}), 4)
+        self.assertEqual({q["language"] for q in plan["queries"]}, {"en", "zh"})
+        self.assertEqual(plan["total_candidates"], 26)
+        self.assertTrue(plan["truncated"])
+
+    def test_balanced_full_plan_preserves_candidate_set_and_filters(self):
+        options = {"source_filters": ["labs", "github_prs", "zhihu", "openreview"],
+                   "language_filters": ["zh", "en"]}
+        legacy = research_case.make_queries("IndexError", **options)
+        balanced = research_case.make_queries("IndexError", strategy="balanced", **options)
+        def candidates(plan):
+            return {(q["source"], q["language"], q["query"]) for q in plan["queries"]}
+        self.assertEqual(candidates(legacy), candidates(balanced))
+        self.assertEqual(len({q["source"] for q in balanced["queries"][:4]}), 4)
+        self.assertEqual([q["id"] for q in balanced["queries"]], [f"S{i}" for i in range(1, 9)])
+        self.assertFalse(balanced["truncated"])
+
+    def test_balanced_cli_and_single_stage_language(self):
+        process = run_cli("queries", "--error", "IndexError", "--strategy", "balanced",
+                          "--language", "zh", "--source", "labs", "--source", "openreview")
+        self.assertEqual(process.returncode, 0, process.stderr)
+        plan = json.loads(process.stdout)
+        self.assertEqual([q["source"] for q in plan["queries"]], ["labs", "openreview"])
+        self.assertEqual({q["language"] for q in plan["queries"]}, {"zh"})
+        with self.assertRaises(ValueError):
+            research_case.make_queries("IndexError", strategy="unknown")
+
     def test_repository_changes_only_github_site_paths(self):
         original = research_case.make_queries("IndexError", "numpy", "2.0", ["boundary"])
         scoped = research_case.make_queries("IndexError", "numpy", "2.0", ["boundary"],

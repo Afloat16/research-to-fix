@@ -114,6 +114,7 @@ python skills/research-to-fix/scripts/research_case.py validate \
 | `--language en` / `--language zh` | 筛选查询语言；可重复以保留两种语言。 |
 | `--limit N` | 用正整数限制生成的候选数，不设置或执行实际联网预算。 |
 | `--repo owner/name` | 仅将 GitHub issue 和 PR 候选限定到指定仓库，其他来源不变。 |
+| `--strategy balanced` | 交错错误匹配与机制检索阶段，优先覆盖各选定来源再补第二语言。默认 `source_order` 保持原顺序；这不是相关性排名。 |
 
 发送前逐条复核查询。输入检查会拒绝常见凭据模式、检测出的私有地址和识别到的非 HTTP(S) URI，但秘密检测只是启发式检查，不能保证所有内容均可公开。
 
@@ -136,7 +137,7 @@ python skills/research-to-fix/scripts/case_bundle.py seal --directory /tmp/resea
 python skills/research-to-fix/scripts/case_bundle.py verify --directory /tmp/research-to-fix-example
 ```
 
-- `review` 统计基线与最终检查覆盖、比较上下文、逐测试明细、已声明的产物与外部证据缺口。提示项用于复核，不是成功率评分；结构合法但不完整的案例仍返回 0。
+- `review` 统计基线与最终检查覆盖、比较上下文、逐测试明细、已声明的产物、改变的验收标准、缺失或未通过的基线测试与外部证据缺口。提示项用于复核，不是成功率评分；结构合法但不完整的案例仍返回 0。
 - `seal` 排他创建 `manifest.json`，记录 `case.json`、运行记录 `artifacts` 字段所引用文件与额外显式 `--artifact` 文件的 SHA-256 和字节长度。需要保留的源码快照须明确选择，不自动扫描目录。
 - `verify` 检查记录结构和文件字节是否匹配清单。可用 `--expected-manifest-sha256` 输入独立保存的摘要以检测清单本身被替换。不重跑测试、不认证作者、不证明所声明观测真实发生。
 

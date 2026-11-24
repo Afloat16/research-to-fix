@@ -117,6 +117,7 @@ python skills/research-to-fix/scripts/research_case.py validate \
 | `--language en` / `--language zh` | Select query languages; repeat to include both. |
 | `--limit N` | Cap the number of generated candidates with a positive integer. This does not set or execute an online search budget. |
 | `--repo owner/name` | Scope GitHub issue and pull-request candidates to one repository; other sources remain unchanged. |
+| `--strategy balanced` | Interleave error-match and mechanism stages; cover each selected source before its second language. Default `source_order` preserves existing ordering. This is a coverage heuristic, not relevance ranking. |
 
 Review every query before sending it. Input checks reject common credential patterns, detected private addresses, and recognized non-HTTP(S) URI forms, but secret detection is heuristic and cannot guarantee safe disclosure.
 
@@ -139,7 +140,7 @@ python skills/research-to-fix/scripts/case_bundle.py seal --directory /tmp/resea
 python skills/research-to-fix/scripts/case_bundle.py verify --directory /tmp/research-to-fix-example
 ```
 
-- `review` reports baseline/final check coverage, comparison context, per-test details, artifact declarations, and external evidence gaps. Findings are review prompts, not a success score; valid incomplete cases still exit 0.
+- `review` reports baseline/final check coverage, comparison context, per-test details, artifact declarations, changed acceptance criteria or missing/nonpassing baseline test IDs, and external evidence gaps. Findings are review prompts, not a success score; valid incomplete cases still exit 0.
 - `seal` creates an exclusive `manifest.json` containing SHA-256 digests and byte lengths for `case.json`, files declared in run-level `artifacts` mappings, and explicit additional `--artifact` paths. Select all snapshots you intend to preserve; no automatic directory crawl occurs.
 - `verify` checks the recorded file bytes and case consistency. Pass `--expected-manifest-sha256` with an independently retained digest to detect replacement of the manifest itself. It does not run the tests, authenticate an author, or prove that the recorded observations occurred.
 

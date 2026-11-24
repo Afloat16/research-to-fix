@@ -127,7 +127,7 @@ def safe_search_input(values):
 
 
 def make_queries(error, component="", version="", concepts=None, source_filters=None,
-                 language_filters=None, max_queries=None, repository=None):
+                 language_filters=None, max_queries=None, repository=None, strategy="source_order"):
     parts = [error, component, version, *(concepts or [])]
     if repository is not None:
         parts.append(repository)
@@ -135,6 +135,8 @@ def make_queries(error, component="", version="", concepts=None, source_filters=
         raise ValueError("检测到可能的凭据、私有 URL 或不支持的 URI，请脱敏后重试。" + NOTICE)
     if not error.strip():
         raise ValueError("报错或症状不能为空。")
+    if not isinstance(strategy, str) or strategy not in ("source_order", "balanced"):
+        raise ValueError("检索计划策略无效。")
     source_filters = source_filters or SOURCE_IDS
     language_filters = language_filters or LANGUAGE_IDS
     if any(not isinstance(source, str) or source not in SOURCE_IDS for source in source_filters):
@@ -184,11 +186,27 @@ def make_queries(error, component="", version="", concepts=None, source_filters=
                             "purpose": purpose, "stage": "error_match" if exact_error else "mechanism",
                             "note": "候选查询：优先核对报错与版本。" if exact_error else mechanism_note})
     total_candidates = len(queries)
+    if strategy == "balanced":
+        # Prioritize one language per selected source before any source gets
+        # a second query. Interleave error and mechanism stages; alternate
+        # the first language across sources when both are requested.
+        by_source = {source: [row for row in queries if row["source"] == source] for source in source_filters}
+        groups = [[source for source in source_filters if by_source[source][0]["stage"] == stage]
+                  for stage in ("error_match", "mechanism")]
+        ordered_sources = []
+        for index in range(max(map(len, groups))):
+            ordered_sources.extend(group[index] for group in groups if index < len(group))
+        queries = [by_source[source][(position + language_round) % len(language_filters)]
+                   for language_round in range(len(language_filters))
+                   for position, source in enumerate(ordered_sources)]
+        for index, row in enumerate(queries, 1):
+            row["id"] = f"S{index}"
     if max_queries is not None:
         queries = queries[:max_queries]
     return {"notice": NOTICE, "review_required": True,
             "note": "以下全部是候选计划；请按相关性优先选择 4–8 条并改写，不要求全部执行。数量上限仅控制生成，不是实际联网预算。",
-            "total_candidates": total_candidates, "truncated": len(queries) < total_candidates, "queries": queries}
+            "total_candidates": total_candidates, "truncated": len(queries) < total_candidates, "queries": queries,
+            **({"strategy": strategy} if strategy != "source_order" else {})}
 
 
 def new_case():
@@ -596,8 +614,21 @@ def review_case(case):
     comparable = [(left, right) for left, right in passed
                   if all(row.get("comparison_context") for row in left + right)
                   and all(row["comparison_context"] == left[0]["comparison_context"] for row in left + right)]
+    changed_acceptance = [(left, right) for left, right in paired
+                          if any(any(row.get(field, default) != left[0].get(field, default)
+                                     for row in left + right)
+                                 for field, default in (("criteria", None), ("expected_exit_code", 0)))]
     detailed = [(left, right) for left, right in paired
                 if all(row.get("test_results") for row in left + right)]
+    test_detail_regressions = 0
+    for left, right in detailed:
+        required = {identifier for row in left for identifier in row["test_results"]}
+        require_pass = {identifier for row in left for identifier, outcome in row["test_results"].items()
+                        if outcome in ("pass", "fail", "error")}
+        if any(not required.issubset(row["test_results"])
+               or any(row["test_results"].get(identifier) != "pass" for identifier in require_pass)
+               for row in right):
+            test_detail_regressions += 1
     artifacts = [(left, right) for left, right in paired
                  if all(isinstance(row.get("artifacts"), dict) and row["artifacts"]
                         for row in left + right)]
@@ -619,8 +650,12 @@ def review_case(case):
         findings.append("baseline_checks_without_final_pass")
     if len(comparable) < len(passed):
         findings.append("final_pass_without_matching_declared_context")
+    if changed_acceptance:
+        findings.append("paired_checks_with_changed_acceptance")
     if len(detailed) < len(paired):
         findings.append("paired_checks_without_test_details")
+    if test_detail_regressions:
+        findings.append("baseline_test_ids_missing_or_not_passing")
     if len(artifacts) < len(paired):
         findings.append("paired_checks_without_declared_artifacts")
     if unsupported:
@@ -636,6 +671,8 @@ def review_case(case):
                    "final_passed_checks": len(passed), "paired_with_test_details": len(detailed),
                    "passed_with_matching_context": len(comparable),
                    "paired_with_declared_artifacts": len(artifacts),
+                   "paired_with_changed_acceptance": len(changed_acceptance),
+                   "paired_with_test_detail_regressions": test_detail_regressions,
                    "historical_after_runs": len(after) - len(final)},
         "evidence": {"records": len(evidence), "read": len(read),
                      "read_support": len(usable), "lead_only": sum(row["outcome"] == "lead" for row in evidence),
@@ -939,6 +976,8 @@ def main(argv=None):
     query_parser.add_argument("--language", action="append", choices=LANGUAGE_IDS, help="筛选查询语言，可重复；按首次指定的顺序生成，默认 en、zh")
     query_parser.add_argument("--limit", type=int, help="最多生成的候选查询数，须为正整数；不代表实际联网预算")
     query_parser.add_argument("--repo", help="公开仓库 owner/name；仅缩小 GitHub issues 和 pull request 查询路径，不检查仓库是否存在")
+    query_parser.add_argument("--strategy", choices=("source_order", "balanced"), default="source_order",
+                              help="balanced 交错错误匹配与机制检索，先覆盖各来源再补充语言；不代表相关性排序")
     query_parser.add_argument("--format", choices=("json", "markdown"), default="json")
     recall_parser = commands.add_parser("recall", help="离线检索显式目录中的历史案例线索", description=RECALL_NOTICE)
     recall_parser.add_argument("--cases-dir", required=True, type=Path, help="只读直接子层普通 JSON；拒绝目录本身及其条目的符号链接，祖先路径按系统规则解析")
@@ -968,7 +1007,7 @@ def main(argv=None):
     try:
         if args.command == "queries":
             plan = make_queries(args.error, args.component, args.version, args.concept, args.source,
-                                args.language, args.limit, args.repo)
+                                args.language, args.limit, args.repo, args.strategy)
             if args.format == "json":
                 print(json.dumps(plan, ensure_ascii=False, indent=2))
             else:

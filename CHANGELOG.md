@@ -4,7 +4,9 @@
 
 ### Added
 
-- `research_case.py review`: a deterministic, machine-readable completeness review for baseline/final check coverage, comparison context, per-test details, artifact declarations, and external evidence gaps. Review findings are not a quality score or certification.
+- Optional `queries --strategy balanced`: interleave error and mechanism stages and cover distinct sources before repeating languages under a limited candidate budget. Legacy order remains the default.
+
+- `research_case.py review`: a deterministic, machine-readable completeness review for baseline/final check coverage, comparison context, per-test details, artifact declarations, changed acceptance criteria, missing/nonpassing baseline test IDs, and external evidence gaps. Review findings are not a quality score or certification.
 - `case_bundle.py seal/verify`: offline, explicit SHA-256 manifest creation and verification with optional independently retained manifest digest, resource bounds and traversal/link rejection.
 - Regression tests for strict JSON, nonregular and oversized inputs, multicast/encoded credential markers, evidence integrity, and final-attempt review.
 - Bilingual user documentation, evidence bundle guide, contribution and security policies, issue and PR templates, and a release checklist.

@@ -223,6 +223,25 @@ def checked_capture_json(root, name, rows):
     return value
 
 
+def validate_unittest_report(report_value):
+    """The complete method-level outcome contract shared by recorder and audit."""
+    if not isinstance(report_value, dict) or set(report_value) != {"python_version", "python_implementation", "tests_run", "successful", "test_results"}:
+        capture_error("capture_report_invalid")
+    outcomes = report_value["test_results"]
+    if (not isinstance(outcomes, dict) or not 1 <= len(outcomes) <= CAPTURE_MAX_TESTS
+            or any(not isinstance(key, str) or not key.strip() or len(key) > 500
+                   or type(value) is not str or value not in ("pass", "fail", "error", "skipped")
+                   for key, value in outcomes.items())
+            or type(report_value["tests_run"]) is not int or report_value["tests_run"] != len(outcomes)
+            or type(report_value["successful"]) is not bool
+            or report_value["successful"] != all(value in ("pass", "skipped") for value in outcomes.values())):
+        capture_error("capture_report_invalid")
+    for key in ("python_version", "python_implementation"):
+        if not isinstance(report_value[key], str) or not report_value[key].strip():
+            capture_error("capture_report_invalid")
+    return outcomes
+
+
 def audit_capture(directory, expected_digest=None):
     """Audit all executed runs in an explicitly captured, sealed case."""
     integrity, case, rows = _verify_details(directory, expected_digest)
@@ -286,17 +305,7 @@ def audit_capture(directory, expected_digest=None):
         stdout_value = checked_capture_json(root, capture["stdout"], rows)
         if not isinstance(report_value, dict) or report_value != stdout_value:
             capture_error("capture_stdout_report_mismatch")
-        if set(report_value) != {"python_version", "python_implementation", "tests_run", "successful", "test_results"}:
-            capture_error("capture_report_invalid")
-        outcomes = report_value["test_results"]
-        if (not isinstance(outcomes, dict) or not 1 <= len(outcomes) <= CAPTURE_MAX_TESTS
-                or any(not isinstance(key, str) or not key.strip() or len(key) > 500
-                       or type(value) is not str or value not in ("pass", "fail", "error", "skipped")
-                       for key, value in outcomes.items())
-                or type(report_value["tests_run"]) is not int or report_value["tests_run"] != len(outcomes)
-                or type(report_value["successful"]) is not bool
-                or report_value["successful"] != all(value in ("pass", "skipped") for value in outcomes.values())):
-            capture_error("capture_report_invalid")
+        outcomes = validate_unittest_report(report_value)
         if run.get("test_results") != outcomes:
             capture_error("capture_test_results_mismatch")
         success = report_value["successful"]

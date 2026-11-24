@@ -2,6 +2,7 @@
 """Bounded offline multi-round research ledger; never searches automatically."""
 import argparse
 import copy
+from collections import Counter, defaultdict
 import json
 import sys
 from pathlib import Path
@@ -24,10 +25,16 @@ def signature(query):
             " ".join(query["native_query"].casefold().split()))
 
 
-def start(problem, query_budget=48, max_rounds=3):
-    return {"schema_version": 1, "scope": "research_session", "problem": w.normalize_problem(problem),
-            "query_budget": w.integer(query_budget, 1, MAX_QUERIES),
-            "max_rounds": w.integer(max_rounds, 1, MAX_ROUNDS), "rounds": []}
+def start(problem, query_budget=48, max_rounds=3, strategy="legacy"):
+    if strategy not in ("legacy", "coverage"):
+        w.fail("invalid_selection_strategy")
+    state = {"schema_version": 1, "scope": "research_session", "problem": w.normalize_problem(problem),
+             "query_budget": w.integer(query_budget, 1, MAX_QUERIES),
+             "max_rounds": w.integer(max_rounds, 1, MAX_ROUNDS), "rounds": []}
+    # Preserve canonical bytes and pending proposal hashes for legacy sessions.
+    if strategy == "coverage":
+        state["selection_strategy"] = strategy
+    return state
 
 
 def checked_problem(root, value):
@@ -71,6 +78,9 @@ def _validate(value):
     if type(value.get("schema_version")) is not int or value["schema_version"] != 1 or value.get("scope") != "research_session":
         w.fail("invalid_session")
     root = w.normalize_problem(value.get("problem"))
+    strategy = value.get("selection_strategy", "legacy")
+    if strategy not in ("legacy", "coverage"):
+        w.fail("invalid_selection_strategy")
     budget = w.integer(value.get("query_budget"), 1, MAX_QUERIES)
     max_rounds = w.integer(value.get("max_rounds"), 1, MAX_ROUNDS)
     rounds = value.get("rounds")
@@ -108,8 +118,75 @@ def _validate(value):
             w.fail("result_limit")
         normalized_rounds.append({"number": number, "plan": plan, "plan_sha256": w.plan_digest(plan),
                                   "query_ids": qids, "payloads": payloads})
-    return {"schema_version": 1, "scope": "research_session", "problem": root,
-            "query_budget": budget, "max_rounds": max_rounds, "rounds": normalized_rounds}, used
+    state = {"schema_version": 1, "scope": "research_session", "problem": root,
+             "query_budget": budget, "max_rounds": max_rounds, "rounds": normalized_rounds}
+    if strategy == "coverage":
+        state["selection_strategy"] = strategy
+    return state, used
+
+
+def provider_group(row):
+    provider = row["provider"]
+    if provider.startswith("github_"):
+        return "github"
+    if provider.startswith("huggingface_"):
+        return "huggingface"
+    # A host-side failure for one search source does not imply that every
+    # host capability is blocked.
+    return "host:" + row["source"] if provider == "host" else provider
+
+
+def coverage_selection(state, fresh, budget):
+    """Greedy distinct stage/family coverage using only recorded outcomes.
+
+    Prioritize stages without an unambiguous completion, diversify families,
+    and prefer sources without a recorded transport failure when alternatives
+    exist. Provisional choices count for diversity but are not reported as
+    completed. No source text, relevance labels, or automatic retry.
+    """
+    stage_ok, family_ok, source_used, group_ok, group_failure = (Counter() for _ in range(5))
+    stage_attempts = Counter()
+    transport_failures = {"rate_limited", "access_blocked", "unavailable", "invalid_response"}
+    non_attempt = {"not_relevant", "skipped_budget"}
+    for round_ in state["rounds"]:
+        by_id = {row["id"]: row for row in round_["plan"]["queries"]}
+        statuses = defaultdict(set)
+        for payload in round_["payloads"]:
+            for search in payload.get("searches", []):
+                statuses[search["query_id"]].add(search["status"])
+        for qid in round_["query_ids"]:
+            query = by_id[qid]
+            actual = statuses[qid] - non_attempt
+            group = provider_group(query)
+            source_used[query["source"]] += 1
+            if actual:
+                stage_attempts[query["stage"]] += 1
+            if actual == {"completed"}:
+                stage_ok[query["stage"]] += 1
+                family_ok[query["family"]] += 1
+                group_ok[group] += 1
+            elif actual & transport_failures:
+                group_failure[group] += 1
+    candidates = list(fresh)
+    selected = []
+    stage_planned, family_planned, group_planned = Counter(), Counter(), Counter()
+    while candidates and len(selected) < budget:
+        def priority(row):
+            group = provider_group(row)
+            stage, family = row["stage"], row["family"]
+            deferred = bool(group_failure[group] and not group_ok[group])
+            return (stage_ok[stage] + stage_planned[stage],
+                    deferred, family_ok[family] + family_planned[family],
+                    stage_attempts[stage], group_planned[group],
+                    source_used[row["source"]], row["id"])
+        chosen = min(candidates, key=priority)
+        candidates.remove(chosen)
+        selected.append(chosen)
+        stage_planned[chosen["stage"]] += 1
+        family_planned[chosen["family"]] += 1
+        group_planned[provider_group(chosen)] += 1
+        source_used[chosen["source"]] += 1
+    return selected
 
 
 def next_round(session, problem=None, budget=16):
@@ -127,14 +204,17 @@ def next_round(session, problem=None, budget=16):
     fresh = [row for row in plan["queries"] if signature(row) not in used]
     if not fresh:
         w.fail("no_new_queries_review_fingerprint")
-    if state["rounds"]:
-        previous = review(state, limit=12)
-        gaps = set(previous["triage"]["family_gaps"])
-        # Resolve source gaps first, then explore alternatives/counterevidence.
-        fresh.sort(key=lambda row: (row["family"] not in gaps,
-                   row["stage"] not in ("alternatives", "counterevidence"),
-                   row["id"]))
-    chosen = fresh[:budget]
+    if state.get("selection_strategy") == "coverage":
+        chosen = coverage_selection(state, fresh, budget)
+    else:
+        if state["rounds"]:
+            previous = review(state, limit=12)
+            gaps = set(previous["triage"]["family_gaps"])
+            # Preserve the original selection policy for legacy sessions.
+            fresh.sort(key=lambda row: (row["family"] not in gaps,
+                       row["stage"] not in ("alternatives", "counterevidence"),
+                       row["id"]))
+        chosen = fresh[:budget]
     return {"schema_version": 1, "scope": "research_round_proposal",
             "session_sha256": w.plan_digest(state), "number": len(state["rounds"]) + 1,
             "plan_sha256": w.plan_digest(plan), "plan": plan,
@@ -199,6 +279,8 @@ def main(argv=None):
     init.add_argument("--problem", required=True, type=Path)
     init.add_argument("--query-budget", type=int, default=48)
     init.add_argument("--max-rounds", type=int, default=3)
+    init.add_argument("--strategy", choices=("legacy", "coverage"), default="legacy",
+                      help="Coverage balances stages and recorded transport failures; legacy preserves prior policy.")
     init.add_argument("--output", required=True, type=Path)
     propose = commands.add_parser("next")
     propose.add_argument("--session", required=True, type=Path)
@@ -218,7 +300,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == "start":
-            result = start(w.read_json(args.problem), args.query_budget, args.max_rounds)
+            result = start(w.read_json(args.problem), args.query_budget, args.max_rounds, args.strategy)
         elif args.command == "next":
             result = next_round(w.read_json(args.session), w.read_json(args.problem) if args.problem else None, args.budget)
         elif args.command == "append":

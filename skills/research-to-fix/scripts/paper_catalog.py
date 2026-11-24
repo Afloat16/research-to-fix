@@ -16,6 +16,7 @@ import re
 import sqlite3
 import stat
 import sys
+import unicodedata
 from time import perf_counter_ns
 
 import public_discovery as discovery
@@ -28,7 +29,7 @@ MAX_LINE = 64 * 1024
 MAX_ROWS = 1_000_000
 MAX_PAPERS = 20
 MAX_LINKS = 3
-SCHEMA = 1
+SCHEMA = 2
 NOTICE = ("Local catalog metadata is user-supplied and not independently authenticated. "
           "Historical official flags are leads, not current license, maintenance, applicability or correctness guarantees.")
 
@@ -50,6 +51,10 @@ def paper_identity(arxiv, landing):
     return "url:" + url, url
 
 
+def title_key(value):
+    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+
 def normalize(row):
     if not isinstance(row, dict):
         return None
@@ -65,7 +70,7 @@ def normalize(row):
     if not repo or not paper or not title:
         return None
     key, url = paper
-    return ((key, url, title, abstract),
+    return ((key, url, title, abstract, title_key(title)),
             (key, repo, int(row.get("is_official") is True),
              int(row.get("mentioned_in_paper") is True), int(row.get("mentioned_in_github") is True)))
 
@@ -106,7 +111,7 @@ def stream_rows(path, digest):
 CREATE = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID;
 CREATE TABLE papers (
-    id TEXT PRIMARY KEY, url TEXT NOT NULL, title TEXT NOT NULL, abstract TEXT NOT NULL
+    id TEXT PRIMARY KEY, url TEXT NOT NULL, title TEXT NOT NULL, abstract TEXT NOT NULL, title_key TEXT NOT NULL
 ) WITHOUT ROWID;
 CREATE TABLE links (
     paper_id TEXT NOT NULL REFERENCES papers(id), repo_url TEXT NOT NULL,
@@ -116,11 +121,14 @@ CREATE TABLE links (
 CREATE VIRTUAL TABLE paper_fts USING fts5(id UNINDEXED, title, abstract, tokenize='porter unicode61');
 """
 PAPER_INSERT = """
-INSERT INTO papers VALUES(?,?,?,?)
+INSERT INTO papers VALUES(?,?,?,?,?)
 ON CONFLICT(id) DO UPDATE SET
 title=CASE WHEN length(excluded.title)>length(papers.title)
              OR (length(excluded.title)=length(papers.title) AND excluded.title<papers.title)
            THEN excluded.title ELSE papers.title END,
+title_key=CASE WHEN length(excluded.title)>length(papers.title)
+             OR (length(excluded.title)=length(papers.title) AND excluded.title<papers.title)
+           THEN excluded.title_key ELSE papers.title_key END,
 abstract=CASE WHEN length(excluded.abstract)>length(papers.abstract)
              OR (length(excluded.abstract)=length(papers.abstract) AND excluded.abstract<papers.abstract)
            THEN excluded.abstract ELSE papers.abstract END
@@ -177,6 +185,8 @@ def build_catalog(input_path, database, source="user-supplied metadata", license
         flush()
         if not counts["accepted_rows"]:
             w.fail("empty_catalog")
+        db.execute("CREATE INDEX paper_title_key ON papers(title_key,id)")
+        db.execute("CREATE INDEX repo_paper_id ON links(repo_url,paper_id)")
         db.execute("INSERT INTO paper_fts(id,title,abstract) SELECT id,title,abstract FROM papers ORDER BY id")
         papers = db.execute("SELECT count(*) FROM papers").fetchone()[0]
         links = db.execute("SELECT count(*) FROM links").fetchone()[0]
@@ -216,7 +226,7 @@ class Catalog:
             self.db.execute("PRAGMA trusted_schema=OFF")
             self.db.execute("PRAGMA query_only=ON")
             if self.db.execute("PRAGMA user_version").fetchone()[0] != SCHEMA:
-                w.fail("invalid_catalog_schema")
+                w.fail("catalog_schema_requires_rebuild")
             self.metadata = dict(self.db.execute("SELECT key,value FROM meta"))
             if set(self.metadata) != {"source", "license", "snapshot", "input_sha256", "papers", "links"}:
                 w.fail("invalid_catalog_metadata")
@@ -253,18 +263,43 @@ class Catalog:
         row = self.db.execute("SELECT * FROM papers WHERE id=?", (key,)).fetchone()
         return dict(row) if row else None
 
+    def lookup_title(self, title, limit=12):
+        """Exact normalized title lookup. Multiple identities remain distinct."""
+        w.integer(limit, 1, MAX_PAPERS)
+        title = w.public_text(title, 1024)
+        return [dict(row) for row in self.db.execute(
+            "SELECT id,url,title,abstract FROM papers WHERE title_key=? ORDER BY id LIMIT ?",
+            (title_key(title), limit))]
+
+    def papers_for_repository(self, url, limit=12):
+        """Reverse lookup by an explicit reviewed GitHub repository URL."""
+        w.integer(limit, 1, MAX_PAPERS)
+        if not isinstance(url, str):
+            w.fail("invalid_repository_url")
+        normalized = discovery.github_repo_url(url)
+        if not normalized:
+            w.fail("invalid_repository_url")
+        return [dict(row) for row in self.db.execute(
+            "SELECT p.id,p.url,p.title,p.abstract FROM links AS l "
+            "JOIN papers AS p ON p.id=l.paper_id WHERE l.repo_url=? "
+            "ORDER BY l.official DESC,l.in_paper DESC,l.in_repo DESC,p.id LIMIT ?",
+            (normalized, limit))]
+
     def links(self, key, limit=MAX_LINKS):
         w.integer(limit, 1, 1000)
         return [dict(row) for row in self.db.execute(
             "SELECT repo_url,official,in_paper,in_repo FROM links WHERE paper_id=? "
             "ORDER BY official DESC,in_paper DESC,in_repo DESC,repo_url LIMIT ?", (key, limit))]
 
-    def observations(self, plan, query_id, limit=12, paper_ids=None):
+    def observations(self, plan, query_id, limit=12, paper_ids=None, exact_title=None, repository=None):
         plan = w.validate_plan(plan)
         query = next((row for row in plan["queries"] if row["id"] == query_id and
                       row["provider"] == "paperswithcode"), None)
         if not query:
             w.fail("catalog_query_required")
+        if sum(value is not None for value in (paper_ids, exact_title, repository)) > 1:
+            w.fail("ambiguous_catalog_lookup")
+        w.integer(limit, 1, MAX_PAPERS)
         if paper_ids is not None:
             if not isinstance(paper_ids, list) or not 1 <= len(paper_ids) <= discovery.MAX_PAPER_LOOKUPS:
                 w.fail("invalid_paper_lookup_count")
@@ -272,6 +307,10 @@ class Catalog:
             if len(set(normalized)) != len(normalized):
                 w.fail("duplicate_paper_lookup")
             papers = [row for value in paper_ids if (row := self.lookup(value)) is not None]
+        elif exact_title is not None:
+            papers = self.lookup_title(exact_title, limit)
+        elif repository is not None:
+            papers = self.papers_for_repository(repository, limit)
         else:
             papers = self.search(query["native_query"], limit)
         results = []
@@ -307,7 +346,9 @@ class Catalog:
                 results.append(code)
         return {"schema_version": 1, "scope": "local_catalog_discovery", "notice": NOTICE,
                 "plan_id": w.plan_fingerprint(plan), "catalog": self.metadata,
-                "query_id": query_id, "local_mode": "identifier" if paper_ids else "keyword",
+                "query_id": query_id, "local_mode": ("identifier" if paper_ids else
+                    "exact_title" if exact_title is not None else
+                    "repository_reverse" if repository is not None else "keyword"),
                 "papers_returned": len(papers), "results": results, "searches": []}
 
 
@@ -325,7 +366,10 @@ def main(argv=None):
     find.add_argument("--database", type=Path, required=True)
     find.add_argument("--plan", type=Path, required=True)
     find.add_argument("--query-id", required=True)
-    find.add_argument("--paper-id", action="append")
+    mode = find.add_mutually_exclusive_group()
+    mode.add_argument("--paper-id", action="append")
+    mode.add_argument("--exact-title")
+    mode.add_argument("--repository")
     find.add_argument("--limit", type=int, default=12)
     find.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
@@ -334,7 +378,8 @@ def main(argv=None):
             report = build_catalog(args.input, args.database, args.source, args.license, args.snapshot)
         else:
             with Catalog(args.database) as catalog:
-                report = catalog.observations(w.read_json(args.plan), args.query_id, args.limit, args.paper_id)
+                report = catalog.observations(w.read_json(args.plan), args.query_id, args.limit, args.paper_id,
+                                              args.exact_title, args.repository)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError, sqlite3.Error) as error:

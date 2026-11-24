@@ -44,11 +44,11 @@ jobs:
       - name: Compare actual numerical repair candidates
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - name: Install optional archive importer
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Benchmark final full catalog')
         run: |
           python -m pip install --only-binary=:all: pyarrow==20.0.0
       - name: Benchmark complete pinned public archive
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Benchmark final full catalog')
         run: python benchmarks/full_catalog.py --approve-public --output "$RUNNER_TEMP/full-catalog"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

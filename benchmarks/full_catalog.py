@@ -104,7 +104,8 @@ def benchmark(path):
             ("r2f-full-index-v1:" + row["id"]).encode()).digest())[:SAMPLE]
         if not chosen:
             raise ValueError("empty_arxiv_index")
-        index_times, scan_times, fts_times, hits, link_hits = [], [], [], 0, 0
+        index_times, scan_times, fts_times, title_times, reverse_times = [], [], [], [], []
+        hits = link_hits = title_hits = reverse_hits = 0
         for item in chosen:
             start = time.perf_counter_ns()
             exact = db.lookup(item["id"].removeprefix("arxiv:"))
@@ -114,9 +115,21 @@ def benchmark(path):
             scan_times.append((time.perf_counter_ns() - start) / 1e6)
             if not exact or not linear or exact["id"] != linear["id"]:
                 raise ValueError("exact_lookup_parity_failed")
-            if not db.links(exact["id"]):
+            links = db.links(exact["id"])
+            if not links:
                 raise ValueError("missing_link")
             link_hits += 1
+            start = time.perf_counter_ns()
+            reverse = db.papers_for_repository(links[0]["repo_url"], 20)
+            reverse_times.append((time.perf_counter_ns() - start) / 1e6)
+            reverse_hits += any(row["id"] == item["id"] for row in reverse)
+            try:
+                start = time.perf_counter_ns()
+                exact_title = db.lookup_title(item["title"], K)
+                title_times.append((time.perf_counter_ns() - start) / 1e6)
+                title_hits += any(row["id"] == item["id"] for row in exact_title)
+            except w.WorkflowError:
+                pass
             try:
                 start = time.perf_counter_ns()
                 results = db.search(item["title"], K)
@@ -131,6 +144,10 @@ def benchmark(path):
                 "python_linear_scan": percentiles(scan_times),
                 "exact_title_hit_at_10": round(hits / len(chosen), 6),
                 "title_queries_timed": len(fts_times),
+                "indexed_exact_title_hit_at_10": round(title_hits / len(chosen), 6),
+                "indexed_exact_title": percentiles(title_times) if title_times else None,
+                "reverse_repository_hit_at_20": round(reverse_hits / len(chosen), 6),
+                "reverse_repository": percentiles(reverse_times),
                 "fts_title": percentiles(fts_times) if fts_times else None,
                 "scope": "Known-item self-lookup on the complete imported archive, not held-out source relevance or repair success."}
 

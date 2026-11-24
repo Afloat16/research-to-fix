@@ -64,6 +64,15 @@ def normalize_spec(value):
     paths = {path.casefold() for path in impl + comparison}
     if len(impl) + len(comparison) > MAX_FILES or len(paths) != len(impl) + len(comparison):
         fail("duplicate_or_excessive_paths")
+    # Reject directory aliases too: A/x.py and a/y.py are different trees
+    # on case-sensitive hosts but merge into one on case-insensitive hosts.
+    spellings = {}
+    for path in impl + comparison:
+        parts = path.split("/")
+        for end in range(1, len(parts)):
+            prefix = "/".join(parts[:end])
+            if spellings.setdefault(prefix.casefold(), prefix) != prefix:
+                fail("ambiguous_directory_case")
     for name in paths:
         if name in {RUNNER.casefold(), PLAN.casefold()} or any(
                 "/".join(name.split("/")[:n]) in paths for n in range(1, len(name.split("/")))):

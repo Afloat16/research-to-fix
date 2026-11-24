@@ -55,6 +55,8 @@ jobs:
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
       - name: Audit real subprocess captures under controlled perturbations
         run: python benchmarks/capture_audit.py --output "$RUNNER_TEMP/capture-audit.json"
+      - name: Execute controlled repair candidates with frozen local captures
+        run: python benchmarks/repair_capture_suite.py --output "$RUNNER_TEMP/repair-capture.json"
       - name: Compare multi-round planning under fixed simulated outcomes
         run: python benchmarks/session_coverage.py --output "$RUNNER_TEMP/session-coverage.json"
       - name: Measure provider scheduler with mock transport
@@ -76,5 +78,6 @@ jobs:
             ${{ runner.temp }}/discovery-schedule.json
             ${{ runner.temp }}/capture-audit.json
             ${{ runner.temp }}/session-coverage.json
+            ${{ runner.temp }}/repair-capture.json
           retention-days: 14
           if-no-files-found: warn

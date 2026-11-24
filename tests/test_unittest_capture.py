@@ -127,6 +127,22 @@ class CaptureTests(unittest.TestCase):
         with self.assertRaises(bundle.BundleError):
             self.freeze()
 
+    def test_timeout_preserves_bounded_logs_without_solved_record(self):
+        self.spec["timeout_seconds"] = 1
+        (self.before / "calculation.py").write_bytes(b"import time\ntime.sleep(10)\n" + BEFORE)
+        with self.assertRaisesRegex(bundle.BundleError, "capture_timeout"):
+            self.record(self.freeze(), "timed-out", approved=True)
+        root = self.root / "timed-out"
+        self.assertTrue((root / "runs/before/stdout.log").is_file())
+        self.assertFalse((root / "case.json").exists())
+        self.assertFalse((root / "manifest.json").exists())
+
+    def test_directory_case_alias_rejected(self):
+        bad = copy.deepcopy(self.spec)
+        bad["implementation_files"] = ["Pkg/calculation.py", "pkg/helper.py"]
+        with self.assertRaisesRegex(bundle.BundleError, "ambiguous_directory_case"):
+            capture.normalize_spec(bad)
+
     def test_cli_freeze_record_and_existing_destination(self):
         spec_path, plan_path = self.root / "spec.json", self.root / "plan.json"
         spec_path.write_text(json.dumps(self.spec), encoding="utf-8")

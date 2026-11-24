@@ -93,6 +93,25 @@ For your own cases, point `recall` at their directory. It reads only that direct
 
 Recall results are leads for a new repair. Recheck the current code, conditions, original evidence, and tests before adapting a prior solution. A relevance score is not proof of correctness, and a recorded `solved` status is not independently authenticated. Recall does not automatically redact local content; review excerpts before sharing them. See [case reuse](skills/research-to-fix/references/case-reuse.md) for resource limits, selection rules, and the upstream implementations that informed this design.
 
+## High-throughput recall and measured ranking
+
+For several local problems against the same corpus, `recall-batch` validates the explicit directory once and reuses a compact in-memory inverted index. The query file is a JSON array of 1–128 nonempty strings, at most 2 MiB, using the same component/version filters and result limit for every query. It never echoes the entire query list.
+
+```bash
+python skills/research-to-fix/scripts/research_case.py recall-batch \
+  --cases-dir ./cases --queries-file ./queries.json --ranking stemmed
+```
+
+| Ranking | Intended use |
+| --- | --- |
+| `bm25` (default) | Exact legacy ranking; deterministic, no compatibility change. |
+| `technical` | Identifier variants (camelCase/snake_case) plus stronger primary symptom weighting. |
+| `stemmed` | Technical tokens plus English suffix normalization; recommended candidate for English issue descriptions. |
+| `hybrid` | Exact and stem channels; useful for mixed technical identifiers and bilingual problems. |
+| `contextual` | Stemmed terms plus a small ordered phrase bonus; experimental. |
+
+Single recall keeps a low-startup scan path. Batch indexing is a snapshot, not a persistent cache; rebuild after modifying cases. All rankers remain lexical, offline, explainable and standard-library-only. Expanded/stem/phrase tokens can produce false matches; no score is a compatibility or success probability. See [benchmark methodology and results](benchmarks/README.md), [performance evidence](docs/PERFORMANCE.md) and [case reuse](skills/research-to-fix/references/case-reuse.md).
+
 ## Helper tools
 
 ```bash

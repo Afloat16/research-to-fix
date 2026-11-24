@@ -35,12 +35,16 @@ jobs:
         run: python benchmarks/retrieval.py --github-titles --k 5 --output "$RUNNER_TEMP/github-titles.json"
       - name: Measure end-to-end batching and compact index
         run: python benchmarks/scale.py --output "$RUNNER_TEMP/scale.json"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - name: Check deterministic retrieval and memory regressions
+        run: python benchmarks/regression.py --synthetic "$RUNNER_TEMP/retrieval.json" --github "$RUNNER_TEMP/github-titles.json" --scale "$RUNNER_TEMP/scale.json" --output "$RUNNER_TEMP/regression.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: retrieval-performance
           path: |
             ${{ runner.temp }}/retrieval.json
             ${{ runner.temp }}/github-titles.json
             ${{ runner.temp }}/scale.json
+            ${{ runner.temp }}/regression.json
           retention-days: 14
-          if-no-files-found: error
+          if-no-files-found: warn

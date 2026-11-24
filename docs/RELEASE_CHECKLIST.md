@@ -10,6 +10,7 @@ This checklist is a review contract, not a claim that every item has passed. Kee
 | Evidence lifecycle | Reproduce the synthetic streaming case, validate it, review its declared gaps, recall it, seal explicitly selected snapshots/logs and verify its manifest. Retain CI artifacts. |
 | Documentation | Both READMEs, SKILL.md, CLI help, reference files and changelog agree on behavior and limits. |
 | Open source operations | Issue/PR templates, contribution instructions and security reporting channel are usable. Review license and attributions. |
+| Retrieval performance | Fixed benchmark data fingerprints match; legacy and compact-index top-k parity, batch parity, bounded memory regression, quality floors and timing warnings reviewed. |
 | Real-world efficacy | New workflow success claims require independent cases with reproducible before/after checks and explicit scope. Synthetic examples alone are not a general benchmark. |
 
 ## Before merging

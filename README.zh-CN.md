@@ -90,6 +90,25 @@ python skills/research-to-fix/scripts/research_case.py recall \
 
 召回结果是新一轮修复的线索。采用旧方案前，仍需核对当前代码、条件、原始证据与测试。相关性分数不证明方案正确，记录中的 `solved` 也未经独立认证。recall 不自动脱敏，对外分享摘要前须复核内容。资源上限、选择规则与参考项目见 [本地案例复用](skills/research-to-fix/references/case-reuse.md)。
 
+## 高吞吐召回与实测排序
+
+同一案例库需要检索多个问题时，`recall-batch` 一次读取与校验显式目录，复用紧凑内存倒排索引。查询文件为 1–128 条非空字符串组成的 JSON 数组，最多 2 MiB；所有查询共享组件、版本筛选及返回数量上限。不回显整个原始查询列表。
+
+```bash
+python skills/research-to-fix/scripts/research_case.py recall-batch \
+  --cases-dir ./cases --queries-file ./queries.json --ranking stemmed
+```
+
+| 排序模式 | 适用情况 |
+| --- | --- |
+| `bm25`（默认） | 与旧版评分和排序保持兼容。 |
+| `technical` | camelCase/snake_case 标识符扩展、原症状加权。 |
+| `stemmed` | 技术词加英文词形归一，适合英文问题描述的候选模式。 |
+| `hybrid` | 精确词和词干双通道，适合技术标识符和混合语言。 |
+| `contextual` | 词干加有序短语弱加权，实验模式。 |
+
+单次召回保留低启动成本扫描路径；批量索引只保存在内存中，案例改变后应重新构建。排序不联网、不依赖模型或第三方包；扩展词、词干和短语可能产生误匹配，分数不能代表兼容性或修复成功率。详见[基准评测](benchmarks/README.md)、[实测性能记录](docs/PERFORMANCE.md)及[案例复用指南](skills/research-to-fix/references/case-reuse.md)。
+
 ## 辅助工具
 
 ```bash

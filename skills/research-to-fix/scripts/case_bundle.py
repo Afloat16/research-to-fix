@@ -8,7 +8,7 @@ import stat
 import sys
 
 from research_case import (SafeArgumentParser, VALIDATE_MAX_FILE_BYTES,
-                           _read_regular_file, decode_case_bytes, validate_case)
+                           _read_regular_file, decode_case_bytes, plain_stat, validate_case)
 
 MANIFEST = "manifest.json"
 CASE = "case.json"
@@ -55,7 +55,7 @@ def portable_path(value):
 
 def checked_root(directory):
     root = Path(directory)
-    if not stat.S_ISDIR(root.lstat().st_mode):
+    if not plain_stat(root.lstat(), stat.S_ISDIR):
         raise BundleError("invalid_directory")
     return root
 
@@ -67,7 +67,7 @@ def read_member(root, name, maximum):
     parts = name.split("/")
     for part in parts[:-1]:
         path = path / part
-        if not stat.S_ISDIR(path.lstat().st_mode):
+        if not plain_stat(path.lstat(), stat.S_ISDIR):
             raise BundleError("non_regular_member")
     path = path / parts[-1]
     data, issue = _read_regular_file(path, maximum)

@@ -721,21 +721,36 @@ def _recall_document(case):
     return "\n".join(_recall_excerpt(field, 1000) for field in fields)[:10000]
 
 
+def plain_stat(metadata, kind):
+    # Windows junctions and other reparse points are not ordinary local entries.
+    reparse = getattr(metadata, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    return kind(metadata.st_mode) and not reparse
+
+
 def _read_regular_file(path, maximum):
     # Preflight also rejects symlinks on platforms without O_NOFOLLOW.
-    if not stat.S_ISREG(os.lstat(path).st_mode):
+    initial = os.lstat(path)
+    if not plain_stat(initial, stat.S_ISREG):
         return None, "non_regular"
     # O_NOFOLLOW protects the final path component where supported; the directory
     # walk also excludes links. Nonblocking open avoids a raced-in FIFO on POSIX.
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     with os.fdopen(os.open(path, flags), "rb") as handle:
         metadata = os.fstat(handle.fileno())
-        if not stat.S_ISREG(metadata.st_mode):
+        if not plain_stat(metadata, stat.S_ISREG):
             return None, "non_regular"
+        if (initial.st_dev, initial.st_ino) != (metadata.st_dev, metadata.st_ino):
+            return None, "unreadable"
         if metadata.st_size > maximum:
             return None, "oversized"
         data = handle.read(maximum + 1)
-    return (None, "oversized") if len(data) > maximum else (data, None)
+        final = os.fstat(handle.fileno())
+        if len(data) > maximum:
+            return None, "oversized"
+        if (metadata.st_size != len(data) or final.st_size != metadata.st_size
+                or final.st_mtime_ns != metadata.st_mtime_ns):
+            return None, "unreadable"
+    return data, None
 
 
 def _recall_read(path):
@@ -789,7 +804,7 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
     component, version = component.strip().casefold(), version.strip()
     try:
         directory = Path(cases_dir)
-        if directory.is_symlink() or not directory.is_dir():
+        if not plain_stat(directory.lstat(), stat.S_ISDIR):
             raise RecallInputError("directory")
         entries = []
         with os.scandir(directory) as scan:

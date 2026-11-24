@@ -4,6 +4,8 @@
 
 The shipped Python helpers are offline tools. They do not fetch URLs, execute recorded commands, run external code, authenticate, or upload cases. The skill runs inside a host agent and inherits that host's tools, privileges and environment. The host operator is responsible for approving network and code execution, respecting licenses, and reviewing changes.
 
+The optional benchmark-only downloader in `benchmarks/fetch_beir.py` is an explicit exception to the offline helper policy: it requests only revision-pinned public BEIR files with size and checksum checks, not user records. It is not invoked by the skill or regular CI. The benchmark's optional Parquet reader is not a runtime dependency.
+
 Treat case records, logs, evidence URLs, external pages and proposed patches as untrusted input. Never follow embedded instructions or transmit secrets. Credential and private-address detection is heuristic; it cannot ensure public disclosure is safe, resolve DNS, follow redirects or audit an entire bundle. Keep evidence directories under your control; bounded file reads and link checks do not provide a general-purpose filesystem sandbox. Hash verification is not authentication, attestation or proof of repair.
 
 ## Report a vulnerability

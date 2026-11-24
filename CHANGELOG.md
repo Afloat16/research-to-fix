@@ -1,6 +1,21 @@
 # Changelog
 
-## Unreleased — evidence integrity and engineering upgrade
+## Unreleased — retrieval performance, ranking and reproducible benchmarks
+
+### Retrieval performance
+
+- Reusable validated in-memory `RecallSnapshot` and `recall-batch` CLI; compact arrays, precomputed BM25 postings, bounded top-k, deterministic tie-breaking and exact legacy score semantics across Python versions. Single-query scan avoids full-index startup cost.
+- Experimental technical, stemmed, hybrid and phrase-aware contextual rankers; identifier expansion, Chinese bigrams and primary symptom weighting, with no default ranking change.
+- Strict batch query file bounds and no persistent cache; rebuild after file changes. Existing case corpus limits and solved-case validation unchanged.
+- Fixed 40-document bilingual synthetic corpus (83 queries), a public 44-title GitHub duplicate-issue sample (18 source-linked judgments), SQLite FTS5/Porter baselines, synthetic throughput/memory workloads, and an optional local BEIR adapter/downloader. Benchmark reports distinguish ranking from repair success.
+- CI performance comparisons, deterministic quality/consistency gates, broad timing warnings, source provenance, and documented limitations.
+
+### Documentation and visualization
+
+- Redesigned bilingual landing pages with five original paper-style vector figures in each language: full evidence workflow, dual retrieval architecture, synthetic and public-issue ranking comparisons, and paired throughput/memory results.
+- Freeze a source-linked completed benchmark snapshot and provide deterministic SVG generation/checking. Preserve full command explanations in bilingual user guides.
+
+## Previous upgrade — evidence integrity and engineering upgrade
 
 ### Added
 

@@ -1,0 +1,50 @@
+name: Retrieval performance
+on:
+  push:
+    paths:
+      - 'benchmarks/**'
+      - 'skills/research-to-fix/scripts/research_case.py'
+      - '.github/workflows/performance.yml'
+  pull_request:
+    paths:
+      - 'benchmarks/**'
+      - 'skills/research-to-fix/scripts/research_case.py'
+      - '.github/workflows/performance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: performance-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.13'
+      - name: Compare ranking quality
+        run: python benchmarks/retrieval.py --k 5 --output "$RUNNER_TEMP/retrieval.json"
+      - name: Compare public duplicate issue title retrieval
+        run: python benchmarks/retrieval.py --github-titles --k 5 --output "$RUNNER_TEMP/github-titles.json"
+      - name: Measure end-to-end batching and compact index
+        run: python benchmarks/scale.py --output "$RUNNER_TEMP/scale.json"
+      - name: Check deterministic retrieval and memory regressions
+        run: python benchmarks/regression.py --synthetic "$RUNNER_TEMP/retrieval.json" --github "$RUNNER_TEMP/github-titles.json" --scale "$RUNNER_TEMP/scale.json" --output "$RUNNER_TEMP/regression.json"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: retrieval-performance
+          path: |
+            ${{ runner.temp }}/retrieval.json
+            ${{ runner.temp }}/github-titles.json
+            ${{ runner.temp }}/scale.json
+            ${{ runner.temp }}/regression.json
+          retention-days: 14
+          if-no-files-found: warn

@@ -2,7 +2,9 @@
 """离线检索计划与证据案例检查；不会联网、上传或执行记录中的命令。"""
 
 import argparse
+import copy
 import hashlib
+import heapq
 import ipaddress
 import json
 import math
@@ -11,7 +13,9 @@ import re
 import stat
 import sys
 import unicodedata
+from array import array
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlsplit
 
@@ -737,10 +741,198 @@ def recall_tokens(text):
     return tokens
 
 
+RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual")
+TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
+ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
+CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
+ASCII_CONTROLS = str.maketrans({char: " " for char in (*range(32), 127)})
+
+
+def technical_tokens(text):
+    """Preserve exact technical tokens; add identifier pieces and collapsed
+    identifier aliases for camelCase, PascalCase, and snake_case.
+    Han bigrams remain the same as legacy recall.
+    """
+    tokens = recall_tokens(text)
+    for word in TECHNICAL_WORD.findall(unicodedata.normalize("NFKC", text)):
+        if "_" not in word and (word.islower() or word.isupper() or word[1:].islower()):
+            continue
+        spaced = ACRONYM_BOUNDARY.sub(r"\1 \2", word)
+        spaced = CAMEL_BOUNDARY.sub(r"\1 \2", spaced)
+        pieces = [part.casefold() for part in spaced.replace("_", " ").split()]
+        if len(pieces) > 1:
+            original = word.casefold()
+            aliases = set(pieces)
+            aliases.add("".join(pieces))
+            tokens.extend(sorted(part for part in aliases
+                                 if len(part) > 1 and not part.isdecimal()
+                                 and part != original and part not in RECALL_STOPWORDS))
+    return tokens
+
+
+def technical_counts(primary, text):
+    """Weighted lexical evidence; primary symptoms receive one extra vote."""
+    counts = Counter(technical_tokens(text))
+    counts.update(technical_tokens(primary))
+    return counts
+
+
+# Independently implemented suffix normalization from the published Porter
+# algorithm (M. F. Porter, 1980, https://snowballstem.org/algorithms/porter/stemmer.html).
+# This is an IR token normalizer, not linguistic lemmatization or code parsing.
+PORTER_STEP2 = (
+    ("ational", "ate"), ("tional", "tion"), ("enci", "ence"), ("anci", "ance"),
+    ("izer", "ize"), ("bli", "ble"), ("alli", "al"), ("entli", "ent"),
+    ("eli", "e"), ("ousli", "ous"), ("ization", "ize"), ("ation", "ate"),
+    ("ator", "ate"), ("alism", "al"), ("iveness", "ive"), ("fulness", "ful"),
+    ("ousness", "ous"), ("aliti", "al"), ("iviti", "ive"), ("biliti", "ble"),
+    ("logi", "log"),
+)
+PORTER_STEP3 = (("icate", "ic"), ("ative", ""), ("alize", "al"), ("iciti", "ic"),
+                ("ical", "ic"), ("ful", ""), ("ness", ""))
+PORTER_STEP4 = ("al", "ance", "ence", "er", "ic", "able", "ible", "ant", "ement",
+                "ment", "ent", "ion", "ou", "ism", "ate", "iti", "ous", "ive", "ize")
+PORTER_STEP2 = tuple(sorted(PORTER_STEP2, key=lambda row: -len(row[0])))
+PORTER_STEP3 = tuple(sorted(PORTER_STEP3, key=lambda row: -len(row[0])))
+PORTER_STEP4 = tuple(sorted(PORTER_STEP4, key=lambda suffix: -len(suffix)))
+
+
+def _vowels(word):
+    flags = []
+    for char in word:
+        flags.append(char in "aeiou" or (char == "y" and bool(flags) and not flags[-1]))
+    return flags
+
+
+def _measure(word):
+    flags = _vowels(word)
+    return sum(left and not right for left, right in zip(flags, flags[1:]))
+
+
+def _cvc(word):
+    flags = _vowels(word)
+    return len(flags) >= 3 and flags[-3:] == [False, True, False] and word[-1] not in "wxy"
+
+
+def english_stem(word):
+    """Only bounded ASCII words are eligible; retain code tokens and Han terms."""
+    if not 3 <= len(word) <= 64 or not word.isascii() or not word.isalpha() or not word.islower():
+        return word
+    return _english_stem(word)
+
+
+@lru_cache(maxsize=8192)
+def _english_stem(word):
+    if word.endswith("sses"):
+        word = word[:-2]
+    elif word.endswith("ies"):
+        word = word[:-2]
+    elif word.endswith("s") and not word.endswith("ss"):
+        word = word[:-1]
+
+    if word.endswith("eed"):
+        if _measure(word[:-3]) > 0:
+            word = word[:-1]
+    else:
+        for ending in ("ed", "ing"):
+            if word.endswith(ending):
+                base = word[:-len(ending)]
+                if any(_vowels(base)):
+                    word = base
+                    if word.endswith(("at", "bl", "iz")):
+                        word += "e"
+                    elif (len(word) >= 2 and word[-1] == word[-2] and not _vowels(word)[-1]
+                          and word[-1] not in "lsz"):
+                        word = word[:-1]
+                    elif _measure(word) == 1 and _cvc(word):
+                        word += "e"
+                break
+
+    if word.endswith("y") and any(_vowels(word[:-1])):
+        word = word[:-1] + "i"
+    for rules in (PORTER_STEP2, PORTER_STEP3):
+        for ending, replacement in rules:
+            if word.endswith(ending):
+                base = word[:-len(ending)]
+                if _measure(base) > 0:
+                    word = base + replacement
+                break
+    for ending in PORTER_STEP4:
+        if word.endswith(ending):
+            base = word[:-len(ending)]
+            if _measure(base) > 1 and (ending != "ion" or base.endswith(("s", "t"))):
+                word = base
+            break
+    if word.endswith("e"):
+        base = word[:-1]
+        measure = _measure(base)
+        if measure > 1 or (measure == 1 and not _cvc(base)):
+            word = base
+    if word.endswith("ll") and _measure(word) > 1:
+        word = word[:-1]
+    return word
+
+
+def ranking_tokens(text, mode):
+    if mode == "bm25":
+        return recall_tokens(text)
+    tokens = technical_tokens(text)
+    if mode == "technical":
+        return tokens
+    if mode in ("stemmed", "contextual"):
+        stems = [english_stem(token) for token in tokens]
+        if mode == "contextual":
+            # Phrase features are independent of English identifier expansion.
+            # Do not manufacture cross-field phrases or double-count Han pairs.
+            for line in text.splitlines():
+                ordered = [english_stem(token) for token in recall_tokens(line)]
+                stems.extend("phrase:" + left + ":" + right for left, right in zip(ordered, ordered[1:])
+                             if 2 <= len(left) <= 64 and 2 <= len(right) <= 64
+                             and left.isascii() and right.isascii()
+                             and left.isalpha() and right.isalpha())
+        return stems
+    if mode == "hybrid":
+        # Separate namespaces avoid collisions between exact terms and stems.
+        # Only alphabetic English words receive a stem channel; Chinese and
+        # identifiers retain their original technical tokens.
+        return tokens + ["stem:" + english_stem(token) for token in tokens
+                         if 3 <= len(token) <= 64 and token.isascii() and token.isalpha()]
+    raise RecallInputError("ranking")
+
+
+def ranking_counts(primary, text, mode):
+    counts = Counter(ranking_tokens(text, mode))
+    if mode != "bm25":
+        counts.update(ranking_tokens(primary, mode))
+    return counts
+
+
+def _rank_terms(error, mode):
+    if not isinstance(mode, str) or mode not in RANKING_MODES:
+        raise RecallInputError("ranking")
+    return set(ranking_tokens(error, mode))
+
+
+
 def _recall_excerpt(text, maximum=500):
-    text = "".join(" " if unicodedata.category(char).startswith("C") else char for char in text)
-    text = " ".join(text.split())
-    return text if len(text) <= maximum else text[:maximum - 1] + "…"
+    if text.isascii():
+        normalized = " ".join(text.translate(ASCII_CONTROLS).split())
+        return normalized if len(normalized) <= maximum else normalized[:maximum - 1] + "…"
+    # Stop once the normalized excerpt is known to be truncated. Avoid
+    # allocating a second full Unicode string for a long untrusted field.
+    result = []
+    pending_space = False
+    for char in text:
+        if char.isspace() or unicodedata.category(char).startswith("C"):
+            pending_space = bool(result)
+            continue
+        if pending_space:
+            result.append(" ")
+            pending_space = False
+        result.append(char)
+        if len(result) > maximum:
+            return "".join(result[:maximum - 1]) + "…"
+    return "".join(result)
 
 
 def _recall_document(case):
@@ -827,8 +1019,8 @@ def _recall_summary(case, filename, requested_version):
     }
 
 
-def recall_cases(cases_dir, error, component="", version="", limit=5):
-    """Rank consistent solved records in one explicit directory, using no service."""
+def _check_recall_query(error, component, version, limit):
+    """Validate before touching the selected directory."""
     if any(not isinstance(value, str) for value in (error, component, version)):
         raise RecallInputError("query")
     if sum(map(len, (error, component, version))) > RECALL_MAX_QUERY_CHARS or not error.strip():
@@ -838,6 +1030,10 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
         raise RecallInputError("query")
     if type(limit) is not int or not 1 <= limit <= RECALL_MAX_RESULTS:
         raise RecallInputError("limit")
+    return query_terms
+
+
+def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
     component, version = component.strip().casefold(), version.strip()
     try:
         directory = Path(cases_dir)
@@ -895,38 +1091,164 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
             skipped["duplicate"] += 1
             continue
         seen.add(fingerprint)
-        documents.append(Counter(recall_tokens(_recall_document(case))))
+        document = _recall_document(case)
+        if ranking != "bm25":
+            problem = case["problem"]
+            primary = "\n".join(_recall_excerpt(field, 1000) for field in
+                                [problem["summary"], problem["component"], *problem["symptoms"][:12]])[:10000]
+            documents.append(ranking_counts(primary, document, ranking))
+        else:
+            documents.append(Counter(recall_tokens(document)))
         summaries.append(_recall_summary(case, entry.name, version))
 
-    # Independent standard-library BM25 implementation. Per-corpus scores are
-    # retrieval aids, not calibrated probabilities or compatibility judgments.
-    lengths = [sum(terms.values()) for terms in documents]
-    mean_length = sum(lengths) / len(lengths) if lengths else 1.0
-    frequencies = Counter(term for document in documents for term in query_terms.intersection(document))
-    ranked = []
-    for document, length, summary in zip(documents, lengths, summaries):
-        normalization = 1.5 * (0.25 + 0.75 * length / (mean_length or 1.0))
+    return documents, summaries, skipped, len(entries)
+
+
+def _term_weight(term):
+    # Fixed, deliberately modest phrase bonus. It applies only to the
+    # contextual namespace, never to exact legacy BM25 terms.
+    return 0.35 if term.startswith("phrase:") else 1.0
+
+
+class PostingIndex:
+    """In-memory inverted BM25 index. Exact legacy formula, no I/O.
+
+    IDs are unique strings, used as the deterministic tie breaker.
+    Each posting stores its precomputed contribution; queries visit only
+    the postings for distinct matching terms, in sorted term order.
+    """
+
+    def __init__(self, documents):
+        documents = list(documents)
+        self.ids = tuple(identifier for identifier, _ in documents)
+        if len(set(self.ids)) != len(self.ids):
+            raise ValueError("duplicate document ID")
+        counts = [terms for _, terms in documents]
+        lengths = [sum(terms.values()) for terms in counts]
+        mean = sum(lengths) / len(lengths) if lengths else 1.0
+        frequencies = Counter(term for terms in counts for term in terms)
+        inverse = {term: math.log1p((len(counts) - count + 0.5) / (count + 0.5))
+                   for term, count in frequencies.items()}
+        self.postings = {}
+        for index, (terms, length) in enumerate(zip(counts, lengths)):
+            normalization = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
+            for term, frequency in terms.items():
+                contribution = inverse[term] * (2.5 * frequency) / (frequency + normalization)
+                contribution *= _term_weight(term)
+                if term not in self.postings:
+                    self.postings[term] = (array("I"), array("d"))
+                identifiers, values = self.postings[term]
+                identifiers.append(index)
+                values.append(contribution)
+
+    def rank(self, query_terms, limit=None, explain=True):
         contributions = {}
-        for term in sorted(query_terms.intersection(document)):
-            inverse_frequency = math.log1p((len(documents) - frequencies[term] + 0.5) / (frequencies[term] + 0.5))
-            contributions[term] = inverse_frequency * (2.5 * document[term]) / (document[term] + normalization)
+        for term in sorted(set(query_terms)):
+            posting = self.postings.get(term)
+            if posting is None:
+                continue
+            for index, value in zip(*posting):
+                contributions.setdefault(index, []).append((term, value) if explain else value)
+        # sum() retains the legacy summation semantics, including Python
+        # 3.12+'s more accurate float summation.
+        scores = ({index: sum(value for _, value in matches)
+                   for index, matches in contributions.items()} if explain else
+                  {index: sum(matches) for index, matches in contributions.items()})
+        key = lambda index: (-scores[index], self.ids[index])
+        order = sorted(scores, key=key) if limit is None else heapq.nsmallest(limit, scores, key=key)
+        return [(scores[index], self.ids[index],
+                 [term for term, _ in sorted(contributions[index],
+                                              key=lambda pair: (-pair[1], pair[0]))[:20]]
+                 if explain else [])
+                for index in order]
+
+
+def scan_rank(documents, query_terms):
+    """One-shot scan avoids building postings for never-queried vocabulary."""
+    query_terms = set(query_terms)
+    lengths = [sum(terms.values()) for _, terms in documents]
+    mean = sum(lengths) / len(lengths) if lengths else 1.0
+    frequencies = Counter(term for _, doc in documents for term in query_terms.intersection(doc))
+    inverse = {term: math.log1p((len(documents) - count + 0.5) / (count + 0.5))
+               for term, count in frequencies.items()}
+    ranked = []
+    for (identifier, doc), length in zip(documents, lengths):
+        norm = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
+        contributions = {term: inverse[term] * (2.5 * doc[term]) / (doc[term] + norm) * _term_weight(term)
+                         for term in sorted(query_terms.intersection(doc))}
         score = sum(contributions.values())
         if score > 0:
-            summary["score"] = round(score, 6)
-            summary["matched_terms"] = sorted(contributions, key=lambda term: (-contributions[term], term))[:20]
-            ranked.append((score, summary))
-    ranked.sort(key=lambda pair: (-pair[0], pair[1]["file"]))
-    best = ranked[0][0] if ranked else 0.0
-    retained = [summary for score, summary in ranked if score >= RECALL_RELATIVE_THRESHOLD * best]
-    return {
-        "scope": "local_case_recall", "review_required": True, "notice": RECALL_NOTICE,
-        "scanned": len(entries), "eligible": len(documents), "skipped": skipped,
-        "matched_candidates": len(retained), "truncated": len(retained) > limit,
-        "matches": retained[:limit],
-        "limits": {"files": RECALL_MAX_FILES, "directory_entries": RECALL_MAX_DIRECTORY_ENTRIES,
-                   "file_bytes": RECALL_MAX_FILE_BYTES, "query_characters": RECALL_MAX_QUERY_CHARS,
-                   "results": RECALL_MAX_RESULTS, "relative_threshold": RECALL_RELATIVE_THRESHOLD},
-    }
+            ranked.append((score, identifier, sorted(contributions,
+                           key=lambda term: (-contributions[term], term))[:20]))
+    return sorted(ranked, key=lambda row: (-row[0], row[1]))
+
+
+class RecallSnapshot:
+    """One validated corpus snapshot for several queries, never persisted.
+
+    Rebuild after files change. Retaining a snapshot is not a claim that the
+    source files have remained unchanged or that their assertions are true.
+    """
+
+    def __init__(self, cases_dir, component="", version="", ranking="bm25", indexed=True):
+        if not isinstance(component, str) or not isinstance(version, str):
+            raise RecallInputError("query")
+        if len(component) + len(version) > RECALL_MAX_QUERY_CHARS:
+            raise RecallInputError("query")
+        _rank_terms("", ranking)
+        self.component, self.version, self.ranking = component, version, ranking
+        documents, summaries, self.skipped, self.scanned = _load_recall_corpus(
+            cases_dir, component, version, ranking)
+        self.summaries = {row["file"]: row for row in summaries}
+        pairs = list(zip(self.summaries, documents))
+        self.index = PostingIndex(pairs) if indexed else None
+        self.documents = None if indexed else pairs
+
+    def search(self, error, limit=5):
+        terms = _check_recall_query(error, self.component, self.version, limit)
+        if self.ranking != "bm25":
+            terms = _rank_terms(error, self.ranking)
+        ranked = self.index.rank(terms) if self.index is not None else scan_rank(self.documents, terms)
+        best = ranked[0][0] if ranked else 0.0
+        retained = [(score, identifier, matched) for score, identifier, matched in ranked
+                    if score >= RECALL_RELATIVE_THRESHOLD * best]
+        results = []
+        for score, identifier, matched in retained[:limit]:
+            summary = copy.deepcopy(self.summaries[identifier])
+            summary.update(score=round(score, 6), matched_terms=matched)
+            results.append(summary)
+        return {
+            "scope": "local_case_recall", "review_required": True, "notice": RECALL_NOTICE,
+            "scanned": self.scanned, "eligible": len(self.summaries), "skipped": dict(self.skipped),
+            "matched_candidates": len(retained), "truncated": len(retained) > limit,
+            "matches": results,
+            **({"ranking": self.ranking} if self.ranking != "bm25" else {}),
+            "limits": {"files": RECALL_MAX_FILES, "directory_entries": RECALL_MAX_DIRECTORY_ENTRIES,
+                       "file_bytes": RECALL_MAX_FILE_BYTES, "query_characters": RECALL_MAX_QUERY_CHARS,
+                       "results": RECALL_MAX_RESULTS, "relative_threshold": RECALL_RELATIVE_THRESHOLD},
+        }
+
+
+RECALL_MAX_BATCH = 128
+
+
+def recall_cases(cases_dir, error, component="", version="", limit=5, ranking="bm25"):
+    """One-shot retrieval retains the original result contract."""
+    _check_recall_query(error, component, version, limit)
+    return RecallSnapshot(cases_dir, component, version, ranking, indexed=False).search(error, limit)
+
+
+def recall_batch(cases_dir, errors, component="", version="", limit=5, ranking="bm25"):
+    """Validate all queries before reading any cases; reuse one snapshot."""
+    if not isinstance(errors, list) or not 1 <= len(errors) <= RECALL_MAX_BATCH:
+        raise RecallInputError("batch")
+    for error in errors:
+        _check_recall_query(error, component, version, limit)
+    snapshot = RecallSnapshot(cases_dir, component, version, ranking)
+    return {"scope": "local_case_recall_batch", "review_required": True,
+            "notice": RECALL_NOTICE, "snapshot": "validated_once_in_memory",
+            "queries": len(errors),
+            "results": [snapshot.search(error, limit) for error in errors]}
 
 
 def emit_recall(report, output_format):
@@ -985,7 +1307,17 @@ def main(argv=None):
     recall_parser.add_argument("--component", default="", help="可选精确筛选：忽略大小写和首尾空白，不展开别名")
     recall_parser.add_argument("--version", default="", help="仅字面对比同组件的记录版本，不推断兼容性或影响排序")
     recall_parser.add_argument("--limit", type=int, default=5, help=f"返回数量，1–{RECALL_MAX_RESULTS}，默认 5；不凑足无关案例")
+    recall_parser.add_argument("--ranking", choices=RANKING_MODES, default="bm25",
+                               help="technical 标识符扩展；stemmed 英文词形归一；hybrid 精确词与词干融合；contextual 增加短语特征。默认 bm25 保持兼容")
     recall_parser.add_argument("--format", choices=("json", "markdown"), default="json")
+    batch_parser = commands.add_parser("recall-batch", help="复用一次校验的内存索引，批量召回")
+    batch_parser.add_argument("--cases-dir", required=True, type=Path)
+    batch_parser.add_argument("--queries-file", required=True, type=Path,
+                              help="普通 UTF-8 JSON 字符串数组，最多 128 条、2 MiB；不回显原始查询")
+    batch_parser.add_argument("--component", default="")
+    batch_parser.add_argument("--version", default="")
+    batch_parser.add_argument("--limit", type=int, default=5)
+    batch_parser.add_argument("--ranking", choices=RANKING_MODES, default="bm25")
     init_parser = commands.add_parser("init", help="创建 blocked 案例模板，不覆盖已有文件")
     init_parser.add_argument("--output", required=True, type=Path)
     validate_parser = commands.add_parser("validate", help="检查记录结构，不证明实际修复")
@@ -1018,11 +1350,12 @@ def main(argv=None):
                     print(f"- {query['id']} / {query['stage']} / {query['source']} / {query['language']}: {query['query']}\n  目的：{query['purpose']}\n  复核：{query['note']}")
         elif args.command == "recall":
             try:
-                report = recall_cases(args.cases_dir, args.error, args.component, args.version, args.limit)
+                report = recall_cases(args.cases_dir, args.error, args.component, args.version, args.limit, args.ranking)
             except RecallInputError as error:
                 messages = {
                     "query": f"问题描述须含可检索词项，查询参数须为字符串且合计不超过 {RECALL_MAX_QUERY_CHARS} 字符。",
                     "limit": f"结果数量须为 1–{RECALL_MAX_RESULTS} 的整数。",
+                    "ranking": "排序模式无效。",
                     "directory": "案例目录不存在、不可读取或为符号链接。未回显路径。",
                     "corpus_limit": f"目录超过 {RECALL_MAX_FILES} 个 JSON 候选或 {RECALL_MAX_DIRECTORY_ENTRIES} 个目录项；请缩小目录。",
                 }
@@ -1031,6 +1364,23 @@ def main(argv=None):
                 emit_recall(report, args.format)
                 return 2
             emit_recall(report, args.format)
+        elif args.command == "recall-batch":
+            try:
+                data, issue = _read_regular_file(args.queries_file, 2 * 1024 * 1024)
+                if issue:
+                    raise RecallInputError("queries_file")
+                errors, _canonical = decode_case_bytes(data)
+                report = recall_batch(args.cases_dir, errors, args.component, args.version,
+                                      args.limit, args.ranking)
+            except RecallInputError as error:
+                print(json.dumps({"scope": "local_case_recall_batch", "input_error": True,
+                                  "error": str(error), "notice": RECALL_NOTICE}, ensure_ascii=True))
+                return 2
+            except (OSError, ValueError, RecursionError):
+                print(json.dumps({"scope": "local_case_recall_batch", "input_error": True,
+                                  "error": "queries_file", "notice": RECALL_NOTICE}, ensure_ascii=True))
+                return 2
+            print(json.dumps(report, ensure_ascii=True, indent=2))
         elif args.command == "init":
             with args.output.open("x", encoding="utf-8") as handle:
                 json.dump(new_case(), handle, ensure_ascii=False, indent=2)

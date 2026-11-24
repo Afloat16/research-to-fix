@@ -1,0 +1,785 @@
+{
+  "name": "r2f-retrieval-v1-synthetic",
+  "license": "MIT",
+  "kind": "synthetic_hand_authored",
+  "description": "Independent fixed diagnostic examples and paraphrase queries authored for this repository; not real repair records or an external benchmark.",
+  "corpus": [
+    {
+      "id": "iterator",
+      "title": "One-shot iterator exhausted by second pass",
+      "text": "Python generator is consumed by sum, count is zero; count during the single traversal."
+    },
+    {
+      "id": "empty",
+      "title": "Empty input division by zero",
+      "text": "Explicit ValueError on empty sequence before calculating mean."
+    },
+    {
+      "id": "dtype",
+      "title": "Mixed precision tensor dtype mismatch",
+      "text": "matmul receives float16 activations and float32 weights; align dtype under autocast."
+    },
+    {
+      "id": "oom",
+      "title": "CUDA out of memory from retaining graphs",
+      "text": "Loss tensors appended without detach retain autograd graph over steps; log scalar detached values."
+    },
+    {
+      "id": "distributed",
+      "title": "DistributedDataParallel gradient hang",
+      "text": "Ranks execute different branches and collective counts differ; ensure matching collective order."
+    },
+    {
+      "id": "loader",
+      "title": "data_loader worker deadlock",
+      "text": "Forked workers inherit a locked mutex; use spawn context and avoid initialized GPU state."
+    },
+    {
+      "id": "seed",
+      "title": "Nonreproducible training across random seeds",
+      "text": "Seed Python numpy torch and deterministic data sampler; record hardware and nondeterministic ops."
+    },
+    {
+      "id": "nan",
+      "title": "NaN loss with logarithm of zero",
+      "text": "Clamp domain or use stable logsumexp when probabilities underflow."
+    },
+    {
+      "id": "padding",
+      "title": "Attention mask padding leakage",
+      "text": "Mask padding keys before softmax and exclude padded labels from loss."
+    },
+    {
+      "id": "split",
+      "title": "Data leakage across train test groups",
+      "text": "Group-aware partition prevents identical patient or document groups in training and evaluation."
+    },
+    {
+      "id": "cache",
+      "title": "Stale cache key misses model revision",
+      "text": "Include revision and configuration in cache identity and invalidate stale entries."
+    },
+    {
+      "id": "async",
+      "title": "asyncio event loop blocked by sync IO",
+      "text": "Blocking network client in coroutine prevents concurrent scheduling; offload blocking calls."
+    },
+    {
+      "id": "sql",
+      "title": "SQLite database is locked with concurrent writes",
+      "text": "Keep write transactions short and use bounded busy timeout; serialize writers when necessary."
+    },
+    {
+      "id": "unicode",
+      "title": "Unicode normalization mismatches filenames",
+      "text": "Normalize composed and decomposed characters before lookup; retain original display name."
+    },
+    {
+      "id": "json",
+      "title": "Duplicate JSON object keys silently overwrite",
+      "text": "Strict object_pairs_hook rejects repeated keys rather than accepting last value."
+    },
+    {
+      "id": "path",
+      "title": "Archive extraction path traversal",
+      "text": "Reject absolute paths and parent traversal before writing into target directory."
+    },
+    {
+      "id": "http",
+      "title": "HTTP retry duplicates non-idempotent writes",
+      "text": "Use an idempotency key and retry only eligible failures with bounded backoff."
+    },
+    {
+      "id": "time",
+      "title": "Timezone DST naive datetime ambiguity",
+      "text": "Use aware datetimes and distinguish repeated local time with fold."
+    },
+    {
+      "id": "float",
+      "title": "Floating-point cancellation in variance",
+      "text": "Stable online variance algorithm avoids subtracting near-equal large squares."
+    },
+    {
+      "id": "shape",
+      "title": "Broadcasting silently changes tensor shape",
+      "text": "Assert intended dimensions before subtraction; unintended singleton expands matrix."
+    },
+    {
+      "id": "memory",
+      "title": "Python list accumulation uses unbounded RAM",
+      "text": "Stream batches instead of materializing all rows; retain fixed-size aggregate state."
+    },
+    {
+      "id": "lr",
+      "title": "Learning rate warmup scheduler off by one",
+      "text": "Advance scheduler after optimizer update; account for gradient accumulation."
+    },
+    {
+      "id": "grad",
+      "title": "Gradient accumulation loss scaling incorrect",
+      "text": "Divide by effective accumulation count and handle last partial batch."
+    },
+    {
+      "id": "token",
+      "title": "Tokenizer revision changes special token IDs",
+      "text": "Pin tokenizer and model revisions and check special IDs before inference."
+    },
+    {
+      "id": "precision",
+      "title": "Accuracy metric averages unequal batches",
+      "text": "Accumulate correct predictions and sample counts rather than mean batch accuracy."
+    },
+    {
+      "id": "connection",
+      "title": "Connection pool exhaustion due to unclosed response",
+      "text": "Close response context and return connections; bound pool and request deadlines."
+    },
+    {
+      "id": "subprocess",
+      "title": "Subprocess pipe deadlock on full stderr",
+      "text": "Drain stdout and stderr concurrently with communicate and enforce timeout."
+    },
+    {
+      "id": "race",
+      "title": "Race condition in shared counter update",
+      "text": "Read modify write is not atomic; protect shared update with a lock."
+    },
+    {
+      "id": "encoding",
+      "title": "UTF-8 decode error reading byte stream",
+      "text": "Use correct encoding and incremental decoder for split multibyte sequences."
+    },
+    {
+      "id": "windows",
+      "title": "Windows path case alias collision",
+      "text": "Detect case-insensitive duplicate paths and reserved device names before writing."
+    },
+    {
+      "id": "tensorview",
+      "title": "Noncontiguous tensor view reshape error",
+      "text": "Transposed tensor has incompatible strides; reshape or contiguous copy as appropriate."
+    },
+    {
+      "id": "checkpoint",
+      "title": "Checkpoint load misses module prefix",
+      "text": "Normalize DataParallel module prefix only after validating expected key names."
+    },
+    {
+      "id": "division",
+      "title": "Integer floor division changes negative values",
+      "text": "Distinguish truncate toward zero from floor for signed integers."
+    },
+    {
+      "id": "pagination",
+      "title": "Pagination drops rows with equal sort keys",
+      "text": "Use stable compound cursor including unique ID; compare tuples consistently."
+    },
+    {
+      "id": "css",
+      "title": "CSS flex child overflows with intrinsic min width",
+      "text": "Set min-width zero where flex child must shrink; handle long unbroken text."
+    },
+    {
+      "id": "git",
+      "title": "Git rebase conflicts from dirty working tree",
+      "text": "Preserve uncommitted edits and apply reviewed changes in isolated branch."
+    },
+    {
+      "id": "cnlock",
+      "title": "多线程互斥锁顺序不一致导致死锁",
+      "text": "统一加锁顺序并缩小临界区，避免循环等待。"
+    },
+    {
+      "id": "cnprecision",
+      "title": "混合精度梯度溢出",
+      "text": "检测非有限梯度，动态调整损失缩放并跳过异常更新。"
+    },
+    {
+      "id": "cncache",
+      "title": "缓存键遗漏输入参数产生脏数据",
+      "text": "对参数与模型版本做稳定摘要，避免不同配置共用缓存。"
+    },
+    {
+      "id": "cnnetwork",
+      "title": "分布式网络超时连接反复重试",
+      "text": "设置有限重试、退避和连接超时，检查网络与进程存活。"
+    }
+  ],
+  "queries": [
+    {
+      "id": "iterator-1",
+      "text": "generator cannot be traversed twice",
+      "relevant": [
+        "iterator"
+      ]
+    },
+    {
+      "id": "iterator-2",
+      "text": "single use iterable count mean",
+      "relevant": [
+        "iterator"
+      ]
+    },
+    {
+      "id": "empty-1",
+      "text": "mean on empty sequence",
+      "relevant": [
+        "empty"
+      ]
+    },
+    {
+      "id": "empty-2",
+      "text": "zero length list division",
+      "relevant": [
+        "empty"
+      ]
+    },
+    {
+      "id": "dtype-1",
+      "text": "float32 half precision matmul error",
+      "relevant": [
+        "dtype"
+      ]
+    },
+    {
+      "id": "dtype-2",
+      "text": "autocast different tensor dtypes",
+      "relevant": [
+        "dtype"
+      ]
+    },
+    {
+      "id": "oom-1",
+      "text": "GPU memory increases each training step",
+      "relevant": [
+        "oom"
+      ]
+    },
+    {
+      "id": "oom-2",
+      "text": "autograd graph memory retention",
+      "relevant": [
+        "oom"
+      ]
+    },
+    {
+      "id": "distributed-1",
+      "text": "DDP collective deadlock uneven ranks",
+      "relevant": [
+        "distributed"
+      ]
+    },
+    {
+      "id": "distributed-2",
+      "text": "distributed_data_parallel hang",
+      "relevant": [
+        "distributed"
+      ]
+    },
+    {
+      "id": "loader-1",
+      "text": "DataLoader deadlock after fork",
+      "relevant": [
+        "loader"
+      ]
+    },
+    {
+      "id": "loader-2",
+      "text": "data loader worker stuck",
+      "relevant": [
+        "loader"
+      ]
+    },
+    {
+      "id": "seed-1",
+      "text": "training runs disagree reproducibility",
+      "relevant": [
+        "seed"
+      ]
+    },
+    {
+      "id": "seed-2",
+      "text": "random seed data sampler deterministic",
+      "relevant": [
+        "seed"
+      ]
+    },
+    {
+      "id": "nan-1",
+      "text": "loss nan log zero underflow",
+      "relevant": [
+        "nan"
+      ]
+    },
+    {
+      "id": "nan-2",
+      "text": "数值 underflow log nan",
+      "relevant": [
+        "nan"
+      ]
+    },
+    {
+      "id": "padding-1",
+      "text": "padding token affects attention logits",
+      "relevant": [
+        "padding"
+      ]
+    },
+    {
+      "id": "padding-2",
+      "text": "attention mask padding contamination",
+      "relevant": [
+        "padding"
+      ]
+    },
+    {
+      "id": "split-1",
+      "text": "train test same patient split",
+      "relevant": [
+        "split"
+      ]
+    },
+    {
+      "id": "split-2",
+      "text": "数据泄漏 group split",
+      "relevant": [
+        "split"
+      ]
+    },
+    {
+      "id": "cache-1",
+      "text": "cache uses old model configuration",
+      "relevant": [
+        "cache"
+      ]
+    },
+    {
+      "id": "cache-2",
+      "text": "缓存 revision 旧版本",
+      "relevant": [
+        "cache"
+      ]
+    },
+    {
+      "id": "async-1",
+      "text": "coroutine freezes event loop",
+      "relevant": [
+        "async"
+      ]
+    },
+    {
+      "id": "async-2",
+      "text": "async IO blocking event loop",
+      "relevant": [
+        "async"
+      ]
+    },
+    {
+      "id": "sql-1",
+      "text": "database locked concurrent transaction",
+      "relevant": [
+        "sql"
+      ]
+    },
+    {
+      "id": "sql-2",
+      "text": "sqlite writer busy lock",
+      "relevant": [
+        "sql"
+      ]
+    },
+    {
+      "id": "unicode-1",
+      "text": "NFC NFD string lookup mismatch",
+      "relevant": [
+        "unicode"
+      ]
+    },
+    {
+      "id": "unicode-2",
+      "text": "unicode normalized filename",
+      "relevant": [
+        "unicode"
+      ]
+    },
+    {
+      "id": "json-1",
+      "text": "json duplicated keys lost data",
+      "relevant": [
+        "json"
+      ]
+    },
+    {
+      "id": "json-2",
+      "text": "重复 JSON 字段覆盖",
+      "relevant": [
+        "json"
+      ]
+    },
+    {
+      "id": "path-1",
+      "text": "zip slip outside directory",
+      "relevant": [
+        "path"
+      ]
+    },
+    {
+      "id": "path-2",
+      "text": "archive ../ extraction",
+      "relevant": [
+        "path"
+      ]
+    },
+    {
+      "id": "http-1",
+      "text": "POST creates duplicate records on retry",
+      "relevant": [
+        "http"
+      ]
+    },
+    {
+      "id": "http-2",
+      "text": "idempotent request retry",
+      "relevant": [
+        "http"
+      ]
+    },
+    {
+      "id": "time-1",
+      "text": "daylight saving repeated timestamp",
+      "relevant": [
+        "time"
+      ]
+    },
+    {
+      "id": "time-2",
+      "text": "naive datetime timezone fold",
+      "relevant": [
+        "time"
+      ]
+    },
+    {
+      "id": "float-1",
+      "text": "variance negative rounding cancellation",
+      "relevant": [
+        "float"
+      ]
+    },
+    {
+      "id": "float-2",
+      "text": "numerically stable variance",
+      "relevant": [
+        "float"
+      ]
+    },
+    {
+      "id": "shape-1",
+      "text": "numpy shape broadcast wrong output",
+      "relevant": [
+        "shape"
+      ]
+    },
+    {
+      "id": "shape-2",
+      "text": "tensor singleton dimension expands",
+      "relevant": [
+        "shape"
+      ]
+    },
+    {
+      "id": "memory-1",
+      "text": "dataset preprocessing memory grows all rows",
+      "relevant": [
+        "memory"
+      ]
+    },
+    {
+      "id": "memory-2",
+      "text": "批量处理 内存 list 缓存",
+      "relevant": [
+        "memory"
+      ]
+    },
+    {
+      "id": "lr-1",
+      "text": "warmup step learning rate wrong",
+      "relevant": [
+        "lr"
+      ]
+    },
+    {
+      "id": "lr-2",
+      "text": "scheduler optimizer order",
+      "relevant": [
+        "lr"
+      ]
+    },
+    {
+      "id": "grad-1",
+      "text": "gradient accumulation last batch scale",
+      "relevant": [
+        "grad"
+      ]
+    },
+    {
+      "id": "grad-2",
+      "text": "accumulated gradients too large",
+      "relevant": [
+        "grad"
+      ]
+    },
+    {
+      "id": "token-1",
+      "text": "token id mismatch tokenizer revision",
+      "relevant": [
+        "token"
+      ]
+    },
+    {
+      "id": "token-2",
+      "text": "tokenizer special tokens changed",
+      "relevant": [
+        "token"
+      ]
+    },
+    {
+      "id": "precision-1",
+      "text": "weighted accuracy uneven batches",
+      "relevant": [
+        "precision"
+      ]
+    },
+    {
+      "id": "precision-2",
+      "text": "batch accuracy aggregation",
+      "relevant": [
+        "precision"
+      ]
+    },
+    {
+      "id": "connection-1",
+      "text": "HTTP pool exhausted leaked response",
+      "relevant": [
+        "connection"
+      ]
+    },
+    {
+      "id": "connection-2",
+      "text": "connection not released",
+      "relevant": [
+        "connection"
+      ]
+    },
+    {
+      "id": "subprocess-1",
+      "text": "child process stuck stderr pipe",
+      "relevant": [
+        "subprocess"
+      ]
+    },
+    {
+      "id": "subprocess-2",
+      "text": "subprocess pipe buffer full",
+      "relevant": [
+        "subprocess"
+      ]
+    },
+    {
+      "id": "race-1",
+      "text": "concurrent counter missing increments",
+      "relevant": [
+        "race"
+      ]
+    },
+    {
+      "id": "race-2",
+      "text": "thread race update counter",
+      "relevant": [
+        "race"
+      ]
+    },
+    {
+      "id": "encoding-1",
+      "text": "multibyte character split chunks",
+      "relevant": [
+        "encoding"
+      ]
+    },
+    {
+      "id": "encoding-2",
+      "text": "UTF8 incremental decoding",
+      "relevant": [
+        "encoding"
+      ]
+    },
+    {
+      "id": "windows-1",
+      "text": "Windows filename CON case collision",
+      "relevant": [
+        "windows"
+      ]
+    },
+    {
+      "id": "windows-2",
+      "text": "case insensitive path duplicate",
+      "relevant": [
+        "windows"
+      ]
+    },
+    {
+      "id": "tensorview-1",
+      "text": "view size stride not compatible",
+      "relevant": [
+        "tensorview"
+      ]
+    },
+    {
+      "id": "tensorview-2",
+      "text": "transpose tensor non contiguous",
+      "relevant": [
+        "tensorview"
+      ]
+    },
+    {
+      "id": "checkpoint-1",
+      "text": "state_dict unexpected module keys",
+      "relevant": [
+        "checkpoint"
+      ]
+    },
+    {
+      "id": "checkpoint-2",
+      "text": "checkpoint load missing module prefix",
+      "relevant": [
+        "checkpoint"
+      ]
+    },
+    {
+      "id": "division-1",
+      "text": "negative integer truncation wrong",
+      "relevant": [
+        "division"
+      ]
+    },
+    {
+      "id": "division-2",
+      "text": "floor divide negative number",
+      "relevant": [
+        "division"
+      ]
+    },
+    {
+      "id": "pagination-1",
+      "text": "duplicate timestamp pagination skips rows",
+      "relevant": [
+        "pagination"
+      ]
+    },
+    {
+      "id": "pagination-2",
+      "text": "cursor sort tie pagination",
+      "relevant": [
+        "pagination"
+      ]
+    },
+    {
+      "id": "css-1",
+      "text": "flexbox long text overflow",
+      "relevant": [
+        "css"
+      ]
+    },
+    {
+      "id": "css-2",
+      "text": "flex item min width",
+      "relevant": [
+        "css"
+      ]
+    },
+    {
+      "id": "git-1",
+      "text": "rebase dirty working directory",
+      "relevant": [
+        "git"
+      ]
+    },
+    {
+      "id": "git-2",
+      "text": "git working tree uncommitted",
+      "relevant": [
+        "git"
+      ]
+    },
+    {
+      "id": "cnlock-1",
+      "text": "锁顺序 死锁",
+      "relevant": [
+        "cnlock"
+      ]
+    },
+    {
+      "id": "cnlock-2",
+      "text": "多线程 循环等待",
+      "relevant": [
+        "cnlock"
+      ]
+    },
+    {
+      "id": "cnprecision-1",
+      "text": "梯度溢出 损失缩放",
+      "relevant": [
+        "cnprecision"
+      ]
+    },
+    {
+      "id": "cnprecision-2",
+      "text": "混合精度 非有限梯度",
+      "relevant": [
+        "cnprecision"
+      ]
+    },
+    {
+      "id": "cncache-1",
+      "text": "缓存键 参数错误",
+      "relevant": [
+        "cncache"
+      ]
+    },
+    {
+      "id": "cncache-2",
+      "text": "脏数据 缓存键",
+      "relevant": [
+        "cncache"
+      ]
+    },
+    {
+      "id": "cnnetwork-1",
+      "text": "网络超时 重试退避",
+      "relevant": [
+        "cnnetwork"
+      ]
+    },
+    {
+      "id": "cnnetwork-2",
+      "text": "连接超时 分布式",
+      "relevant": [
+        "cnnetwork"
+      ]
+    },
+    {
+      "id": "negative-1",
+      "text": "photosynthesis chloroplast",
+      "relevant": []
+    },
+    {
+      "id": "negative-2",
+      "text": "sourdough fermentation",
+      "relevant": []
+    },
+    {
+      "id": "negative-3",
+      "text": "天体轨道 天文望远镜",
+      "relevant": []
+    }
+  ]
+}

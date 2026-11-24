@@ -1,0 +1,307 @@
+{
+  "source": {
+    "repository": "Afloat16/research-to-fix",
+    "run_id": 45339912941,
+    "job_id": 138260812812,
+    "commit": "672145cb26aadc9d7ac43e23a3f0e96ec8abbe0f",
+    "run_url": "https://github.com/Afloat16/research-to-fix/actions/runs/45339912941",
+    "date": "2026-11-24",
+    "provenance": "Parsed from the completed performance job's printed JSON reports; values are unmodified."
+  },
+  "synthetic": {
+    "dataset": {
+      "name": "r2f-retrieval-v1-synthetic",
+      "kind": "synthetic_hand_authored",
+      "sha256": "5d88bf32d7eba9abf2f78033589d5159e5b059b29be1ba85cfcc12a83b79fe57",
+      "license": "MIT"
+    },
+    "documents": 40,
+    "queries": 83,
+    "k": 5,
+    "repeats": 3,
+    "python": "3.13.18",
+    "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "sqlite_version": "3.46.1",
+    "legacy_indexed_top_k_exact_match": true,
+    "methods": {
+      "legacy_scan": {
+        "status": "completed",
+        "build_ms": 8.021,
+        "query_p50_ms": 0.054191,
+        "query_p95_ms": 0.061491,
+        "query_total_ms_per_repeat": 4.601,
+        "mrr@5": 0.940625,
+        "recall@5": 0.9875,
+        "ndcg@5": 0.952703,
+        "hit@5": 0.9875,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "indexed_bm25": {
+        "status": "completed",
+        "build_ms": 1.444,
+        "query_p50_ms": 0.008412,
+        "query_p95_ms": 0.012328,
+        "query_total_ms_per_repeat": 0.733,
+        "mrr@5": 0.940625,
+        "recall@5": 0.9875,
+        "ndcg@5": 0.952703,
+        "hit@5": 0.9875,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "technical": {
+        "status": "completed",
+        "build_ms": 1.999,
+        "query_p50_ms": 0.009614,
+        "query_p95_ms": 0.015884,
+        "query_total_ms_per_repeat": 0.844,
+        "mrr@5": 0.966667,
+        "recall@5": 0.9875,
+        "ndcg@5": 0.972023,
+        "hit@5": 0.9875,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "stemmed": {
+        "status": "completed",
+        "build_ms": 3.124,
+        "query_p50_ms": 0.011827,
+        "query_p95_ms": 0.021352,
+        "query_total_ms_per_repeat": 1.056,
+        "mrr@5": 0.9875,
+        "recall@5": 1,
+        "ndcg@5": 0.990773,
+        "hit@5": 1,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "hybrid": {
+        "status": "completed",
+        "build_ms": 2.568,
+        "query_p50_ms": 0.012979,
+        "query_p95_ms": 0.021723,
+        "query_total_ms_per_repeat": 1.113,
+        "mrr@5": 1,
+        "recall@5": 1,
+        "ndcg@5": 1,
+        "hit@5": 1,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "contextual": {
+        "status": "completed",
+        "build_ms": 3.85,
+        "query_p50_ms": 0.019349,
+        "query_p95_ms": 0.028302,
+        "query_total_ms_per_repeat": 1.666,
+        "mrr@5": 0.98125,
+        "recall@5": 1,
+        "ndcg@5": 0.98616,
+        "hit@5": 1,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "sqlite_fts5": {
+        "status": "completed",
+        "build_ms": 6.393,
+        "query_p50_ms": 0.022643,
+        "query_p95_ms": 0.042734,
+        "query_total_ms_per_repeat": 2.069,
+        "mrr@5": 0.86875,
+        "recall@5": 0.8875,
+        "ndcg@5": 0.87366,
+        "hit@5": 0.8875,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      },
+      "sqlite_fts5_porter": {
+        "status": "completed",
+        "build_ms": 0.885,
+        "query_p50_ms": 0.022163,
+        "query_p95_ms": 0.033831,
+        "query_total_ms_per_repeat": 1.862,
+        "mrr@5": 0.89375,
+        "recall@5": 0.9,
+        "ndcg@5": 0.895387,
+        "hit@5": 0.9,
+        "negative_queries": 3,
+        "negative_abstention": 1
+      }
+    },
+    "scope": "ranking only, exclude self-ID, no relative-threshold filtering; timing includes query tokenization, excludes case validation and disk I/O",
+    "notice": "Synthetic examples and duplicate judgments (including unjudged distractors) do not establish repair success or universal ranking superiority."
+  },
+  "github": {
+    "dataset": {
+      "name": "github-vscode-duplicate-titles-v1",
+      "kind": "public_issue_title_retrieval",
+      "sha256": "e4999d999db31a69d758bbcd9f4f7e9342524b270538b31791d7b0f34b220e1a",
+      "license": "Original public issue titles retain their source rights; source links included; selection and benchmark code under repository MIT license."
+    },
+    "documents": 44,
+    "queries": 18,
+    "k": 5,
+    "repeats": 3,
+    "python": "3.13.18",
+    "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "sqlite_version": "3.46.1",
+    "legacy_indexed_top_k_exact_match": true,
+    "methods": {
+      "legacy_scan": {
+        "status": "completed",
+        "build_ms": 3.215,
+        "query_p50_ms": 0.056154,
+        "query_p95_ms": 0.082443,
+        "query_total_ms_per_repeat": 1.107,
+        "mrr@5": 0.509259,
+        "recall@5": 0.611111,
+        "ndcg@5": 0.535052,
+        "hit@5": 0.611111,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "indexed_bm25": {
+        "status": "completed",
+        "build_ms": 1.116,
+        "query_p50_ms": 0.015598,
+        "query_p95_ms": 0.03332,
+        "query_total_ms_per_repeat": 0.344,
+        "mrr@5": 0.509259,
+        "recall@5": 0.611111,
+        "ndcg@5": 0.535052,
+        "hit@5": 0.611111,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "technical": {
+        "status": "completed",
+        "build_ms": 1.932,
+        "query_p50_ms": 0.018017,
+        "query_p95_ms": 0.034872,
+        "query_total_ms_per_repeat": 0.387,
+        "mrr@5": 0.509259,
+        "recall@5": 0.611111,
+        "ndcg@5": 0.535052,
+        "hit@5": 0.611111,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "stemmed": {
+        "status": "completed",
+        "build_ms": 2.714,
+        "query_p50_ms": 0.026731,
+        "query_p95_ms": 0.048713,
+        "query_total_ms_per_repeat": 0.5,
+        "mrr@5": 0.722222,
+        "recall@5": 0.833333,
+        "ndcg@5": 0.751318,
+        "hit@5": 0.833333,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "hybrid": {
+        "status": "completed",
+        "build_ms": 2.42,
+        "query_p50_ms": 0.022623,
+        "query_p95_ms": 0.042193,
+        "query_total_ms_per_repeat": 0.486,
+        "mrr@5": 0.592593,
+        "recall@5": 0.722222,
+        "ndcg@5": 0.625659,
+        "hit@5": 0.722222,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "contextual": {
+        "status": "completed",
+        "build_ms": 3.831,
+        "query_p50_ms": 0.036029,
+        "query_p95_ms": 0.066199,
+        "query_total_ms_per_repeat": 0.74,
+        "mrr@5": 0.712963,
+        "recall@5": 0.833333,
+        "ndcg@5": 0.744044,
+        "hit@5": 0.833333,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "sqlite_fts5": {
+        "status": "completed",
+        "build_ms": 0.842,
+        "query_p50_ms": 0.036995,
+        "query_p95_ms": 0.073189,
+        "query_total_ms_per_repeat": 0.843,
+        "mrr@5": 0.509259,
+        "recall@5": 0.611111,
+        "ndcg@5": 0.535052,
+        "hit@5": 0.611111,
+        "negative_queries": 0,
+        "negative_abstention": null
+      },
+      "sqlite_fts5_porter": {
+        "status": "completed",
+        "build_ms": 0.582,
+        "query_p50_ms": 0.039083,
+        "query_p95_ms": 0.079929,
+        "query_total_ms_per_repeat": 0.838,
+        "mrr@5": 0.740741,
+        "recall@5": 0.833333,
+        "ndcg@5": 0.764548,
+        "hit@5": 0.833333,
+        "negative_queries": 0,
+        "negative_abstention": null
+      }
+    },
+    "scope": "ranking only, exclude self-ID, no relative-threshold filtering; timing includes query tokenization, excludes case validation and disk I/O",
+    "notice": "Synthetic examples and duplicate judgments (including unjudged distractors) do not establish repair success or universal ranking superiority."
+  },
+  "scale": {
+    "dataset": {
+      "name": "r2f-retrieval-v1-synthetic",
+      "kind": "synthetic_hand_authored",
+      "sha256": "5d88bf32d7eba9abf2f78033589d5159e5b059b29be1ba85cfcc12a83b79fe57",
+      "license": "MIT"
+    },
+    "batch_recall": {
+      "documents": 120,
+      "queries": 32,
+      "repeats": 3,
+      "one_shot_total_median_ms": 683.454,
+      "batch_total_median_ms": 25.266,
+      "speedup": 27.05,
+      "identical_reports": true,
+      "scope": "full file reads, validation, tokenization and recall, warmed OS filesystem cache"
+    },
+    "index_scale": {
+      "documents": 5000,
+      "terms_per_document": 48,
+      "queries": 64,
+      "index_memory": {
+        "tuple_postings": {
+          "build_ms": 129.801,
+          "retained_bytes": 22013956,
+          "peak_allocated_bytes": 22707348
+        },
+        "packed_postings": {
+          "build_ms": 150.005,
+          "retained_bytes": 5184748,
+          "peak_allocated_bytes": 5918192
+        }
+      },
+      "retained_memory_reduction_factor": 4.246,
+      "scan_total_ms": 848.813,
+      "index_total_ms": 7.763,
+      "warm_query_speedup": 109.341,
+      "exact_top_10_scores": true,
+      "scope": "generated sparse vocabulary; allocation tracing excludes input corpus"
+    },
+    "python": "3.13.18"
+  },
+  "regression": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "scope": "fixed development fixtures; not an independent held-out benchmark or repair-success certification"
+  }
+}

@@ -578,7 +578,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
     ranked.sort(key=ordering)
     # Do not displace relevant code/paper candidates simply to fill all
     # source-family slots. Keep lexical top-k and expose other coverage gaps
-    # for targeted searches. A missing code or paper may fill an unused slot.
+    # for targeted searches.
     best = max((row["relevance"] for row in ranked), default=0)
     eligible = [row for row in ranked if row["relevance"] >= max(.08, .30 * best)
                 and row["access"] not in ("unavailable", "access_blocked")]

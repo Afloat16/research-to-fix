@@ -91,7 +91,7 @@ def benchmark():
             ranked = {"fixed_order": order, "stemmed_bm25": bm25,
                       "sqlite_porter": sqlite.search(text, K),
                       "facet_rank": [original_id(row) for row in facet["ranked"][:K]],
-                      "diversified_shortlist": [original_id(row) for row in report["shortlist"]]}
+                      "evidence_shortlist": [original_id(row) for row in report["shortlist"]]}
             values = {name: metrics(ranked[name], relevant, task["pairs"], family) for name in names}
             for name in names:
                 all_metrics.setdefault((name, formulation), []).append(values[name])

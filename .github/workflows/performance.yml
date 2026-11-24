@@ -43,6 +43,9 @@ jobs:
         run: python benchmarks/discovery.py --output "$RUNNER_TEMP/discovery.json"
       - name: Compare actual numerical repair candidates
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
+      - name: One-time external public archive and API evaluation
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1'
+        run: python benchmarks/external_paper_code.py --approve-public --live --output "$RUNNER_TEMP/external-paper-code"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -54,5 +57,6 @@ jobs:
             ${{ runner.temp }}/regression.json
             ${{ runner.temp }}/discovery.json
             ${{ runner.temp }}/variance-comparison/
+            ${{ runner.temp }}/external-paper-code/
           retention-days: 14
           if-no-files-found: warn

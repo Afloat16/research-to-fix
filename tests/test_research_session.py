@@ -11,7 +11,7 @@ from test_comprehensive_plan import PROBLEM
 
 
 def make_round(problem, source, url, title, **extra):
-    plan = w.make_plan(problem, 2, [source], "comprehensive")
+    plan = w.make_plan(problem, 1, [source], "comprehensive")
     qid = plan["queries"][0]["id"]
     return {"plan": plan, "inputs": [{"plan_id": plan["plan_id"],
             "results": [dict(query_id=qid, url=url, title=title, **extra)],

@@ -100,6 +100,7 @@ def aggregate(rounds, limit=12, ranking="bm25"):
         stats.append({"round": idx, "plan_id": binding, "planned_queries": len(plan["queries"]),
                       "repeated_query_definitions": repeated,
                       "attempted_unique_queries": len({key for key, status in seen_status if status in ATTEMPTED}),
+                      "successful_queries": len({key for key, status in seen_status if status in {"completed", "partial"}}),
                       "observations": len(round_results),
                       "statuses": dict(sorted(Counter(status for _, status in seen_status).items())),
                       "first_seen_identities": 0})
@@ -138,7 +139,7 @@ def aggregate(rounds, limit=12, ranking="bm25"):
     followup.sort(key=lambda pair: pair[0])
     read_families = sorted({row["family"] for row in report["shortlist"]
                             if any(source["access"] == "read" for source in row["provenance"])})
-    saturated = (len(stats) >= 3 and all(row["attempted_unique_queries"] > 0
+    saturated = (len(stats) >= 3 and all(row["successful_queries"] > 0
                  and row["first_seen_identities"] == 0 for row in stats[-2:]))
     if not report["shortlist"]:
         action = "reframe_or_read_missing_sources"

@@ -17,6 +17,7 @@ class TokenizerParityTests(unittest.TestCase):
         examples.extend("".join(rng.choices(alphabet, k=rng.randrange(0, 800))) for _ in range(300))
         for text in examples:
             self.assertEqual(b.rc.recall_tokens(text), b.legacy_tokens(text))
+            self.assertEqual(b.rc.precision_tokens(text), b.legacy_precision_tokens(text))
 
     def test_ascii_and_unicode_paths(self):
         report = b.compare(["word attention cache", "缓存 内存 data_loader", ""] * 20, 2)

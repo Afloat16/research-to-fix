@@ -25,16 +25,16 @@ def legacy_tokens(text):
     return tokens
 
 
-def compare(texts, repeats=5):
+def compare(texts, repeats=5, old_tokenize=legacy_tokens, new_tokenize=rc.recall_tokens):
     timings = {"v1": [], "optimized": []}
     total = 0
     for text in texts:
-        old = legacy_tokens(text)
-        if old != rc.recall_tokens(text):
+        old = old_tokenize(text)
+        if old != new_tokenize(text):
             raise RuntimeError("Tokenizer semantic regression")
         total += len(old)
     for repeat in range(repeats):
-        methods = (("v1", legacy_tokens), ("optimized", rc.recall_tokens))
+        methods = (("v1", old_tokenize), ("optimized", new_tokenize))
         for label, tokenize in methods if repeat % 2 == 0 else methods[::-1]:
             start = perf_counter_ns()
             count = sum(len(tokenize(text)) for text in texts)
@@ -49,6 +49,13 @@ def compare(texts, repeats=5):
             "scope": "Tokenization only, paired same-run timings; excludes I/O, index construction and retrieval."}
 
 
+def legacy_precision_tokens(text):
+    # Frozen development/holdout implementation: hybrid plus contextual
+    # extraction. The latter computes an unused stem channel.
+    return rc.ranking_tokens(text, "hybrid") + [term for term in rc.ranking_tokens(text, "contextual")
+                                               if term.startswith("phrase:")]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, required=True)
@@ -56,7 +63,11 @@ def main():
     args = parser.parse_args()
     corpus, _, meta = load_beir(args.data, 0)
     corpus.sort(key=lambda row: hashlib.sha256(("r2f-tokenizer-v1:" + row["id"]).encode()).digest())
-    result = compare([text_fields(row)[1] for row in corpus[:4096]])
+    texts = [text_fields(row)[1] for row in corpus[:4096]]
+    result = compare(texts)
+    precision = compare(texts, old_tokenize=legacy_precision_tokens, new_tokenize=rc.precision_tokens)
+    precision["scope"] = "Precision feature extraction only; frozen feature sequence parity."
+    result["precision_feature_parity"] = precision
     result["data_sha256"] = meta["files_sha256"]
     with args.output.open("x", encoding="utf-8") as handle:
         json.dump(result, handle, indent=2)

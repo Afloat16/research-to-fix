@@ -890,6 +890,18 @@ def _english_stem(word):
     return word
 
 
+def _phrase_tokens(text):
+    # Keep the old contextual phrase ordering and field boundary behavior.
+    phrases = []
+    for line in text.splitlines():
+        ordered = [english_stem(token) for token in recall_tokens(line)]
+        phrases.extend("phrase:" + left + ":" + right for left, right in zip(ordered, ordered[1:])
+                       if 2 <= len(left) <= 64 and 2 <= len(right) <= 64
+                       and left.isascii() and right.isascii()
+                       and left.isalpha() and right.isalpha())
+    return phrases
+
+
 def ranking_tokens(text, mode):
     if mode == "precision_field":
         return precision_tokens(text)
@@ -903,12 +915,7 @@ def ranking_tokens(text, mode):
         if mode == "contextual":
             # Phrase features are independent of English identifier expansion.
             # Do not manufacture cross-field phrases or double-count Han pairs.
-            for line in text.splitlines():
-                ordered = [english_stem(token) for token in recall_tokens(line)]
-                stems.extend("phrase:" + left + ":" + right for left, right in zip(ordered, ordered[1:])
-                             if 2 <= len(left) <= 64 and 2 <= len(right) <= 64
-                             and left.isascii() and right.isascii()
-                             and left.isalpha() and right.isalpha())
+            stems.extend(_phrase_tokens(text))
         return stems
     if mode == "hybrid":
         # Separate namespaces avoid collisions between exact terms and stems.
@@ -1193,8 +1200,7 @@ class PostingIndex:
 def precision_tokens(text):
     """Exact/stem channels plus separately namespaced ordered phrase evidence."""
     # Keep the original hybrid and contextual algorithms unchanged.
-    return ranking_tokens(text, "hybrid") + [term for term in ranking_tokens(text, "contextual")
-                                             if term.startswith("phrase:")]
+    return ranking_tokens(text, "hybrid") + _phrase_tokens(text)
 
 
 def field_counts(primary, secondary, mode="stemmed"):

@@ -1,5 +1,9 @@
 # Retrieval benchmarks / 检索基准评测
 
+## v1.3 diagnostics
+
+[Measured execution, evidence audit and planning results](V13_RESULTS.md) complement the retrieval benchmarks. They use actual trusted subprocess tests, controlled evidence perturbations and fixed-status simulations; none is a model repair-rate estimate.
+
 ## What is measured
 
 The original small fixtures below are fixed development fixtures, not a general repair-success benchmark, not a leaderboard, and not a held-out estimate of field performance. A separate external retrieval evaluation is defined in [INDEPENDENT_PROTOCOL.md](INDEPENDENT_PROTOCOL.md). Compare the same inputs, relevance judgments, top-k and environment. The production CLI additionally requires valid solved case declarations and applies a relative score threshold; raw ranking evaluations deliberately omit that threshold and evaluate top-k.

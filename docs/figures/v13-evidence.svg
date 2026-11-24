@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 690" role="img" aria-labelledby="title desc" font-family="system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
+<title id="title">v1.3 real execution and evidence review</title>
+<desc id="desc">Three bounded experiments: actual local Python subprocesses, named evidence perturbations and simulated search statuses.</desc>
+<rect x="0" y="0" width="1040" height="690" rx="22" fill="#101a2c"/>
+<text x="36" y="42" font-size="15" fill="#69d6cf" font-weight="700" text-anchor="start">RESEARCH TO FIX  /  v1.3.0</text>
+<text x="36" y="91" font-size="38" fill="#ffffff" font-weight="750" text-anchor="start">Repair with evidence, not assertions.</text>
+<text x="36" y="124" font-size="18" fill="#b2c3d9" font-weight="400" text-anchor="start">Frozen tests · observed outcomes · independent digests · research coverage</text>
+<rect x="36" y="148" width="316" height="102" rx="14" fill="#1e2d43"/>
+<text x="54" y="196" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">42</text>
+<text x="54" y="228" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">actual Python test runs</text>
+<rect x="362" y="148" width="316" height="102" rx="14" fill="#1e2d43"/>
+<text x="380" y="196" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">174</text>
+<text x="380" y="228" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">test-method outcomes</text>
+<rect x="688" y="148" width="316" height="102" rx="14" fill="#1e2d43"/>
+<text x="706" y="196" font-size="35" fill="#72e0d3" font-weight="730" text-anchor="start">21/21</text>
+<text x="706" y="228" font-size="16" fill="#c8d5e6" font-weight="500" text-anchor="start">consistent evidence bundles</text>
+<rect x="36" y="268" width="476" height="217" rx="14" fill="#1b293e"/>
+<rect x="528" y="268" width="476" height="217" rx="14" fill="#1b293e"/>
+<text x="54" y="302" font-size="21" fill="#fff" font-weight="650" text-anchor="start">13 evidence faults · rejected</text>
+<text x="546" y="302" font-size="20" fill="#fff" font-weight="650" text-anchor="start">7 defects · incomplete fixes accepted</text>
+<text x="54" y="334" font-size="15" fill="#c8d5e6" font-weight="500" text-anchor="start">Unpinned hash verification</text>
+<rect x="54" y="343" width="345" height="20" rx="5" fill="#2a3950"/>
+<rect x="54" y="343" width="0.000" height="20" rx="5" fill="#8897ad" data-metric="capture.verify_unpinned" data-value="0"/>
+<text x="411" y="359" font-size="16" fill="#fff" font-weight="650" text-anchor="start">0/13</text>
+<text x="54" y="392" font-size="15" fill="#c8d5e6" font-weight="500" text-anchor="start">Unpinned semantic audit</text>
+<rect x="54" y="401" width="345" height="20" rx="5" fill="#2a3950"/>
+<rect x="54" y="401" width="345.000" height="20" rx="5" fill="#69d6cf" data-metric="capture.audit_unpinned" data-value="13"/>
+<text x="411" y="417" font-size="16" fill="#fff" font-weight="650" text-anchor="start">13/13</text>
+<text x="546" y="334" font-size="15" fill="#c8d5e6" font-weight="500" text-anchor="start">Original symptom only</text>
+<rect x="546" y="343" width="345" height="20" rx="5" fill="#2a3950"/>
+<rect x="546" y="343" width="345.000" height="20" rx="5" fill="#e9aa70" data-metric="repair.symptom_only_incomplete" data-value="7"/>
+<text x="903" y="359" font-size="16" fill="#fff" font-weight="650" text-anchor="start">7/7</text>
+<text x="546" y="392" font-size="15" fill="#c8d5e6" font-weight="500" text-anchor="start">Full frozen suite</text>
+<rect x="546" y="401" width="345" height="20" rx="5" fill="#2a3950"/>
+<rect x="546" y="401" width="0.000" height="20" rx="5" fill="#69d6cf" data-metric="repair.full_suite_incomplete" data-value="0"/>
+<text x="903" y="417" font-size="16" fill="#fff" font-weight="650" text-anchor="start">0/7</text>
+<text x="54" y="457" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="start">Pinned manifest: both reject all 13 faults.</text>
+<text x="546" y="457" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="start">Full suite also accepts all 7 designed fixes.</text>
+<rect x="36" y="501" width="968" height="134" rx="14" fill="#1b293e"/>
+<text x="54" y="532" font-size="20" fill="#fff" font-weight="650" text-anchor="start">272 paired simulations · all six stages completed</text>
+<text x="54" y="561" font-size="15" fill="#c8d5e6" font-weight="500" text-anchor="start">Legacy</text>
+<rect x="54" y="570" width="327" height="20" rx="5" fill="#2a3950"/>
+<rect x="54" y="570" width="67.324" height="20" rx="5" fill="#8897ad" data-metric="planning.legacy_all_stages" data-value="0.20588235294117646"/>
+<text x="393" y="586" font-size="16" fill="#fff" font-weight="650" text-anchor="start">20.6%</text>
+<text x="546" y="561" font-size="15" fill="#c8d5e6" font-weight="500" text-anchor="start">Coverage-first</text>
+<rect x="546" y="570" width="327" height="20" rx="5" fill="#2a3950"/>
+<rect x="546" y="570" width="123.827" height="20" rx="5" fill="#69d6cf" data-metric="planning.coverage_all_stages" data-value="0.3786764705882353"/>
+<text x="885" y="586" font-size="16" fill="#fff" font-weight="650" text-anchor="start">37.9%</text>
+<text x="54" y="617" font-size="14" fill="#a6b8cf" font-weight="400" text-anchor="start">Fixed simulated statuses, not live search success.</text>
+<text x="36" y="664" font-size="15" fill="#a6b8cf" font-weight="400" text-anchor="start">Controlled diagnostics, not agent repair accuracy, general attack detection or authenticity.</text>
+</svg>

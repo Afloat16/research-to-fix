@@ -30,7 +30,7 @@ Use `focus: bug` for direct fixes; `algorithm` for research-led improvements. Th
 The single-plan commands remain compatible. A session keeps the public problem anchors stable and records up to four rounds and 64 distinct planned queries (default three rounds, 48 queries); no queries run automatically. Review each proposed query. Change concepts, aliases or alternative concepts only when justified by reviewed evidence. Do not change the symptom/task/component/version/repo/focus anchors in the same session.
 
 ```bash
-python skills/research-to-fix/scripts/research_session.py start --problem problem.json --output session.json
+python skills/research-to-fix/scripts/research_session.py start --problem problem.json --strategy coverage --output session.json
 python skills/research-to-fix/scripts/research_session.py next --session session.json --budget 12 --output proposal.json
 # Use the host's search/browsing tools for selected_queries; save actual results and statuses.
 # Only after explicit authorization, optional metadata requests:
@@ -39,6 +39,8 @@ python skills/research-to-fix/scripts/research_session.py append --session sessi
 python skills/research-to-fix/scripts/research_session.py review --session session-r1.json --ranking paired --output shortlist.json
 python skills/research-to-fix/scripts/research_session.py next --session session-r1.json --budget 8 --output proposal-r2.json
 ```
+
+The optional `--strategy coverage` is fixed in the session and recommended for new multi-round work: it prioritizes stages without an unambiguous recorded completion, diversifies families, and defers a previously blocked/rate-limited provider when a comparable choice exists. The initial round also balances distinct stages. Choices remain proposals, not executions; no automatic retry and no claim of exhaustive coverage. Old sessions and the CLI default retain the legacy ordering and proposal digest. Do not change the strategy inside an active ledger.
 
 Include only actual result files; omit either results argument if not used. For host results, use query IDs selected by the proposal, its `plan_sha256` when possible, and actual access/search statuses. The ledger namespaces query IDs across rounds and refuses stale proposals, out-of-round results, repeated query signatures and exceeded limits. Planned, attempted and completed counts differ; no inferred execution or retry. Refine the public fingerprint or report a blocked gap if no new distinct query remains. Never send confidential information.
 

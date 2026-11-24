@@ -44,6 +44,7 @@ jobs:
           node docs/figures/render-independent.cjs --check
           node docs/figures/render-competitor.cjs --check
           node docs/figures/render-v12.cjs --check
+          node docs/figures/render-v13.cjs --check
       - name: Smoke-test committed skill package
         if: runner.os == 'Linux' && matrix.python == '3.13'
         shell: bash
@@ -74,6 +75,7 @@ jobs:
           python "$script_dir/case_bundle.py" seal --directory "$case_dir" "${artifacts[@]}" > "$RUNNER_TEMP/research-to-fix-seal.json"
           manifest_hash=$(python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["manifest_sha256"])' "$RUNNER_TEMP/research-to-fix-seal.json")
           python "$script_dir/case_bundle.py" verify --directory "$case_dir" --expected-manifest-sha256 "$manifest_hash" > "$RUNNER_TEMP/research-to-fix-verify.json"
+          python "$script_dir/case_bundle.py" audit --directory "$case_dir" --expected-manifest-sha256 "$manifest_hash" > "$RUNNER_TEMP/research-to-fix-audit.json"
       - name: Save example run artifacts
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -85,6 +87,7 @@ jobs:
             ${{ runner.temp }}/research-to-fix-review.json
             ${{ runner.temp }}/research-to-fix-seal.json
             ${{ runner.temp }}/research-to-fix-verify.json
+            ${{ runner.temp }}/research-to-fix-audit.json
           retention-days: 7
           if-no-files-found: error
 
@@ -134,6 +137,9 @@ jobs:
           python benchmarks/discovery.py --output "$d/discovery.json"
           python benchmarks/discovery.py --dataset transfer --output "$d/transfer.json"
           python benchmarks/discovery_regression.py --original "$d/discovery.json" --transfer "$d/transfer.json" --output "$d/discovery-regression.json"
+          python benchmarks/capture_audit.py --output "$d/capture-audit.json"
+          python benchmarks/repair_capture_suite.py --output "$d/repair-capture.json"
+          python benchmarks/session_coverage.py --output "$d/session-coverage.json"
           python examples/numerical-variance/compare_methods.py --output "$d/variance"
           python examples/exact-attention/compare_attention.py --output "$d/attention"
           python tools/build_release.py --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/release"

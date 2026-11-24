@@ -85,6 +85,43 @@ class SessionTests(unittest.TestCase):
         with self.assertRaises(w.WorkflowError):
             w.rank_results(plan, [{"plan_sha256": "different", "results": []}])
 
+    def test_coverage_first_round_covers_six_stages_and_preserves_old_session(self):
+        legacy = s.start(PROBLEM)
+        self.assertNotIn("selection_strategy", legacy)
+        self.assertEqual(s.next_round(legacy, budget=6)["selected_queries"],
+                         w.make_plan(PROBLEM, w.MAX_QUERIES)["queries"][:6])
+        state = s.start(PROBLEM, 12, 3, "coverage")
+        first = s.next_round(state, budget=6)
+        self.assertEqual({row["stage"] for row in first["selected_queries"]}, set(w.STAGES))
+        self.assertEqual(first, s.next_round(copy.deepcopy(state), budget=6))
+        with self.assertRaises(w.WorkflowError):
+            s.append(legacy, first, [{"results": []}])
+        statuses = [{"query_id": row["id"], "status": "completed"}
+                    for row in first["selected_queries"]]
+        state = s.append(state, first, [{"searches": statuses}])
+        self.assertEqual(state["selection_strategy"], "coverage")
+        second = s.next_round(state, budget=6)
+        self.assertEqual(len(second["query_ids"]), 6)
+        self.assertFalse({s.signature(q) for q in first["selected_queries"]} &
+                         {s.signature(q) for q in second["selected_queries"]})
+
+    def test_coverage_uses_clean_completion_and_transport_fallback(self):
+        def q(id, stage, family, source, provider):
+            return {"id": id, "stage": stage, "family": family, "source": source, "provider": provider}
+        old = q("Q01", "mechanism", "paper", "arxiv", "arxiv")
+        same = q("Q02", "mechanism", "paper", "arxiv", "arxiv")
+        fallback = q("Q03", "mechanism", "paper", "crossref", "crossref")
+        other = q("Q04", "verification", "code", "github_prs", "github_prs")
+        state = {"rounds": [{"plan": {"queries": [old, other]}, "query_ids": ["Q01", "Q04"],
+                             "payloads": [{"searches": [{"query_id": "Q01", "status": "rate_limited"},
+                                                        {"query_id": "Q04", "status": "completed"}]}]}]}
+        self.assertEqual(s.coverage_selection(state, [same, fallback], 1), [fallback])
+        # Contradictory statuses are not treated as a clean completion.
+        state["rounds"][0]["payloads"].append({"searches": [{"query_id": "Q01", "status": "completed"}]})
+        self.assertEqual(s.coverage_selection(state, [same, fallback], 1), [fallback])
+        with self.assertRaises(w.WorkflowError):
+            s.start(PROBLEM, strategy="unknown")
+
     def test_conflicting_paper_identifiers_are_not_promoted(self):
         plan = w.make_plan(PROBLEM)
         qid = next(q["id"] for q in plan["queries"] if q["source"] == "arxiv")

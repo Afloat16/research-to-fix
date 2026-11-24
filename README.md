@@ -18,6 +18,18 @@
 Concept and workflow design: [Afloat16](https://github.com/Afloat16). MIT licensed. **No mandatory Python third-party packages, hosted search service, or embedding model.**
 
 
+## v1.3.0 — Executed repairs, frozen evidence and coverage-first research
+
+![Actual repair test executions, semantic evidence auditing, and paired simulated research coverage](docs/figures/v13-evidence.svg)
+
+**42 actual Python test subprocesses · 174 method-level outcomes · 21 audited candidate bundles.** Seven controlled Python defects each have unchanged, symptom-only and fully repaired variants. Checking only the original failure accepts 14 candidates, including seven incomplete ones; the complete frozen suite accepts the seven designed fixes and rejects all 14 others. These are constructed diagnostic cases, not model-generated repairs or a field repair-rate estimate.
+
+**13/13 named evidence contradictions rejected** by semantic audit versus 0/13 by unpinned hash-only verification after resealing. Independently pinned manifest verification rejects all 13 too; a coherent log edit passes both unpinned checks but fails the original pin. A new trusted-local unittest recorder freezes the before/after code, common test inputs and original failure IDs, runs explicitly authorized subprocesses, and binds the resulting claims back to sealed snapshots and the plan digest. No automatic execution of untrusted code; this is not a security sandbox or authenticity certification.
+
+**272 matched status simulations:** optional coverage-first planning raises mean completed source families from 2.61 to 4.68 and mean completed stages from 4.76 to 5.36 (128 wins, 143 ties, one loss); full six-stage completion rises from 20.6% to 37.9%. Counterevidence completion is unchanged. This is a fixed outcome simulation, not live provider performance. Legacy planning stays the compatible CLI default; the skill recommends the coverage strategy.
+
+[Actual benchmark CI](https://github.com/Afloat16/research-to-fix/actions/runs/45372900657) · [Detailed results and reproduction](benchmarks/V13_RESULTS.md) · [Measured snapshot](docs/figures/v13-snapshot.json) · [Trusted local recorder guide](skills/research-to-fix/references/unittest-capture.md).
+
 ## v1.2.0 — Exact recall, deeper research audits
 
 ![Exact recall acceleration: six workloads, speedup and exact parity](docs/figures/v12-recall.svg)
@@ -81,7 +93,7 @@ Read the [source playbook](skills/research-to-fix/references/source-playbook.md)
 
 ## Installation
 
-Release archive: [v1.2.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.2.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
+Release archive: [v1.3.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.3.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
 
 Use a host supporting the Agent Skills format. Verify your host's installation tool, then:
 

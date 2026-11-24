@@ -23,3 +23,21 @@ for (const zh of [false, true]) {
     if (fs.readFileSync(out, "utf8") !== expected) throw Error("Stale v1.2 figure: " + out);
   } else fs.writeFileSync(out, expected, "utf8");
 }
+
+function renderTransfer(s,zh){
+ const v=s.transfer, m=v.methods, names={precision_field4:"R2F Precision Field",v1_contextual:"R2F Contextual",v1_bm25:"R2F BM25",sqlite_unicode4:"SQLite Unicode 4",sqlite_porter:"SQLite Porter",bm25s_native:"BM25S Native",bm25s_matched:"BM25S Matched",rank_bm25_matched:"rank-bm25 Matched"};
+ const order=Object.keys(m).sort((a,b)=>m[b]["ndcg@10"]-m[a]["ndcg@10"]),esc=x=>String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"), t=(x,y,l,size=20,c="#e7edf7",weight=400,anchor="start")=>`<text x="${x}" y="${y}" font-size="${size}" fill="${c}" font-weight="${weight}" text-anchor="${anchor}">${esc(l)}</text>`, rect=(x,y,w,h,f,rx=10)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${f}"/>`;
+ const a=[`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 735" role="img" aria-labelledby="title desc" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">`,`<title id="title">${zh?"真实 Mathematica 检索迁移对照":"Real Mathematica retrieval transfer"}</title>`,`<desc id="desc">${zh?"八种方法的 nDCG@10，展示全部结果及真实查询的严格一致性和加速；不代表实际修复率。":"All eight nDCG@10 scores and exact recall parity/speed on real queries; not agent repair accuracy."}</desc>`,rect(0,0,1040,735,"#101a2c",22),t(36,42,"RESEARCH TO FIX  /  EXTERNAL TRANSFER",15,"#69d6cf",700),t(36,90,zh?"真实语料，全部对照。":"Real corpus. All comparators.",38,"#ffffff",750),t(36,124,zh?"BEIR Mathematica · 16,705 篇文档 · 804 条测试查询 · 预先冻结方法":"BEIR Mathematica · 16,705 documents · 804 test queries · frozen methods",18,"#b2c3d9")];
+ const cards=[[`${v.exact_recall.p50_speedup.toFixed(2)}×`,zh?"精确召回 P50 加速":"exact recall P50 speedup"],[`${v.exact_recall.queries}/${v.exact_recall.queries}`,zh?"完整输出一致":"exact full-output parity"],[m.precision_field4["ndcg@10"].toFixed(4),zh?"Precision Field nDCG@10":"Precision Field nDCG@10"]];cards.forEach(([value,label],i)=>{let x=36+i*326;a.push(rect(x,151,316,102,"#1e2d43",14),t(x+18,199,value,35,"#72e0d3",730),t(x+18,231,label,16,"#c8d5e6",500));});
+ a.push(t(36,291,zh?"检索质量 · nDCG@10（从零起）":"Retrieval quality · nDCG@10 (zero baseline)",21,"#fff",650));
+ const x=290,w=596,scale=.25;for(let n=0;n<=5;n++){let xx=x+w*n/5;a.push(`<line x1="${xx}" y1="306" x2="${xx}" y2="620" stroke="#304159" stroke-width="1"/>`,t(xx,643,(n*.05).toFixed(2),14,"#a6b8cf",400,"middle"));}
+ order.forEach((key,i)=>{let n=m[key]["ndcg@10"],y=313+i*39,color=key==="precision_field4"?"#69d6cf":key.startsWith("v1_")?"#7ba8fa":"#687b96";a.push(t(36,y+20,names[key],17,"#e7edf7",500),`<rect x="${x}" y="${y}" width="${(w*n/scale).toFixed(3)}" height="25" rx="5" fill="${color}" data-method="${key}" data-value="${n}"/>`,t(x+w*n/scale+12,y+20,n.toFixed(4),17,"#f0f5ff",650));});
+ a.push(t(36,680,zh?"Precision Field 的区间相对 Unicode 4、rank-bm25 及旧 BM25 为正；其他不确定。":"Positive pointwise intervals vs Unicode 4, rank-bm25 and old BM25; other comparisons inconclusive.",15,"#b2c3d9"),t(36,706,zh?"BM25S 查询更快；召回加速比较旧版解释路径，不是与 BM25S 的速度比。":"BM25S queries are faster; recall speedup compares the old explanation path, not BM25S.",15,"#a6b8cf"),"</svg>");return a.join("\n")+"\n";
+}
+for (const zh of [false, true]) {
+  const out = path.join(__dirname, "v12-transfer" + (zh ? ".zh-CN" : "") + ".svg");
+  const expected = renderTransfer(snap, zh);
+  if (process.argv.includes("--check")) {
+    if (fs.readFileSync(out, "utf8") !== expected) throw Error("Stale v1.2 figure: " + out);
+  } else fs.writeFileSync(out, expected, "utf8");
+}

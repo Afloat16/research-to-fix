@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FIGURES = ROOT / "docs" / "figures"
 NS = {"svg": "http://www.w3.org/2000/svg"}
-NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1", "independent-holdout", "competitor-diagnostic", "v12-recall")
+NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1", "independent-holdout", "competitor-diagnostic", "v12-recall", "v12-transfer")
 
 
 class ReadmeFiguresTest(unittest.TestCase):
@@ -38,6 +38,12 @@ class ReadmeFiguresTest(unittest.TestCase):
                 for element in document.iter():
                     local = element.tag.rsplit("}", 1)[-1]
                     self.assertNotIn(local, {"script", "image", "foreignObject", "iframe"})
+                if name == "v12-transfer":
+                    snapshot = json.loads((FIGURES / "v12-snapshot.json").read_text(encoding="utf-8"))["transfer"]
+                    bars = {e.get("data-method"): float(e.get("data-value")) for e in document.iter() if e.get("data-method")}
+                    self.assertEqual(bars, {k: v["ndcg@10"] for k, v in snapshot["methods"].items()})
+                    self.assertTrue(snapshot["exact_recall"]["exact_count_scores_ids_explanations"])
+                    self.assertEqual(snapshot["exact_recall"]["queries"], 804)
                 if name == "v12-recall":
                     snapshot = json.loads((FIGURES / "v12-snapshot.json").read_text(encoding="utf-8"))["relative_recall"]
                     bars = {e.get("data-scenario"): float(e.get("data-value")) for e in document.iter() if e.get("data-scenario")}

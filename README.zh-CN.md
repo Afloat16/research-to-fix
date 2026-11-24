@@ -28,6 +28,14 @@
 
 [真实 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45366494938) · [详细结果与复现](benchmarks/V12_RESULTS.md) · [原始快照](docs/figures/v12-snapshot.json) · [独立迁移协议](benchmarks/TRANSFER_V12_PROTOCOL.md)。
 
+### 新增外部迁移：Mathematica
+
+![Mathematica 八种检索方法对照与精确召回实测](docs/figures/v12-transfer.zh-CN.svg)
+
+**16,705 篇文档 · 804 条真实标签查询 · 八种预先冻结的方法。** 未利用本语料调整排序或参数。Precision Field 的 nDCG@10 = **0.2366**，较 SQLite Unicode 4 提升 9.71%、较真实 rank-bm25 0.2.2 提升 5.87%（点态配对 95% 区间为正）。Contextual 得分 0.2389；相对 Contextual、SQLite Porter 及两种 BM25S 的区间跨零。BM25S 原始查询明显更快。精确相对阈值召回在 **全部 804 条查询**上计数、ID、分数及解释完全一致；单次配对预分词热索引 P50 **35.36 → 7.24 ms（4.88 倍）**。五套公开评测语料合计 101,597 篇文档、2,668 条有标签查询；按语料独立报告，不混合构造排行榜。
+
+[八种方法实测](https://github.com/Afloat16/research-to-fix/actions/runs/45366934273) · [完整指标、区间与复现](benchmarks/V12_RESULTS.md#mathematica-external-transfer) · [原始产物](https://github.com/Afloat16/research-to-fix/actions/runs/45366934273/artifacts/14906654892)。
+
 ## v1.1.0 — 外部保留集与精准检索
 
 ![外部保留集排序性能与配对区间](docs/figures/independent-holdout.zh-CN.svg)
@@ -73,7 +81,7 @@
 
 ## 安装
 
-正式版安装包：[v1.1.0 与 SHA-256 校验文件](https://github.com/Afloat16/research-to-fix/releases/tag/v1.1.0)。解压后将 `research-to-fix/` 目录放入宿主 Skill 目录；安装包只包含提交的 Skill、许可与版本，不包含实验日志或本地用户数据。
+正式版安装包：[v1.2.0 与 SHA-256 校验文件](https://github.com/Afloat16/research-to-fix/releases/tag/v1.2.0)。解压后将 `research-to-fix/` 目录放入宿主 Skill 目录；安装包只包含提交的 Skill、许可与版本，不包含实验日志或本地用户数据。
 
 使用支持 Agent Skills 格式的宿主。核对安装工具后运行：
 

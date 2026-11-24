@@ -29,12 +29,16 @@ API = {
     "arxiv": "https://export.arxiv.org/api/query",
     "huggingface_models": "https://huggingface.co/api/models",
     "huggingface_datasets": "https://huggingface.co/api/datasets",
+    "semantic_scholar": "https://api.semanticscholar.org/graph/v1/paper/search",
+    "openalex": "https://api.openalex.org/works",
+    "dblp": "https://dblp.org/search/publ/api",
 }
 GROUPS = {provider: ("github" if provider.startswith("github_") else
                     "huggingface" if provider.startswith("huggingface_") else provider)
           for provider in API}
 # A single arXiv request per invocation avoids concurrent or rapid polling.
-GROUP_LIMITS = {"github": 4, "crossref": 2, "arxiv": 1, "huggingface": 2}
+GROUP_LIMITS = {"github": 4, "crossref": 2, "arxiv": 1, "huggingface": 2,
+                "semantic_scholar": 1, "openalex": 1, "dblp": 1}
 DISCOVERY_NOTICE = ("Only the explicitly approved public fingerprint queries are transmitted to fixed public APIs. "
                     "No credentials, private repo contents, result URL fetches, downloads, code execution, or auto-retries. "
                     "Metadata and excerpts are leads, not read/verified original evidence. Host search is needed for other sources.")
@@ -68,6 +72,16 @@ def make_request(query, limit):
             raise ProviderError("invalid_response")
         params = {"search_query": " AND ".join('all:"' + term + '"' for term in terms),
                   "start": 0, "max_results": limit, "sortBy": "relevance", "sortOrder": "descending"}
+    elif provider == "semantic_scholar":
+        params = {"query": native.replace("-", " "), "limit": limit,
+                  "fields": "paperId,title,abstract,externalIds,url,year,venue,publicationTypes"}
+    elif provider == "openalex":
+        # Keyless casual use only; if the service requires authentication,
+        # report the restriction and let the host use its approved tools.
+        params = {"search": native, "per_page": limit,
+                  "select": "id,doi,title,publication_year,type,primary_location,is_retracted"}
+    elif provider == "dblp":
+        params = {"q": native, "format": "json", "h": limit, "c": 0}
     else:
         params = {"search": native, "limit": limit}
     return API[provider] + "?" + urllib.parse.urlencode(params)
@@ -104,7 +118,7 @@ def request_metadata(url, provider):
         if error.code == 429 or (error.code == 403 and error.headers and
                                  error.headers.get("X-RateLimit-Remaining") == "0"):
             raise ProviderError("rate_limited") from None
-        if error.code in (401, 403, 451) or 300 <= error.code < 400:
+        if error.code in (401, 403, 409, 451) or 300 <= error.code < 400:
             raise ProviderError("access_blocked") from None
         raise ProviderError("unavailable") from None
     except (urllib.error.URLError, TimeoutError, socket.timeout, OSError, http.client.HTTPException):
@@ -118,10 +132,32 @@ def excerpt(value, limit):
     return value if core.safe_search_input([value]) and not w.PRIVATE_PATH.search(value) else ""
 
 
+def metadata_links(*values):
+    # Strictly extract explicit repository or paper mentions. No fetches,
+    # fuzzy link inference, or claim of official implementation.
+    found = {}
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        for raw in re.findall(r"https?://[^\s<>\"']{1,600}", value[:16000]):
+            raw = raw.rstrip(".,;:!?)]}")
+            try:
+                url = w.canonical_url(raw)
+            except w.WorkflowError:
+                continue
+            parts = urllib.parse.urlsplit(url)
+            if ((parts.hostname == "github.com" and len(parts.path.strip("/").split("/")) == 2)
+                    or url.startswith(("https://arxiv.org/abs/", "https://doi.org/"))):
+                found[url] = {"url": url, "relation": "mentions", "basis": "metadata"}
+            if len(found) >= w.MAX_LINKS:
+                return list(found.values())
+    return list(found.values())
+
+
 def base_row(query, url, title, snippet="", **extra):
     row = {"query_id": query["id"], "origin": query["provider"], "kind": query["kind"],
            "url": url, "title": excerpt(title, 300), "snippet": excerpt(snippet, 700),
-           "access": "metadata", **extra}
+           "access": "metadata", "links": metadata_links(snippet), **extra}
     try:
         w.normalize_result(row, {query["id"]: query})
     except w.WorkflowError:
@@ -144,7 +180,8 @@ def parse_github(query, payload, limit):
             row = base_row(query, item.get("html_url"), item.get("full_name"),
                            item.get("description"), revision=excerpt(item.get("default_branch"), 100),
                            license_hint=excerpt(license_hint, 120),
-                           maintenance_hint="archived; historical implementation only" if item.get("archived") is True else "")
+                           maintenance_hint="archived; historical implementation only" if item.get("archived") is True else "",
+                           links=metadata_links(item.get("description"), item.get("homepage")))
         else:
             is_pr = isinstance(item.get("pull_request"), dict)
             if is_pr != (query["provider"] == "github_prs"):
@@ -241,6 +278,96 @@ def parse_hf(query, payload, limit):
     return results, False
 
 
+def paper_hint(provider, kind, venue, year):
+    year = str(year) if type(year) is int else (year if isinstance(year, str) and year.isdigit() else "")
+    return excerpt(" ".join(part for part in (provider + " metadata:", kind, venue, year) if part), 120)
+
+
+def parse_semantic_scholar(query, payload, limit):
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+        raise ProviderError("invalid_response")
+    rows = []
+    for item in payload["data"][:limit]:
+        if not isinstance(item, dict):
+            continue
+        external = item.get("externalIds")
+        external = external if isinstance(external, dict) else {}
+        doi = w.normalized_doi(external.get("DOI"))
+        aid = w.normalized_arxiv(external.get("ArXiv"))
+        pid = item.get("paperId")
+        if doi:
+            url = "https://doi.org/" + urllib.parse.quote(doi, safe="/:;()[]-._")
+        elif aid:
+            url = "https://arxiv.org/abs/" + aid
+        elif isinstance(pid, str) and re.fullmatch(r"[0-9a-f]{40}", pid):
+            url = "https://www.semanticscholar.org/paper/" + pid
+        else:
+            continue
+        types = item.get("publicationTypes")
+        types = ", ".join(t for t in types[:5] if isinstance(t, str)) if isinstance(types, list) else ""
+        row = base_row(query, url, item.get("title"), item.get("abstract"), doi=doi, arxiv_id=aid,
+                       publication_hint=paper_hint("Semantic Scholar", types, excerpt(item.get("venue"), 60), item.get("year")))
+        if row:
+            rows.append(row)
+    return rows, False
+
+
+def parse_openalex(query, payload, limit):
+    if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+        raise ProviderError("invalid_response")
+    rows = []
+    for item in payload["results"][:limit]:
+        if not isinstance(item, dict):
+            continue
+        doi = w.normalized_doi(item.get("doi"))
+        identifier = item.get("id")
+        if doi:
+            url = "https://doi.org/" + urllib.parse.quote(doi, safe="/:;()[]-._")
+        elif isinstance(identifier, str) and re.fullmatch(r"https://openalex\.org/W\d+", identifier):
+            url = identifier
+        else:
+            continue
+        location = item.get("primary_location")
+        location = location if isinstance(location, dict) else {}
+        source = location.get("source")
+        source = source if isinstance(source, dict) else {}
+        venue = excerpt(source.get("display_name"), 60)
+        # Retraction metadata is a review flag, not an authoritative decision.
+        kind = "RETRACTED flag; verify original" if item.get("is_retracted") is True else excerpt(item.get("type"), 40)
+        row = base_row(query, url, item.get("title"), "", doi=doi,
+                       publication_hint=paper_hint("OpenAlex", kind, venue, item.get("publication_year")))
+        if row:
+            rows.append(row)
+    return rows, False
+
+
+def parse_dblp(query, payload, limit):
+    try:
+        hits = payload["result"]["hits"]
+    except (KeyError, TypeError):
+        raise ProviderError("invalid_response") from None
+    if not isinstance(hits, dict):
+        raise ProviderError("invalid_response")
+    entries = hits.get("hit", [])
+    if not isinstance(entries, list):
+        raise ProviderError("invalid_response")
+    rows = []
+    for hit in entries[:limit]:
+        info = hit.get("info") if isinstance(hit, dict) else None
+        if not isinstance(info, dict):
+            continue
+        doi = w.normalized_doi(info.get("doi"))
+        url = "https://doi.org/" + urllib.parse.quote(doi, safe="/:;()[]-._") if doi else info.get("url")
+        if not doi and (not isinstance(url, str) or not url.startswith("https://dblp.org/rec/")):
+            continue
+        row = base_row(query, url, info.get("title"), "", doi=doi,
+                       publication_hint=paper_hint("DBLP", excerpt(info.get("type"), 40),
+                                                   excerpt(info.get("venue"), 60), info.get("year")))
+        if row:
+            rows.append(row)
+    return rows, False
+
+
 def parse_response(query, raw, limit):
     if not isinstance(raw, bytes) or not raw or len(raw) > MAX_RESPONSE_BYTES:
         raise ProviderError("invalid_response")
@@ -257,6 +384,12 @@ def parse_response(query, raw, limit):
         return parse_crossref(query, payload, limit)
     if provider.startswith("huggingface_"):
         return parse_hf(query, payload, limit)
+    if provider == "semantic_scholar":
+        return parse_semantic_scholar(query, payload, limit)
+    if provider == "openalex":
+        return parse_openalex(query, payload, limit)
+    if provider == "dblp":
+        return parse_dblp(query, payload, limit)
     raise ProviderError("unavailable")
 
 
@@ -313,7 +446,9 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
 
 def main(argv=None):
     parser = core.SafeArgumentParser(description=__doc__)
-    parser.add_argument("--plan", required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--plan", type=Path)
+    source.add_argument("--proposal", type=Path, help="Research-session proposal; only selected query IDs may be sent")
     parser.add_argument("--approve-public", action="store_true",
                         help="I have reviewed the public fingerprint and consent to these fixed API queries")
     parser.add_argument("--max-requests", type=int, default=6)
@@ -326,8 +461,25 @@ def main(argv=None):
             w.fail("explicit_public_approval_required")
         if args.output.exists() or args.output.is_symlink():
             w.fail("output_exists")
-        report = discover(w.read_json(args.plan), args.approve_public, args.max_requests,
-                          args.per_query, args.query_id)
+        if args.proposal:
+            proposal = w.object_(w.read_json(args.proposal))
+            if proposal.get("scope") != "research_round_proposal":
+                w.fail("invalid_round_proposal")
+            plan = w.validate_plan(proposal.get("plan"))
+            if proposal.get("plan_sha256") != w.plan_digest(plan):
+                w.fail("round_plan_mismatch")
+            permitted = w.str_list(proposal.get("query_ids"), w.MAX_QUERIES, 8)
+            selected = args.query_id if args.query_id is not None else permitted
+            if not permitted or not set(selected) <= set(permitted):
+                w.fail("query_outside_proposal")
+            expected_rows = [next((q for q in plan["queries"] if q["id"] == qid), None) for qid in permitted]
+            if None in expected_rows or proposal.get("selected_queries") != expected_rows:
+                w.fail("round_proposal_changed")
+        else:
+            plan = w.read_json(args.plan)
+            selected = args.query_id
+        report = discover(plan, args.approve_public, args.max_requests,
+                          args.per_query, selected)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

@@ -112,6 +112,41 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertIn("archived", result[0]["maintenance_hint"])
 
+    def test_additional_bibliographic_providers_and_identity_aliases(self):
+        plan = w.make_plan(PROBLEM, 6, ["semantic_scholar", "openalex", "dblp"])
+        by_provider = {q["provider"]: q for q in plan["queries"]}
+        self.assertEqual(set(by_provider), {"semantic_scholar", "openalex", "dblp"})
+        metadata = {
+            "semantic_scholar": {"data": [{"paperId": "a" * 40, "title": "Efficient attention",
+                "abstract": "Reference https://github.com/example/attention",
+                "externalIds": {"DOI": "10.1000/example", "ArXiv": "2205.14135"},
+                "year": 2022, "venue": "Example"}]},
+            "openalex": {"results": [{"id": "https://openalex.org/W123", "doi": "https://doi.org/10.1000/example",
+                "title": "Efficient attention", "publication_year": 2022, "is_retracted": True}]},
+            "dblp": {"result": {"hits": {"hit": [{"info": {"doi": "10.1000/example", "title": "Efficient attention",
+                "year": "2022", "venue": "Example"}}]}}},
+        }
+        results = []
+        for provider, q in by_provider.items():
+            self.assertTrue(d.make_request(q, 3).startswith(d.API[provider] + "?"))
+            rows, partial = d.parse_response(q, encoded(metadata[provider]), 3)
+            self.assertEqual(len(rows), 1)
+            self.assertFalse(partial)
+            self.assertEqual(rows[0]["access"], "metadata")
+            results.extend(rows)
+        report = w.rank_results(plan, [{"results": results}])
+        self.assertEqual(report["unique_identities"], 1)
+        self.assertEqual(report["duplicates_collapsed"], 2)
+        self.assertEqual(report["evidence_graph"]["pair_count"], 0)
+        self.assertGreaterEqual(report["evidence_graph"]["unresolved_count"], 1)
+        self.assertIn("RETRACTED", results[1]["publication_hint"])
+
+    def test_metadata_mention_never_claims_implementation(self):
+        links = d.metadata_links("See https://github.com/example/attention and https://arxiv.org/abs/2205.14135v2.",
+                                 "http://127.0.0.1/a https://example.com/unknown")
+        self.assertEqual(len(links), 2)
+        self.assertTrue(all(row["relation"] == "mentions" and row["basis"] == "metadata" for row in links))
+
     def test_public_credential_like_excerpts_are_not_retained(self):
         row = next(row for row in w.make_plan(PROBLEM)["queries"] if row["provider"] == "github_issues")
         result, _ = d.parse_github(row, {"items": [{"html_url": "https://github.com/a/b/issues/1",

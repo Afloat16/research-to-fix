@@ -22,7 +22,7 @@ FAMILIES = ("code", "paper", "documentation", "model_data", "community")
 KIND_FAMILY = {"repository": "code", "issue": "code", "pull_request": "code",
                "paper": "paper", "documentation": "documentation",
                "model": "model_data", "dataset": "model_data", "community": "community"}
-RELATIONS = ("implements", "describes", "reproduces", "compares", "limits", "homepage")
+RELATIONS = ("implements", "describes", "reproduces", "compares", "limits", "homepage", "mentions")
 MAX_LINKS = 8
 SOURCE_SPECS = {
     "github_issues": ("code", "github_issues", "issue"),
@@ -38,6 +38,9 @@ SOURCE_SPECS = {
     "community": ("community", "host", "community"),
     "limitations": ("paper", "host", "paper"),
     "regressions": ("code", "host", "issue"),
+    "semantic_scholar": ("paper", "semantic_scholar", "paper"),
+    "openalex": ("paper", "openalex", "paper"),
+    "dblp": ("paper", "dblp", "paper"),
 }
 FOCUS = ("algorithm", "bug", "performance", "reproduction")
 STAGES = ("exact", "mechanism", "implementation", "alternatives", "verification", "counterevidence")
@@ -234,6 +237,14 @@ def make_plan(problem, budget=12, sources=None):
     add("community", "alternatives", joined("(site:zhihu.com OR site:xiaohongshu.com OR site:discuss.huggingface.co)",
                                             p["component"], p["aliases"][0] if p["aliases"] else second, "复现 解决"),
         "", "Find community leads; trace claims to original evidence.")
+    # Additional bibliographic indexes for deeper or explicitly filtered plans.
+    # Preserve the first shallow-plan queries and legacy source-filter ordering.
+    add("semantic_scholar", "mechanism", joined("site:semanticscholar.org", mechanism_text, "paper"),
+        mechanism_text, "Discover additional papers and DOI/arXiv cross-identifiers.")
+    add("openalex", "alternatives", joined("site:openalex.org", alternate_text, "paper"),
+        alternate_text, "Find additional works and source/venue metadata.")
+    add("dblp", "verification", joined("site:dblp.org", mechanism_text),
+        mechanism_text, "Check computer-science publication records; inspect official venue separately.")
     # Use remaining capacity on genuine alternative mechanisms, not duplicate queries.
     for alternative in p["alternative_concepts"][1:]:
         add("github_repositories", "alternatives", joined("site:github.com", p["task"], alternative, "implementation"),
@@ -613,7 +624,17 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     # Match only explicit links to known URL identities. Do not infer
     # official implementation, equivalence, or support from title similarity.
     nodes = {row["id"]: row for row in ranked}
-    by_url = {row["url"]: key for key, group in graph_observations for row in group}
+    url_owners = defaultdict(set)
+    for key, group in graph_observations:
+        for row in group:
+            url_owners[row["url"]].add(key)
+            for identity in row["keys"]:
+                if identity.startswith("doi:"):
+                    url_owners["https://doi.org/" + quote(identity[4:], safe="/:;()[]-._")].add(key)
+                elif identity.startswith("arxiv:"):
+                    url_owners["https://arxiv.org/abs/" + identity[6:]].add(key)
+    # Ambiguous aliases cannot resolve an edge automatically.
+    by_url = {url: next(iter(owners)) for url, owners in url_owners.items() if len(owners) == 1}
     edges, unresolved = {}, set()
     for key, group in graph_observations:
         for row in group:
@@ -660,13 +681,28 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                                                    "kind": row["kind"], "access": row["access"],
                                                    "linked_from": seed, "relation": pair["relation"],
                                                    "basis": pair["basis"], "review_required": True})
+    # Metadata URL mentions are a separate, weaker review route. A mention
+    # never creates an implementation pair or a verified relationship.
+    for edge in graph_edges:
+        if edge["relation"] not in ("mentions", "homepage"):
+            continue
+        left, right = nodes[edge["from"]], nodes[edge["to"]]
+        if {left["family"], right["family"]} != {"paper", "code"}:
+            continue
+        for seed, partner in ((left, right), (right, left)):
+            if seed["id"] in selected_ids and partner["id"] not in selected_ids and partner["access"] not in ("unavailable", "access_blocked"):
+                followups.setdefault(partner["id"], {"id": partner["id"], "url": partner["url"],
+                    "title": partner["title"], "kind": partner["kind"], "access": partner["access"],
+                    "linked_from": seed["id"], "relation": edge["relation"], "basis": edge["basis"],
+                    "review_required": True})
     followup_rows = sorted(followups.values(), key=lambda row: ordering(nodes[row["id"]]))[:12]
     return {"schema_version": SCHEMA, "scope": "research_shortlist", "notice": NOTICE,
             "input_observations": len(raw_rows), "valid_observations": len(normalized),
             "unique_identities": len(groups), "duplicates_collapsed": len(normalized) - len(groups),
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
             "ranking": ranking, "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
-            "evidence_graph": {"nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in ranked
+            "evidence_graph": {"ambiguous_aliases": sum(len(owners) > 1 for owners in url_owners.values()),
+                               "nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in ranked
                                          if row["id"] in {key for edge in graph_edges[:100] for key in (edge["from"], edge["to"])}],
                                "edges": graph_edges[:100], "edge_count": len(graph_edges),
                                "paper_code_pairs": pairs[:50], "pair_count": len(pairs),

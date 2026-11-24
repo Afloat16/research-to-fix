@@ -152,6 +152,38 @@ def benchmark(path):
                 "scope": "Known-item self-lookup on the complete imported archive, not held-out source relevance or repair success."}
 
 
+def problem_benchmark(path):
+    # Use the same reviewed problem formulations, without title/ID gold terms.
+    # Known qrels are sparse development labels, not a complete relevance set.
+    fixture = json.loads((ROOT / "benchmarks/datasets/algorithm_discovery_v1.json").read_text())
+    docs = {row["id"]: row for row in fixture["documents"] if not row.get("duplicate_type")}
+    tasks = []
+    with catalog.Catalog(path) as db:
+        for task in fixture["tasks"]:
+            plan = w.make_plan(task["problem"], 1, ["paperswithcode"], "comprehensive")
+            q = plan["queries"][0]
+            qrels = {key: w.canonical_url(docs[key]["url"]) for key in task["relevant"]}
+            def matches(result):
+                urls = {w.canonical_url(row["url"]) for row in result["results"]}
+                return sorted(key for key, url in qrels.items() if url in urls)
+            methods = {}
+            for mode in ("keyword", "route_fusion"):
+                start = time.perf_counter_ns()
+                out = db.observations(plan, q["id"], limit=K, route_fusion=(mode == "route_fusion"))
+                latency = (time.perf_counter_ns() - start) / 1e6
+                hit = matches(out)
+                methods[mode] = {"known_hits": len(hit), "known_recall": len(hit) / len(qrels),
+                                 "known_pairs": sum(set(pair) <= set(hit) for pair in task["pairs"]),
+                                 "latency_ms": round(latency, 3), "papers_returned": out["papers_returned"],
+                                 "matched_label_ids": hit}
+            tasks.append({"task_id": task["id"], "known_sources": len(qrels), "methods": methods})
+    return {"tasks": tasks, "paper_limit": K,
+            "total_known_sources": sum(row["known_sources"] for row in tasks),
+            "known_hits": {mode: sum(row["methods"][mode]["known_hits"] for row in tasks)
+                           for mode in ("keyword", "route_fusion")},
+            "scope": "Eight development problems; labels are known positives only; no exact gold IDs/titles in queries."}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approve-public", action="store_true")
@@ -171,7 +203,8 @@ def main():
     build = catalog.build_catalog(metadata, database, DATASET, "CC-BY-SA-4.0", "2025-07-28")
     report = {"status": "completed", "dataset": DATASET, "dataset_url": URL,
               "revision": REVISION, "archive_sha256": SHA256, "archive_bytes": size,
-              "archive_rows": count, "build": build, "benchmark": benchmark(database)}
+              "archive_rows": count, "build": build, "benchmark": benchmark(database),
+              "problem_benchmark": problem_benchmark(database)}
     w.write_json(report, args.output / "report.json")
     print(json.dumps(report, indent=2))
 

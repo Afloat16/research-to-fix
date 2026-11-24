@@ -29,6 +29,7 @@ MAX_LINE = 64 * 1024
 MAX_ROWS = 1_000_000
 MAX_PAPERS = 20
 MAX_LINKS = 3
+MAX_ROUTES = 6
 SCHEMA = 2
 NOTICE = ("Local catalog metadata is user-supplied and not independently authenticated. "
           "Historical official flags are leads, not current license, maintenance, applicability or correctness guarantees.")
@@ -245,17 +246,61 @@ class Catalog:
     def __exit__(self, *exc):
         self.close()
 
-    def search(self, query, limit=12):
+    def search(self, query, limit=12, conjunction=False):
         w.integer(limit, 1, MAX_PAPERS)
-        query = w.public_text(query, 1024)
+        query = unicodedata.normalize("NFKC", w.public_text(query, 1024))
+        if type(conjunction) is not bool:
+            w.fail("invalid_catalog_match")
         terms = list(dict.fromkeys(word.casefold() for word in re.findall(r"[^\W_]+", query)
                                   if len(word) > 1 and word.casefold() not in w.GENERIC))[:32]
         if not terms:
             return []
-        expression = " OR ".join('"' + term.replace('"', '""') + '"' for term in terms)
+        expression = (" AND " if conjunction else " OR ").join('"' + term.replace('"', '""') + '"' for term in terms)
         return [dict(row) for row in self.db.execute(
             "SELECT id,title,abstract,bm25(paper_fts,0,4,1) AS score FROM paper_fts "
             "WHERE paper_fts MATCH ? ORDER BY score,id LIMIT ?", (expression, limit))]
+
+    def route_search(self, problem, query, limit=12):
+        """Fuse bounded lexical routes from the reviewed problem, not guessed synonyms.
+
+        A route gets an equal vote; identical normalized routes count once.
+        A conjunctive query is tried first to reduce generic-token flooding;
+        sparse routes back off to OR. Each returned row retains route ranks.
+        """
+        problem = w.normalize_problem(problem)
+        w.integer(limit, 1, MAX_PAPERS)
+        candidates = [query, *problem["concepts"], *problem["alternative_concepts"],
+                      *problem["aliases"], problem["task"], problem["symptom"]]
+        routes = []
+        seen = set()
+        for value in candidates:
+            if not value:
+                continue
+            key = title_key(w.public_text(value, 1024))
+            if key not in seen:
+                seen.add(key)
+                routes.append(value)
+            if len(routes) == MAX_ROUTES:
+                break
+        scores, papers, details = Counter(), {}, {}
+        depth = MAX_PAPERS
+        for route in routes:
+            hits = self.search(route, depth, conjunction=True)
+            match = "all"
+            if len(hits) < min(3, limit):
+                # Preserve the exact conjunction matches first; append OR
+                # matches only to fill the bounded route, never count twice.
+                existing = {row["id"] for row in hits}
+                hits.extend(row for row in self.search(route, depth) if row["id"] not in existing)
+                hits = hits[:depth]
+                match = "all_then_any"
+            for rank, row in enumerate(hits, 1):
+                key = row["id"]
+                scores[key] += 1 / (20 + rank)
+                papers[key] = row
+                details.setdefault(key, []).append({"query": route, "rank": rank, "match": match})
+        keys = sorted(scores, key=lambda key: (-scores[key], key))[:limit]
+        return [{**papers[key], "score": scores[key], "route_matches": details[key]} for key in keys]
 
     def lookup(self, arxiv_id):
         discovery.paper_detail_request(arxiv_id)
@@ -291,13 +336,13 @@ class Catalog:
             "SELECT repo_url,official,in_paper,in_repo FROM links WHERE paper_id=? "
             "ORDER BY official DESC,in_paper DESC,in_repo DESC,repo_url LIMIT ?", (key, limit))]
 
-    def observations(self, plan, query_id, limit=12, paper_ids=None, exact_title=None, repository=None):
+    def observations(self, plan, query_id, limit=12, paper_ids=None, exact_title=None, repository=None, route_fusion=False):
         plan = w.validate_plan(plan)
         query = next((row for row in plan["queries"] if row["id"] == query_id and
                       row["provider"] == "paperswithcode"), None)
         if not query:
             w.fail("catalog_query_required")
-        if sum(value is not None for value in (paper_ids, exact_title, repository)) > 1:
+        if type(route_fusion) is not bool or sum(value is not None for value in (paper_ids, exact_title, repository)) + int(route_fusion) > 1:
             w.fail("ambiguous_catalog_lookup")
         w.integer(limit, 1, MAX_PAPERS)
         if paper_ids is not None:
@@ -311,6 +356,8 @@ class Catalog:
             papers = self.lookup_title(exact_title, limit)
         elif repository is not None:
             papers = self.papers_for_repository(repository, limit)
+        elif route_fusion:
+            papers = self.route_search(plan["problem"], query["native_query"], limit)
         else:
             papers = self.search(query["native_query"], limit)
         results = []
@@ -348,7 +395,9 @@ class Catalog:
                 "plan_id": w.plan_fingerprint(plan), "catalog": self.metadata,
                 "query_id": query_id, "local_mode": ("identifier" if paper_ids else
                     "exact_title" if exact_title is not None else
-                    "repository_reverse" if repository is not None else "keyword"),
+                    "repository_reverse" if repository is not None else "route_fusion" if route_fusion else "keyword"),
+                "local_rank_evidence": [{"paper_id": row["id"], "route_matches": row["route_matches"]}
+                                        for row in papers if "route_matches" in row],
                 "papers_returned": len(papers), "results": results, "searches": []}
 
 
@@ -370,6 +419,7 @@ def main(argv=None):
     mode.add_argument("--paper-id", action="append")
     mode.add_argument("--exact-title")
     mode.add_argument("--repository")
+    mode.add_argument("--route-fusion", action="store_true", help="Fuse distinct reviewed problem phrases")
     find.add_argument("--limit", type=int, default=12)
     find.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
@@ -379,7 +429,7 @@ def main(argv=None):
         else:
             with Catalog(args.database) as catalog:
                 report = catalog.observations(w.read_json(args.plan), args.query_id, args.limit, args.paper_id,
-                                              args.exact_title, args.repository)
+                                              args.exact_title, args.repository, args.route_fusion)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError, sqlite3.Error) as error:

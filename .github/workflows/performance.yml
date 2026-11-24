@@ -47,18 +47,12 @@ jobs:
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - name: Compare exact top-k alternatives under a locked protocol
         run: python examples/exact-topk/compare_methods.py --output "$RUNNER_TEMP/exact-topk"
-      - name: Install optional benchmark importer
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run external research benchmark')
-        run: |
-          python -m pip install --only-binary=:all: pyarrow==20.0.0
-      - name: Evaluate independent public duplicate-question labels
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run external research benchmark')
-        run: |
-          python benchmarks/fetch_beir.py --output "$RUNNER_TEMP/beir-programmers"
-          python benchmarks/retrieval.py --beir-dir "$RUNNER_TEMP/beir-programmers" --query-limit 128 --k 10 --repeats 2 --output "$RUNNER_TEMP/beir-report.json"
-      - name: Evaluate live public algorithm discovery
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run external research benchmark')
-        run: python benchmarks/live_problem.py --approve-public --output "$RUNNER_TEMP/live-problem.json"
+      - name: Install optional catalog importer
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run route-fusion archive benchmark')
+        run: python -m pip install --only-binary=:all: pyarrow==20.0.0
+      - name: Compare broad problem retrieval on the pinned archive
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run route-fusion archive benchmark')
+        run: python benchmarks/full_catalog.py --approve-public --output "$RUNNER_TEMP/full-catalog"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -71,7 +65,6 @@ jobs:
             ${{ runner.temp }}/discovery.json
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/exact-topk/
-            ${{ runner.temp }}/beir-report.json
-            ${{ runner.temp }}/live-problem.json
+            ${{ runner.temp }}/full-catalog/report.json
           retention-days: 14
           if-no-files-found: warn

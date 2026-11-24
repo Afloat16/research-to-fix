@@ -69,6 +69,24 @@ class CatalogTests(unittest.TestCase):
                 db.observations(plan, plan["queries"][0]["id"], paper_ids=["2205.14135"],
                                 exact_title="Memory efficient exact attention")
 
+    def test_route_search_is_bounded_and_preserves_query_evidence(self):
+        pc.build_catalog(self.input, self.database)
+        problem = {**PROBLEM, "concepts": ["memory efficient attention", "quantized adaptation"],
+                   "alternative_concepts": ["contrastive learning"]}
+        plan = w.make_plan(problem, 1, ["paperswithcode"], "comprehensive")
+        with pc.Catalog(self.database) as catalog:
+            one = catalog.observations(plan, plan["queries"][0]["id"], route_fusion=True)
+            two = catalog.observations(plan, plan["queries"][0]["id"], route_fusion=True)
+            self.assertEqual(one, two)
+            self.assertEqual(one["local_mode"], "route_fusion")
+            self.assertTrue(one["local_rank_evidence"])
+            self.assertTrue(all(len(x["route_matches"]) <= pc.MAX_ROUTES for x in one["local_rank_evidence"]))
+            self.assertIn("arxiv:2205.14135", {x["paper_id"] for x in one["local_rank_evidence"]})
+            self.assertEqual(catalog.search("memory efficient", conjunction=True)[0]["id"], "arxiv:2205.14135")
+            with self.assertRaises(w.WorkflowError):
+                catalog.observations(plan, plan["queries"][0]["id"], route_fusion=True,
+                                     exact_title="Memory efficient exact attention")
+
     def test_local_results_bound_to_plan_and_metadata_only(self):
         pc.build_catalog(self.input, self.database)
         plan = w.make_plan(PROBLEM, 1, ["paperswithcode"], "comprehensive")

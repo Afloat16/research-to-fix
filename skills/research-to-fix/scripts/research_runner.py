@@ -22,7 +22,7 @@ MAX_CATALOG_QUERIES = 3
 
 def run_round(plan, output, inputs=None, database=None, approve_public=False,
               query_ids=None, requests=8, per_query=8, workers=3, limit=12,
-              ranking="bm25", transport=d.request_metadata):
+              ranking="bm25", transport=d.request_metadata, catalog_routes=False):
     plan = w.validate_plan(plan)
     binding = w.plan_fingerprint(plan)
     queries = {q["id"]: q for q in plan["queries"]}
@@ -38,7 +38,7 @@ def run_round(plan, output, inputs=None, database=None, approve_public=False,
     w.integer(limit, 1, w.MAX_SHORTLIST)
     if ranking not in ("bm25", "facet", "fusion"):
         w.fail("invalid_ranking")
-    if type(approve_public) is not bool:
+    if type(approve_public) is not bool or type(catalog_routes) is not bool:
         w.fail("invalid_approval")
     inputs = [] if inputs is None else inputs
     if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS:
@@ -53,6 +53,8 @@ def run_round(plan, output, inputs=None, database=None, approve_public=False,
     if not inputs and database is None and not approve_public:
         w.fail("no_enabled_research_source")
     catalog_queries = [q for q in selected if q["provider"] == "paperswithcode"][:MAX_CATALOG_QUERIES]
+    if catalog_routes and database is None:
+        w.fail("catalog_required_for_routes")
     if database is not None and not catalog_queries:
         w.fail("catalog_query_required")
     # One explicitly named new directory; no implicit scanning or overwrite.
@@ -68,7 +70,8 @@ def run_round(plan, output, inputs=None, database=None, approve_public=False,
     if database is not None:
         with catalog.Catalog(database) as db:
             for i, query in enumerate(catalog_queries, 1):
-                result = db.observations(plan, query["id"], limit=min(limit, catalog.MAX_PAPERS))
+                result = db.observations(plan, query["id"], limit=min(limit, catalog.MAX_PAPERS),
+                                         route_fusion=catalog_routes)
                 name = f"catalog-{i:02d}.json"
                 w.write_json(result, output / name)
                 files.append(name)
@@ -77,6 +80,11 @@ def run_round(plan, output, inputs=None, database=None, approve_public=False,
     if payloads:
         session.aggregate([{"plan": plan, "inputs": payloads}], limit, ranking)
     if approve_public:
+        # Reserve the worst-case paper + three linked repositories per hit.
+        # Fail before network rather than overrun the triage result cap.
+        local_count = sum(len(payload.get("results", [])) for payload in payloads)
+        if local_count + requests * per_query * 4 > w.MAX_RESULTS:
+            w.fail("combined_result_budget_exceeded")
         result = d.discover(plan, True, max_requests=requests, per_query=per_query,
                             query_ids=query_ids, workers=workers, transport=transport)
         w.write_json(result, output / "api.json")
@@ -106,6 +114,7 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--input", type=Path, action="append", default=[])
     parser.add_argument("--catalog", type=Path)
+    parser.add_argument("--catalog-routes", action="store_true")
     parser.add_argument("--approve-public", action="store_true")
     parser.add_argument("--query-id", action="append")
     parser.add_argument("--max-requests", type=int, default=8)
@@ -120,7 +129,8 @@ def main(argv=None):
         report = run_round(w.read_json(args.plan), args.output,
                            [w.read_json(path) for path in args.input], args.catalog,
                            args.approve_public, args.query_id, args.max_requests,
-                           args.per_query, args.workers, args.limit, args.ranking)
+                           args.per_query, args.workers, args.limit, args.ranking,
+                           catalog_routes=args.catalog_routes)
         w.write_json(report, None)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError, sqlite3.Error) as error:

@@ -150,6 +150,17 @@ class TriageTests(unittest.TestCase):
         self.assertIn("crossref", {row["source"] for row in rows})
         self.assertTrue(any("block sparse attention" in row["query"] for row in rows))
 
+    def test_linked_followup_preserves_alternative_paper_without_displacing_top_rank(self):
+        code = self.row("github_repositories", "https://github.com/Dao-AILab/flash-attention",
+                        "FlashAttention efficient attention", access="read",
+                        links=[{"url": "https://arxiv.org/abs/2205.14135", "relation": "implements", "basis": "read"}])
+        paper = self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention")
+        report = w.rank_results(self.plan, [{"results": [code, paper]}], 1)
+        self.assertEqual(len(report["shortlist"]), 1)
+        self.assertEqual(len(report["linked_followups"]), 1)
+        self.assertNotEqual(report["linked_followups"][0]["id"], report["shortlist"][0]["id"])
+        self.assertTrue(report["linked_followups"][0]["review_required"])
+
     def test_rank_modes_and_graph_nodes(self):
         code = self.row("github_repositories", "https://github.com/Dao-AILab/flash-attention",
                         "FlashAttention efficient attention", access="read",

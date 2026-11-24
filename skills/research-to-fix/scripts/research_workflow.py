@@ -580,7 +580,8 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
     # source-family slots. Keep lexical top-k and expose other coverage gaps
     # for targeted searches.
     best = max((row["relevance"] for row in ranked), default=0)
-    eligible = [row for row in ranked if row["relevance"] >= max(.08, .30 * best)
+    eligible = [row for row in ranked if row["relevance"] >= (.08 if ranking == "bm25" else max(.08, .30 * best))
+                and (ranking != "bm25" or row["bm25_score"] > 0)
                 and row["access"] not in ("unavailable", "access_blocked")]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
     chosen = eligible[:limit]
@@ -621,6 +622,20 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
                       "returned": returned[qid]}
                      for qid, q in queries.items()]
     family_gaps = [family for family in wanted if not any(row["family"] == family for row in chosen)]
+    # Explicit related-source followups are an additional review lane, not
+    # a claim that linked sources are relevant or independent evidence.
+    selected_ids = {row["id"] for row in chosen}
+    followups = {}
+    for pair in pairs:
+        for seed, partner in ((pair["paper_id"], pair["code_id"]), (pair["code_id"], pair["paper_id"])):
+            if seed in selected_ids and partner not in selected_ids:
+                row = nodes[partner]
+                if row["access"] not in ("unavailable", "access_blocked"):
+                    followups.setdefault(partner, {"id": partner, "url": row["url"], "title": row["title"],
+                                                   "kind": row["kind"], "access": row["access"],
+                                                   "linked_from": seed, "relation": pair["relation"],
+                                                   "basis": pair["basis"], "review_required": True})
+    followup_rows = sorted(followups.values(), key=lambda row: ordering(nodes[row["id"]]))[:12]
     return {"schema_version": SCHEMA, "scope": "research_shortlist", "notice": NOTICE,
             "input_observations": len(raw_rows), "valid_observations": len(normalized),
             "unique_identities": len(groups), "duplicates_collapsed": len(normalized) - len(groups),
@@ -635,6 +650,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
                                "unresolved_count": len(unresolved),
                                "notice": "Links are source assertions, not authenticated official relationships."},
             "omitted_sources": plan["omitted_sources"], "family_gaps": family_gaps,
+            "linked_followups": followup_rows,
             "unrecorded_queries": [qid for qid in queries if not searches[qid]],
             "needs_original_review": [row["id"] for row in chosen if row["access"] != "read"],
             "next_steps": ["Read original papers, code, tests and version/venue/license details.",

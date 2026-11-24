@@ -508,6 +508,13 @@ def normalize_result(row, queries):
             keys.add("doi:" + unquote(url[len("https://doi.org/"):]))
         if url.startswith("https://arxiv.org/abs/"):
             keys.add("arxiv:" + url[len("https://arxiv.org/abs/"):])
+    year = row.get("year")
+    if type(year) is not int or not 1800 <= year <= 2100:
+        year = None
+    provider_rank = row.get("provider_rank")
+    if type(provider_rank) is not int or not 1 <= provider_rank <= MAX_RESULTS:
+        provider_rank = None
+    retraction = "retracted" if row.get("retraction_hint") == "retracted" else ""
     origin = row.get("origin", "host")
     if origin not in ("host", q["provider"]):
         fail("invalid_origin")
@@ -529,6 +536,7 @@ def normalize_result(row, queries):
     return {"query_id": qid, "source": q["source"], "family": KIND_FAMILY[kind], "kind": kind,
             "url": url, "original_url": original_url, "title": title, "snippet": snippet,
             "access": access, "origin": origin, "keys": keys, "links": links,
+            "year": year, "provider_rank": provider_rank, "retraction_hint": retraction,
             "revision": _safe_excerpt(row.get("revision"), 100),
             "publication_hint": _safe_excerpt(row.get("publication_hint"), 120),
             "license_hint": _safe_excerpt(row.get("license_hint"), 120),
@@ -705,6 +713,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
                        "access": winner["access"], "relevance": round(value, 6),
                        "matched_terms": terms, "facet_coverage": {k: round(v, 6) for k, v in cover.items()},
                        "revision": winner["revision"], "publication_hint": winner["publication_hint"],
+                       "year": winner["year"], "retraction_hint": "retracted" if any(row["retraction_hint"] for row in group) else "",
                        "license_hint": winner["license_hint"], "maintenance_hint": winner["maintenance_hint"], "identities": ids,
                        "observations": len(group), "provenance": sources,
                        "provenance_truncated": len(provenance) > len(sources),
@@ -726,6 +735,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
     best = max((row["relevance"] for row in ranked), default=0)
     eligible = [row for row in ranked if row["relevance"] >= (.08 if ranking == "bm25" else max(.08, .30 * best))
                 and (ranking != "bm25" or row["bm25_score"] > 0)
+                and not row["retraction_hint"]
                 and row["access"] not in ("unavailable", "access_blocked")]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
     chosen = eligible[:limit]

@@ -303,7 +303,7 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
             searches.append(dict(record, status=error.code, reason=error.code))
             if error.code in ("rate_limited", "access_blocked"):
                 stopped[group] = error.code
-    return {"schema_version": 1, "scope": "public_metadata_discovery",
+    return {"schema_version": 1, "scope": "public_metadata_discovery", "plan_sha256": w.plan_digest(plan),
             "notice": DISCOVERY_NOTICE, "requests": requests, "results": results,
             "searches": searches, "host_required_queries": host_pending,
             "unselected_queries": [qid for qid in queries if qid not in {q["id"] for q in query_list}],

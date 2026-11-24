@@ -363,9 +363,15 @@ def normalize_result(row, queries):
         if aid:
             keys.add("arxiv:" + aid)
         if url.startswith("https://doi.org/"):
-            keys.add("doi:" + unquote(url[len("https://doi.org/"):]))
+            direct = unquote(url[len("https://doi.org/"):])
+            if doi and doi != direct:
+                fail("conflicting_doi")
+            keys.add("doi:" + direct)
         if url.startswith("https://arxiv.org/abs/"):
-            keys.add("arxiv:" + url[len("https://arxiv.org/abs/"):])
+            direct = url[len("https://arxiv.org/abs/"):]
+            if aid and aid != direct:
+                fail("conflicting_arxiv")
+            keys.add("arxiv:" + direct)
     origin = row.get("origin", "host")
     if origin not in ("host", q["provider"]):
         fail("invalid_origin")
@@ -384,6 +390,7 @@ def normalize_result(row, queries):
             fail("unread_relation")
         links.append({"url": canonical_url(link.get("url")), "relation": relation,
                       "basis": basis, "note": _safe_excerpt(link.get("note"), 200)})
+    # The original locator (including revision/anchor) remains in provenance.
     return {"query_id": qid, "source": q["source"], "family": KIND_FAMILY[kind], "kind": kind,
             "url": url, "original_url": original_url, "title": title, "snippet": snippet,
             "access": access, "origin": origin, "keys": keys, "links": links,
@@ -435,10 +442,28 @@ def group_results(rows):
     return list(groups.values())
 
 
+def plan_digest(plan):
+    """Stable binding for result payloads; not an authenticity signature."""
+    raw = json.dumps(plan, sort_keys=True, ensure_ascii=True, separators=(",", ":"),
+                     allow_nan=False).encode("ascii")
+    return hashlib.sha256(raw).hexdigest()
+
+
 def rank_results(plan, inputs, limit=12, ranking="bm25"):
+    plan = validate_plan(plan)
+    expected = plan_digest(plan)
+    if not isinstance(inputs, list):
+        fail("invalid_results")
+    for payload in inputs:
+        if not isinstance(payload, dict) or ("plan_sha256" in payload and payload["plan_sha256"] != expected):
+            fail("result_plan_mismatch")
+    return _rank_validated(plan, inputs, limit, ranking)
+
+
+def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
+    """Internal scorer: caller validates all original round plans first."""
     if ranking not in ("bm25", "facet"):
         fail("invalid_ranking")
-    plan = validate_plan(plan)
     integer(limit, 1, MAX_SHORTLIST)
     if not isinstance(inputs, list) or not 1 <= len(inputs) <= 12:
         fail("invalid_results")

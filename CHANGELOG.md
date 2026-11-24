@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased — retrieval performance, ranking and reproducible benchmarks
+## Unreleased — research discovery and measured multi-solution decision
+
+- Public-fingerprint research planner spanning symptom, mechanism, implementation, alternatives, verification and counterevidence; explicit source budgets and coverage gaps.
+- Optional, explicitly approved public metadata API adapter with fixed endpoints, bounded requests and mocked transport tests; host browsing remains preferred.
+- Provenance-preserving identity grouping, BM25 and facet rankers, paper-code graph and source access review.
+- Protocol-bound baseline/alternative measurement comparison, every-replicate acceptance gates, paired metrics, Pareto frontier and optional declared objective priority.
+- Source-linked 32-identity algorithm discovery development replay and measured numerical variance example in offline CI. No live-provider or universal repair-success claim.
+- Agent Skills prompts, bilingual guides and reproducibility documentation.
+
+## Previous upgrade — retrieval performance, ranking and reproducible benchmarks
 
 ### Retrieval performance
 

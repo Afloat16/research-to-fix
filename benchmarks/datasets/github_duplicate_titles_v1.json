@@ -1,0 +1,482 @@
+{
+  "name": "github-vscode-duplicate-titles-v1",
+  "kind": "public_issue_title_retrieval",
+  "license": "Original public issue titles retain their source rights; source links included; selection and benchmark code under repository MIT license.",
+  "collected_at": "2026-11-24",
+  "description": "Small convenience sample of explicit duplicate closure comments; corpus has 14 referenced targets and 30 closed bug titles as unjudged distractors. Targets can be open or closed and are not necessarily repaired. Query titles only, no bodies, comments, source code, user profiles or labels in ranked content.",
+  "selection": "First 30 results of closed VS Code duplicate-label search; retained 18 explicit duplicate links to issues (not pull requests), excluded ambiguous/probable or unavailable links. Distractors are first 30 closed bug results sorted created descending at collection. No ranking results used to select labels.",
+  "corpus": [
+    {
+      "id": "env-2026",
+      "title": "File path with apostrophe + parentheses gets double-quoted when running via Run button / integrated terminal",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode-python-environments/issues/2026",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "348664",
+      "title": "Lots of cut off text in the features tab",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348664",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "346935",
+      "title": "Inbox mode: Custom groups cannot be created",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/346935",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "346927",
+      "title": "Inbox mode: Done and Archived sections and their actions are confusing",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/346927",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "341543",
+      "title": "Copilot takes several minutes to respond, any query",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/341543",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "337993",
+      "title": "Agents: Add opt-in rotating welcome phrases",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/337993",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "330791",
+      "title": "Link for `Learn More` tip in Folder Picker for Agent Host Session support in Multi-root workspaces",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/330791",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "332347",
+      "title": "Chat loose selected Agent on first enter (Claude)",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/332347",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "332336",
+      "title": "Wired sorting order in Agent picker",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/332336",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "331366",
+      "title": "Folder picker always shown when no hooks present",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/331366",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "330398",
+      "title": "Dismissing a promo banner in one window should dismiss it in all windows.",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/330398",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "325540",
+      "title": "Agents - primary action tooltip contains icon code",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/325540",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "323051",
+      "title": "Enable Chromium PDF viewer",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/323051",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "319821",
+      "title": "Terminal: OSC 52 clipboard garbled for Chinese (UTF-8 multi-byte) characters since 1.123.0",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/319821",
+      "judgment": "referenced_duplicate_target"
+    },
+    {
+      "id": "350024",
+      "title": "Integrated browser: highlighting an element larger than its scroll area adds a scrollbar to the page",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/350024",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "350016",
+      "title": "Chat input: `@` file suggestions close when you type `-` or `.` in agent host chats",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/350016",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349959",
+      "title": "Chat input: `@` and `#` suggestions don't come back after Backspace",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349959",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349957",
+      "title": "Editor window re-converts every agent-host session for each session summary change",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349957",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349884",
+      "title": "Slow window close caused by repeated configuration cloning during chat tool disposal",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349884",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349839",
+      "title": "Agents: Open in VS Code on a Dev Container environment hangs when the Docker context is not `default`",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349839",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349763",
+      "title": "Agents: Dev Container handoff approval shows an internal host ID instead of the destination name",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349763",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349691",
+      "title": "Agent host spawns bursts of identical git reads and hits 30 s git timeouts under load",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349691",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349526",
+      "title": "New tab button: second press on + opens the tab in the active group, not the button's group",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349526",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349503",
+      "title": "Integrated browser: page dialogs (alert/confirm) show even when the browser isn't visible",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349503",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349406",
+      "title": "No way to restore a \"doned\" chat from within the chat in an editor window",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349406",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349353",
+      "title": "Sessions: per-session policy config reads deep-clone the full configuration; each agent-host notification blocks the renderer up to ~1.6 s",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349353",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349266",
+      "title": "I get lots of gpg signing input prompts when mass marking sessions as done",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349266",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349256",
+      "title": "Git: worktree repository keeps thousands of phantom deleted files after its folder is removed",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349256",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349222",
+      "title": "Agents: Focus moves out of sessions tree when marking session as done",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349222",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349154",
+      "title": "Agents window: `/` suggestions often don't appear because Agent Host completions take seconds",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349154",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349131",
+      "title": "Model router: add command to open folder containing router files",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349131",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349085",
+      "title": "Sessions: GitHub PR models poll in lockstep and overflow the request queue (\"Request capacity exceeded\")",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349085",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349077",
+      "title": "Chat input falls back to the default agent when the selected custom agent's ID changes",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349077",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349057",
+      "title": "Disassembly view does not show an instruction breakpoint after it reloads",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349057",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349047",
+      "title": "Agent host chats ignore a custom agent's argument-hint",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349047",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "349040",
+      "title": "Wrapped editor tabs: new tab (+) button alone on the last row",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/349040",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348795",
+      "title": "Agents window: Changes tab shows a Toggle Files action",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348795",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348764",
+      "title": "Sandbox blocks canvas extension from writing its private state",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348764",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348748",
+      "title": "Inbox: failed Cloud starts remain in Working after model-selection failure",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348748",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348747",
+      "title": "Agent Host: IPC close during connect leaves the connection attempt pending",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348747",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348743",
+      "title": "Inbox: duplicate PR merge operations hide Merge on local Agent Host sessions",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348743",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348739",
+      "title": "Integrated Browser: element highlight overlay is unstyled on pages with a strict style-src CSP",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348739",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348666",
+      "title": "Automations: Create with Agent omits the /automate argument placeholder",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348666",
+      "judgment": "unjudged"
+    },
+    {
+      "id": "348656",
+      "title": "Integrated browser: Local files in a remote window have wrong trust and info",
+      "text": "",
+      "source_url": "https://github.com/microsoft/vscode/issues/348656",
+      "judgment": "unjudged"
+    }
+  ],
+  "queries": [
+    {
+      "id": "vscode-347948",
+      "text": "Running Python file from path containing spaces results in cannot be found error in terminal",
+      "relevant": [
+        "env-2026"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/347948",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/347948#issuecomment-6865931561"
+    },
+    {
+      "id": "vscode-347697",
+      "text": "Agents window: extension info clips the Features category list and the extension identifier",
+      "relevant": [
+        "348664"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/347697",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/347697#issuecomment-6954770373"
+    },
+    {
+      "id": "vscode-347447",
+      "text": "vscode automatically add a pair of single quote mark on the directory",
+      "relevant": [
+        "env-2026"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/347447",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/347447#issuecomment-6865928205"
+    },
+    {
+      "id": "vscode-347297",
+      "text": "An error occurs -> [Errno 22] Invalid argument",
+      "relevant": [
+        "env-2026"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/347297",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/347297#issuecomment-6865935004"
+    },
+    {
+      "id": "vscode-347133",
+      "text": "Working, Ready to merge, On hold, etc have a \"Create Group\" action",
+      "relevant": [
+        "346935"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/347133",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/347133#issuecomment-6771930340"
+    },
+    {
+      "id": "vscode-347092",
+      "text": "Mark as Done under Done section? I'm so confused",
+      "relevant": [
+        "346927"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/347092",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/347092#issuecomment-6771930566"
+    },
+    {
+      "id": "vscode-346161",
+      "text": "Problems in argument-passing with quoting in pwsh",
+      "relevant": [
+        "env-2026"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/346161",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/346161#issuecomment-6865894266"
+    },
+    {
+      "id": "vscode-341979",
+      "text": "Copilot is taking Way long time to answer",
+      "relevant": [
+        "341543"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/341979",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/341979#issuecomment-6217607029"
+    },
+    {
+      "id": "vscode-337542",
+      "text": "Use contextual text for the cross-posting affordance",
+      "relevant": [
+        "337993"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/337542",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/337542#issuecomment-5838935966"
+    },
+    {
+      "id": "vscode-332390",
+      "text": "\"Learn more\" link should go to doc",
+      "relevant": [
+        "330791"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/332390",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/332390#issuecomment-5399798442"
+    },
+    {
+      "id": "vscode-332344",
+      "text": "Claude multi-root agents discovery: agents disappear from list when making a request",
+      "relevant": [
+        "332347"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/332344",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/332344#issuecomment-5399025619"
+    },
+    {
+      "id": "vscode-332339",
+      "text": "Custom agents in the Agent dropdown are not sorted by name after a change",
+      "relevant": [
+        "332336"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/332339",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/332339#issuecomment-5403593846"
+    },
+    {
+      "id": "vscode-331263",
+      "text": "folder picker with no relevant hook configs",
+      "relevant": [
+        "331366"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/331263",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/331263#issuecomment-5322736022"
+    },
+    {
+      "id": "vscode-330327",
+      "text": "Dismissing a promo banner should disable it from showing again",
+      "relevant": [
+        "330398"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/330327",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/330327#issuecomment-5293186597"
+    },
+    {
+      "id": "vscode-325350",
+      "text": "\"Create PR\" button hover has icon syntax",
+      "relevant": [
+        "325540"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/325350",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/325350#issuecomment-4956146996"
+    },
+    {
+      "id": "vscode-325313",
+      "text": "Regression: Postman extension fails to load items on VS Code 1.128.0 (\"Unable to load items. Retry\")",
+      "relevant": [
+        "323051"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/325313",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/325313#issuecomment-4957174725"
+    },
+    {
+      "id": "vscode-321352",
+      "text": "Copying Chinese characters will result in garbled text.",
+      "relevant": [
+        "319821"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/321352",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/321352#issuecomment-4712488629"
+    },
+    {
+      "id": "vscode-319853",
+      "text": "Terminal copy corrupts UTF-8 (Japanese/CJK/emoji) text via OSC 52 round-trip in 1.123 (atob in @xterm/addon-clipboard)",
+      "relevant": [
+        "319821"
+      ],
+      "source_url": "https://github.com/microsoft/vscode/issues/319853",
+      "judgment_url": "https://github.com/microsoft/vscode/issues/319853#issuecomment-4712495867"
+    }
+  ]
+}

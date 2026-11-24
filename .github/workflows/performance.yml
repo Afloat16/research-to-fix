@@ -11,11 +11,6 @@ on:
       - 'skills/research-to-fix/scripts/research_case.py'
       - '.github/workflows/performance.yml'
   workflow_dispatch:
-    inputs:
-      public_data:
-        description: 'Also download and evaluate the pinned public BEIR dataset'
-        type: boolean
-        default: false
 permissions:
   contents: read
 concurrency:
@@ -36,6 +31,8 @@ jobs:
           python-version: '3.13'
       - name: Compare ranking quality
         run: python benchmarks/retrieval.py --k 5 --output "$RUNNER_TEMP/retrieval.json"
+      - name: Compare public duplicate issue title retrieval
+        run: python benchmarks/retrieval.py --github-titles --k 5 --output "$RUNNER_TEMP/github-titles.json"
       - name: Measure end-to-end batching and compact index
         run: python benchmarks/scale.py --output "$RUNNER_TEMP/scale.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -43,30 +40,7 @@ jobs:
           name: retrieval-performance
           path: |
             ${{ runner.temp }}/retrieval.json
+            ${{ runner.temp }}/github-titles.json
             ${{ runner.temp }}/scale.json
           retention-days: 14
-          if-no-files-found: error
-
-  public_data:
-    if: (github.event_name == 'workflow_dispatch' && inputs.public_data) || (github.event_name == 'push' && github.ref == 'refs/heads/upgrade/retrieval-performance-benchmarks')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: '3.12'
-      - name: Fetch public dataset
-        run: python benchmarks/fetch_beir.py --output "$RUNNER_TEMP/beir-programmers"
-      - name: Install Parquet reader (benchmark only)
-        run: python -m pip install --only-binary=:all: pyarrow==20.0.0
-      - name: Run external retrieval evaluation
-        run: python benchmarks/retrieval.py --beir-dir "$RUNNER_TEMP/beir-programmers" --query-limit 128 --k 10 --repeats 2 --output "$RUNNER_TEMP/beir-retrieval.json"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: beir-programmers-metrics
-          path: ${{ runner.temp }}/beir-retrieval.json
-          retention-days: 30
           if-no-files-found: error

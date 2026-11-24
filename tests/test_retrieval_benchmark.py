@@ -19,6 +19,17 @@ class BenchmarkTests(unittest.TestCase):
         self.assertTrue(bench.metrics([], [], 10)["abstained"])
         self.assertFalse(bench.metrics(["a"], [], 10)["abstained"])
 
+    def test_public_title_dataset_has_traceable_labels(self):
+        corpus, queries, meta = bench.load_github_titles()
+        self.assertEqual(meta["kind"], "public_issue_title_retrieval")
+        self.assertEqual(len(corpus), 44)
+        self.assertEqual(len(queries), 18)
+        self.assertTrue(all(row["source_url"].startswith("https://github.com/") for row in corpus))
+        self.assertTrue(all(row["judgment_url"].startswith(row["source_url"] + "#issuecomment-")
+                            and len(row["relevant"]) == 1 for row in queries))
+        result = bench.run(corpus, queries, meta, k=5, repeats=1)
+        self.assertTrue(result["legacy_indexed_top_k_exact_match"])
+
     def test_dataset_and_end_to_end_benchmark(self):
         corpus, queries, meta = bench.load_synthetic()
         self.assertGreaterEqual(len(corpus), 40)

@@ -36,11 +36,19 @@ def validate_dataset(corpus, queries):
     return corpus, queries
 
 
-def load_synthetic():
-    dataset = json.loads(DATASET.read_text(encoding="utf-8"))
+def load_bundled(path):
+    dataset = json.loads(path.read_text(encoding="utf-8"))
     corpus, queries = validate_dataset(dataset["corpus"], dataset["queries"])
     return corpus, queries, {"name": dataset["name"], "kind": dataset["kind"],
-                             "sha256": digest(DATASET), "license": dataset["license"]}
+                             "sha256": digest(path), "license": dataset["license"]}
+
+
+def load_synthetic():
+    return load_bundled(DATASET)
+
+
+def load_github_titles():
+    return load_bundled(DATASET.with_name("github_duplicate_titles_v1.json"))
 
 
 def load_beir(directory, query_limit):
@@ -107,9 +115,10 @@ def text_fields(row):
 
 
 class SQLiteBaseline:
-    def __init__(self, corpus):
+    def __init__(self, corpus, porter=False):
         self.db = sqlite3.connect(":memory:")
-        self.db.execute("CREATE VIRTUAL TABLE docs USING fts5(id UNINDEXED, title, body, tokenize='unicode61')")
+        tokenizer = "porter unicode61" if porter else "unicode61"
+        self.db.execute(f"CREATE VIRTUAL TABLE docs USING fts5(id UNINDEXED, title, body, tokenize='{tokenizer}')")
         self.db.executemany("INSERT INTO docs VALUES(?,?,?)",
                             ((row["id"], text_fields(row)[0], rc._recall_excerpt(row["text"], 9000)) for row in corpus))
         self.db.commit()
@@ -155,7 +164,7 @@ def percentile(values, fraction):
 def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
     methods = {}
     outputs = {}
-    for name in ("legacy_scan", "indexed_bm25", "technical", "sqlite_fts5"):
+    for name in ("legacy_scan", "indexed_bm25", "technical", "sqlite_fts5", "sqlite_fts5_porter"):
         if name == "legacy_scan" and not include_scan:
             continue
         start = perf_counter_ns()
@@ -180,7 +189,7 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                 return [identifier for _, identifier, _ in index.rank(rc.technical_tokens(text), depth, False)]
         else:
             try:
-                sqlite = SQLiteBaseline(corpus)
+                sqlite = SQLiteBaseline(corpus, porter=name == "sqlite_fts5_porter")
             except sqlite3.OperationalError as error:
                 if "no such module" in str(error).lower():
                     methods[name] = {"status": "unavailable", "reason": "SQLite FTS5 not compiled"}
@@ -224,12 +233,14 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
             "platform": platform.platform(), "sqlite_version": sqlite3.sqlite_version,
             "legacy_indexed_top_k_exact_match": parity, "methods": methods,
             "scope": "ranking only, exclude self-ID, no relative-threshold filtering; timing includes query tokenization, excludes case validation and disk I/O",
-            "notice": "Synthetic examples and duplicate-question judgments do not establish repair success or universal ranking superiority."}
+            "notice": "Synthetic examples and duplicate judgments (including unjudged distractors) do not establish repair success or universal ranking superiority."}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--beir-dir", type=Path, help="Local BEIR directory; default is bundled synthetic data")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--beir-dir", type=Path, help="Local BEIR directory; default is bundled synthetic data")
+    group.add_argument("--github-titles", action="store_true", help="Public duplicate issue title sample")
     parser.add_argument("--query-limit", type=int, default=0, help="Stable hash sample for BEIR; 0 uses all")
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--repeats", type=int, default=3)
@@ -238,8 +249,12 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.k <= 100 or not 1 <= args.repeats <= 10 or args.query_limit < 0:
         parser.error("invalid benchmark limits")
-    corpus, queries, meta = (load_beir(args.beir_dir, args.query_limit)
-                             if args.beir_dir else load_synthetic())
+    if args.beir_dir:
+        corpus, queries, meta = load_beir(args.beir_dir, args.query_limit)
+    elif args.github_titles:
+        corpus, queries, meta = load_github_titles()
+    else:
+        corpus, queries, meta = load_synthetic()
     report = run(corpus, queries, meta, args.k, args.repeats, not args.no_scan)
     with args.output.open("x", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)

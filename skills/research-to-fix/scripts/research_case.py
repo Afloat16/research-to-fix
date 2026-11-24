@@ -1197,6 +1197,48 @@ class PostingIndex:
                 for index in order]
 
 
+    def rank_relative(self, query_terms, limit, relative_threshold):
+        """Return exact retained count and bounded explained top-k.
+
+        Score all matching documents in the same sorted term order as rank(),
+        preserving Python's float sum semantics. Count every document above
+        the relative cutoff, but only sort/select and explain the requested
+        winners. Posting arrays are in ascending internal document order.
+        """
+        from bisect import bisect_left
+
+        if type(limit) is not int or limit < 1:
+            raise ValueError("limit must be a positive integer")
+        if not 0 <= relative_threshold <= 1:
+            raise ValueError("relative threshold must be in [0, 1]")
+        postings = [(term, self.postings[term]) for term in sorted(set(query_terms))
+                    if term in self.postings]
+        contributions = {}
+        for _, (positions, weights) in postings:
+            for index, value in zip(positions, weights):
+                contributions.setdefault(index, []).append(value)
+        # Reuse the dictionary instead of retaining a second candidate map.
+        for index, values in contributions.items():
+            contributions[index] = sum(values)
+        if not contributions:
+            return 0, []
+        cutoff = relative_threshold * max(contributions.values())
+        retained = [index for index, score in contributions.items() if score >= cutoff]
+        order = heapq.nsmallest(limit, retained,
+                                key=lambda i: (-contributions[i], self.ids[i]))
+        results = []
+        for index in order:
+            matches = []
+            for term, (positions, weights) in postings:
+                at = bisect_left(positions, index)
+                if at < len(positions) and positions[at] == index:
+                    matches.append((term, weights[at]))
+            matches.sort(key=lambda pair: (-pair[1], pair[0]))
+            results.append((contributions[index], self.ids[index],
+                            [term for term, _ in matches[:20]]))
+        return len(retained), results
+
+
 def precision_tokens(text):
     """Exact/stem channels plus separately namespaced ordered phrase evidence."""
     # Keep the original hybrid and contextual algorithms unchanged.
@@ -1301,19 +1343,23 @@ class RecallSnapshot:
         terms = _check_recall_query(error, self.component, self.version, limit)
         if self.ranking != "bm25":
             terms = _rank_terms(error, self.ranking)
-        ranked = self.index.rank(terms) if self.index is not None else scan_rank(self.documents, terms)
-        best = ranked[0][0] if ranked else 0.0
-        retained = [(score, identifier, matched) for score, identifier, matched in ranked
-                    if score >= RECALL_RELATIVE_THRESHOLD * best]
+        if self.index is not None:
+            matched_candidates, retained = self.index.rank_relative(terms, limit, RECALL_RELATIVE_THRESHOLD)
+        else:
+            ranked = scan_rank(self.documents, terms)
+            best = ranked[0][0] if ranked else 0.0
+            retained = [row for row in ranked if row[0] >= RECALL_RELATIVE_THRESHOLD * best]
+            matched_candidates = len(retained)
+            retained = retained[:limit]
         results = []
-        for score, identifier, matched in retained[:limit]:
+        for score, identifier, matched in retained:
             summary = copy.deepcopy(self.summaries[identifier])
             summary.update(score=round(score, 6), matched_terms=matched)
             results.append(summary)
         return {
             "scope": "local_case_recall", "review_required": True, "notice": RECALL_NOTICE,
             "scanned": self.scanned, "eligible": len(self.summaries), "skipped": dict(self.skipped),
-            "matched_candidates": len(retained), "truncated": len(retained) > limit,
+            "matched_candidates": matched_candidates, "truncated": matched_candidates > limit,
             "matches": results,
             **({"ranking": self.ranking} if self.ranking != "bm25" else {}),
             "limits": {"files": RECALL_MAX_FILES, "directory_entries": RECALL_MAX_DIRECTORY_ENTRIES,

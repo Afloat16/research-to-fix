@@ -74,3 +74,76 @@ jobs:
             ${{ runner.temp }}/research-to-fix-verify.json
           retention-days: 7
           if-no-files-found: error
+
+  release:
+    # A reviewed main-branch version change is the explicit publication trigger.
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Detect explicit version change
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f VERSION ]] || git diff --quiet HEAD^1 HEAD -- VERSION; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version=$(cat VERSION)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -f "docs/releases/v$version.md"
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        if: steps.version.outputs.publish == 'true'
+        with:
+          python-version: '3.13'
+      - name: Verify release quality and build exact-commit package
+        if: steps.version.outputs.publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/release-validation"
+          mkdir "$d"
+          python benchmarks/retrieval.py --k 5 --output "$d/retrieval.json"
+          python benchmarks/retrieval.py --github-titles --k 5 --output "$d/github.json"
+          python benchmarks/scale.py --output "$d/scale.json"
+          python benchmarks/regression.py --synthetic "$d/retrieval.json" --github "$d/github.json" --scale "$d/scale.json" --output "$d/regression.json"
+          python benchmarks/discovery.py --output "$d/discovery.json"
+          python benchmarks/discovery.py --dataset transfer --output "$d/transfer.json"
+          python benchmarks/discovery_regression.py --original "$d/discovery.json" --transfer "$d/transfer.json" --output "$d/discovery-regression.json"
+          python examples/numerical-variance/compare_methods.py --output "$d/variance"
+          python examples/exact-attention/compare_attention.py --output "$d/attention"
+          python tools/build_release.py --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/release"
+          cd "$RUNNER_TEMP/release"
+          sha256sum --check ./*.sha256
+      - name: Publish release without replacing an existing tag
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$RELEASE_TAG"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          # Exit 2 means no matching tag; any other transport failure aborts.
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag"; then
+            echo "Tag already exists; refusing to overwrite." >&2
+            exit 1
+          else
+            status=$?
+            test "$status" -eq 2
+          fi
+          file="$RUNNER_TEMP/release/research-to-fix-$tag-skill.zip"
+          gh release create "$tag" "$file" "$file.sha256" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Research to Fix $tag" --notes-file "docs/releases/$tag.md"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json tagName,url,isDraft,isPrerelease,assets

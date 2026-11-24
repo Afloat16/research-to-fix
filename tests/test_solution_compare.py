@@ -104,6 +104,71 @@ class CompareTests(unittest.TestCase):
         with self.assertRaises(w.WorkflowError):
             s.compare(value)
 
+    def test_protocol_lock_detects_changed_threshold_priority_and_context(self):
+        value = fixture()
+        lock = s.freeze_protocol(value["protocol"])
+        result = s.compare(value, lock)
+        self.assertTrue(result["protocol_lock_checked"])
+        self.assertEqual(result["protocol_sha256"], lock["protocol_sha256"])
+        for modify in (
+            lambda p: p["objectives"][1].update(threshold=.7),
+            lambda p: p.update(priority=["latency", "accuracy"]),
+            lambda p: p["context"].update(dataset="different"),
+        ):
+            altered = copy.deepcopy(value)
+            modify(altered["protocol"])
+            with self.assertRaises(w.WorkflowError):
+                s.compare(altered, lock)
+
+    def test_all_pairs_frontier_exposes_median_reversal(self):
+        value = fixture()
+        # Same accuracy, fast has lower median but a slow outlier.
+        for candidate in value["candidates"][1:]:
+            for run in candidate["runs"]:
+                run["metrics"]["accuracy"] = .9
+        value["candidates"][1]["runs"][2]["metrics"]["latency"] = 9
+        median = s.compare(value)
+        self.assertEqual(median["median_frontier"], ["fast"])
+        self.assertEqual(median["all_pairs_frontier"], ["accurate", "fast"])
+        value["protocol"]["decision_policy"] = "all_pairs"
+        robust = s.compare(value)
+        self.assertIsNone(robust["selected_candidate"])
+        self.assertIn("median_and_all_pairs_frontiers_differ", robust["warnings"])
+
+    def test_resolution_does_not_relax_hard_thresholds(self):
+        value = fixture()
+        for candidate in value["candidates"][1:]:
+            for run in candidate["runs"]:
+                run["metrics"]["accuracy"] = .9
+        for run in value["candidates"][1]["runs"]:
+            run["metrics"]["latency"] = 6.01
+        value["protocol"]["objectives"][0]["resolution"] = 1.0
+        result = s.compare(value)
+        self.assertEqual(result["pareto_frontier"], ["accurate", "fast"])
+        value["candidates"][1]["runs"][0]["metrics"]["accuracy"] = .79999
+        value["protocol"]["objectives"][1]["resolution"] = .1
+        result = s.compare(value)
+        self.assertEqual(result["selected_candidate"], "accurate")
+
+    def test_unread_supporting_sources_and_code_license(self):
+        value = fixture()
+        value["evidence"].append({"id": "E2", "url": "https://example.org/lead",
+            "access": "metadata", "claim": "possible mechanism", "conditions": "unknown", "limitations": "unread"})
+        candidate = value["candidates"][2]
+        candidate["evidence_ids"].append("E2")
+        result = s.compare(value)
+        self.assertIn("original_evidence_not_read", next(row for row in result["candidates"] if row["id"] == "accurate")["reasons"])
+        candidate["supporting_evidence_ids"] = ["E1"]
+        candidate["reuse_external_code"] = True
+        result = s.compare(value)
+        self.assertIn("external_code_license_not_established", next(row for row in result["candidates"] if row["id"] == "accurate")["reasons"])
+        candidate["license_review"] = "permitted"
+        candidate["compatibility_review"] = "unknown"
+        result = s.compare(value)
+        self.assertIn("compatibility_not_established", next(row for row in result["candidates"] if row["id"] == "accurate")["reasons"])
+        candidate["compatibility_review"] = "compatible"
+        self.assertEqual(s.compare(value)["pareto_frontier"], ["accurate", "fast"])
+
     def test_unmeasured_options_never_selected(self):
         value = fixture()
         value["candidates"][1].update(state="planned", runs=[])

@@ -48,3 +48,15 @@ python skills/research-to-fix/scripts/case_bundle.py audit --directory ./capture
 The root contains case.json and manifest.json; per-phase workspaces contain exact copies of selected implementation/test files, the frozen plan, and the trusted runner. Logs and structured reports are separate. The case can be reviewed and recalled by the existing helpers (only solved records are eligible). Never replay a received bundle automatically.
 
 Limits: 48 distinct input paths, 1 MiB per source and 12 MiB combined source bytes, 24 explicit test modules, up to 64 original IDs, 2,000 methods, 1–120 seconds per phase, 256 KiB stdout/report, 1 MiB stderr; portable relative paths, no case-insensitive collisions or linked members. See [evidence-bundle.md](evidence-bundle.md).
+
+### Re-audit a frozen plan offline
+
+For a recording produced by this command, use the stronger plan-binding audit:
+
+```bash
+python skills/research-to-fix/scripts/unittest_capture.py audit --directory ./evidence \
+  --expected-plan-sha256 YOUR_INDEPENDENT_PLAN_DIGEST \
+  --expected-manifest-sha256 YOUR_INDEPENDENT_MANIFEST_DIGEST
+```
+
+It checks both snapshots, exact frozen test modules and original failure IDs, implementation and comparison file bindings, interpreter labels, and recomputes the conditional solved/partial decision from sealed outcomes. It does not rerun any code. The independent digests are optional but a coordinated rewrite can evade an unpinned audit. The audit establishes consistency, not authorship or execution authenticity.

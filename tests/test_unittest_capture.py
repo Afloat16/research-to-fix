@@ -83,6 +83,25 @@ class CaptureTests(unittest.TestCase):
         self.assertNotIn(self.tmp.name, capture.canonical(lock).decode())
         self.assertNotIn("synthetic-only", (root / "case.json").read_text(encoding="utf-8"))
 
+    def test_plan_audit_rejects_resealed_claim_and_never_executes(self):
+        from unittest.mock import patch
+        lock = self.freeze()
+        pin = bundle.digest(capture.canonical(lock))
+        result = self.record(lock, approved=True, expected_digest=pin)
+        root = self.root / "recorded"
+        with patch.object(capture.subprocess, "Popen", side_effect=AssertionError("audit executed code")):
+            self.assertTrue(capture.audit_recording(root, pin, result["manifest_sha256"])["plan_consistency"])
+            with self.assertRaisesRegex(bundle.BundleError, "frozen_plan_digest_mismatch"):
+                capture.audit_recording(root, "0" * 64)
+        record = json.loads((root / "case.json").read_bytes())
+        record["recording"]["plan_sha256"] = "0" * 64
+        (root / "case.json").write_bytes(capture.canonical(record))
+        (root / "manifest.json").unlink()
+        bundle.seal(root)
+        self.assertTrue(bundle.audit_capture(root)["ok"])
+        with self.assertRaisesRegex(bundle.BundleError, "frozen_recording_claim_mismatch"):
+            capture.audit_recording(root)
+
     def test_partial_candidate_and_missing_original_failure(self):
         (self.after / "calculation.py").write_bytes(BAD)
         result = self.record(self.freeze(), approved=True)

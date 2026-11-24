@@ -231,20 +231,7 @@ def capture_phase(destination, phase, lock, source, runner):
                         "comparison_files": {name + ".sha256": file_paths[name] for name in comparison}}}
 
 
-def record(lock, before, after, tests, output, *, approved=False, expected_digest=None):
-    if approved is not True:
-        fail("local_execution_approval_required")
-    if not isinstance(lock, dict) or "spec" not in lock:
-        fail("invalid_frozen_plan")
-    if expected_digest is not None and (not bundle.valid_digest(expected_digest) or bundle.digest(canonical(lock)) != expected_digest):
-        fail("frozen_plan_digest_mismatch")
-    actual, source, runner = prepare(lock["spec"], before, after, tests)
-    if canonical(actual) != canonical(lock):
-        fail("frozen_plan_changed")
-    output = Path(output)
-    output.mkdir()
-    first = capture_phase(output, "before", lock, source, runner)
-    final = capture_phase(output, "after", lock, source, runner)
+def transition_findings(lock, first, final):
     spec = lock["spec"]
     original = set(spec["original_test_ids"])
     left, right = first["test_results"], final["test_results"]
@@ -262,6 +249,95 @@ def record(lock, before, after, tests, output, *, approved=False, expected_diges
         reasons.append("candidate_checks_not_all_passed")
     if not changed:
         reasons.append("implementation_not_changed")
+    return reasons
+
+
+def validate_frozen_lock(lock):
+    if (not isinstance(lock, dict) or set(lock) != {"schema_version", "scope", "spec", "source_sha256",
+                                                       "runner_sha256", "python_version", "python_implementation"}
+            or type(lock["schema_version"]) is not int or lock["schema_version"] != 1
+            or lock["scope"] != "frozen_local_unittest"):
+        fail("invalid_frozen_plan")
+    spec = normalize_spec(lock["spec"])
+    if spec != lock["spec"] or not bundle.valid_digest(lock["runner_sha256"]):
+        fail("invalid_frozen_plan")
+    for name in ("python_version", "python_implementation"):
+        local_text(lock[name], 100)
+    source = lock["source_sha256"]
+    if not isinstance(source, dict) or set(source) != {"before", "after", "comparison"}:
+        fail("invalid_frozen_plan")
+    for role, names in (("before", spec["implementation_files"]),
+                        ("after", spec["implementation_files"]),
+                        ("comparison", spec["comparison_files"])):
+        values = source[role]
+        if (not isinstance(values, dict) or set(values) != set(names)
+                or not all(bundle.valid_digest(v) for v in values.values())):
+            fail("invalid_frozen_plan")
+    return spec
+
+
+def audit_recording(directory, expected_plan=None, expected_manifest=None):
+    """Bind sealed evidence back to the frozen plan without executing sources."""
+    integrity, case, rows = bundle._verify_details(directory, expected_manifest)
+    audit = bundle.audit_capture(directory, integrity["manifest_sha256"])
+    root = Path(directory)
+    runs = case["validation"]["runs"]
+    if (len(runs) != 2 or [r.get("phase") for r in runs] != ["before", "after"]
+            or any(r["result"] == "not_run" for r in runs)):
+        fail("frozen_recording_pair_required")
+    first, final = runs
+    name = "runs/before/workspace/" + PLAN
+    lock = bundle.checked_capture_json(root, name, rows)
+    spec = validate_frozen_lock(lock)
+    plan_digest = bundle.digest(canonical(lock))
+    if expected_plan is not None and (not bundle.valid_digest(expected_plan) or expected_plan != plan_digest):
+        fail("frozen_plan_digest_mismatch")
+    reasons = transition_findings(lock, first, final)
+    if (case.get("recording") != {"scope": "frozen_local_unittest", "plan_sha256": plan_digest,
+                                  "original_test_ids": spec["original_test_ids"], "transition_findings": reasons}
+            or case["validation"]["status"] != ("partial" if reasons else "solved")
+            or case["case_id"] != spec["case_id"]
+            or case["problem"]["summary"] != spec["summary"]
+            or case["problem"]["component"] != spec["component"]):
+        fail("frozen_recording_claim_mismatch")
+    command = "python -I -S -B -X utf8 " + RUNNER + " " + " ".join(spec["test_modules"])
+    shared = {**lock["source_sha256"]["comparison"], RUNNER: lock["runner_sha256"], PLAN: plan_digest}
+    for run in runs:
+        prefix = "runs/" + run["phase"] + "/workspace/"
+        comparison = {key + ".sha256": prefix + key for key in shared}
+        context = {key + ".sha256": val for key, val in shared.items()}
+        context.update(python_version=lock["python_version"], python_implementation=lock["python_implementation"])
+        implementation = {prefix + key: val for key, val in lock["source_sha256"][run["phase"]].items()}
+        if (run["check_id"] != "frozen-unittest" or run["kind"] != "reproduction"
+                or run["command"] != command or run["comparison_context"] != context
+                or run["capture"]["comparison_files"] != comparison
+                or run["capture"]["implementation_files"] != implementation):
+            fail("frozen_recording_binding_mismatch")
+    # Generic capture auditing already verifies these exact path-to-digest maps
+    # against the manifest. It cannot prove who executed or authored the tests.
+    return {**audit, "operation": "audit_recording", "scope": "frozen_local_unittest",
+            "expected_digest_checked": expected_manifest is not None,
+            "expected_plan_digest_checked": expected_plan is not None,
+            "plan_sha256": plan_digest, "plan_consistency": True,
+            "transition_findings": reasons, "notice": NOTICE}
+
+
+def record(lock, before, after, tests, output, *, approved=False, expected_digest=None):
+    if approved is not True:
+        fail("local_execution_approval_required")
+    validate_frozen_lock(lock)
+    if expected_digest is not None and (not bundle.valid_digest(expected_digest) or bundle.digest(canonical(lock)) != expected_digest):
+        fail("frozen_plan_digest_mismatch")
+    actual, source, runner = prepare(lock["spec"], before, after, tests)
+    if canonical(actual) != canonical(lock):
+        fail("frozen_plan_changed")
+    output = Path(output)
+    output.mkdir()
+    first = capture_phase(output, "before", lock, source, runner)
+    final = capture_phase(output, "after", lock, source, runner)
+    spec = lock["spec"]
+    left = first["test_results"]
+    reasons = transition_findings(lock, first, final)
     solved = not reasons
     case = core.new_case()
     case["case_id"] = spec["case_id"]
@@ -291,7 +367,7 @@ def record(lock, before, after, tests, output, *, approved=False, expected_diges
         fail("record_consistency_failed")
     (output / "case.json").write_bytes(canonical(case))
     seal = bundle.seal(output)
-    audit = bundle.audit_capture(output, seal["manifest_sha256"])
+    audit = audit_recording(output, bundle.digest(canonical(lock)), seal["manifest_sha256"])
     return {"ok": True, "declared_status": case["validation"]["status"], "transition_findings": reasons,
             "plan_sha256": bundle.digest(canonical(lock)), "manifest_sha256": seal["manifest_sha256"],
             "capture_audit": audit, "notice": NOTICE}
@@ -308,6 +384,10 @@ def main(argv=None):
         if name == "record":
             sub.add_argument("--approve-local-execution", action="store_true")
             sub.add_argument("--expected-plan-sha256")
+    audit = subs.add_parser("audit", help="Check sealed evidence against its frozen plan; never execute")
+    audit.add_argument("--directory", type=Path, required=True)
+    audit.add_argument("--expected-plan-sha256")
+    audit.add_argument("--expected-manifest-sha256")
     args = parser.parse_args(argv)
     try:
         if args.command == "freeze":
@@ -315,6 +395,8 @@ def main(argv=None):
             with args.output.open("xb") as out:
                 out.write(canonical(lock))
             result = {"ok": True, "plan_sha256": bundle.digest(canonical(lock)), "notice": NOTICE}
+        elif args.command == "audit":
+            result = audit_recording(args.directory, args.expected_plan_sha256, args.expected_manifest_sha256)
         else:
             if not args.approve_local_execution:
                 fail("local_execution_approval_required")

@@ -23,7 +23,7 @@ concurrency:
 jobs:
   offline:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       PYTHONUTF8: '1'
     steps:
@@ -53,6 +53,11 @@ jobs:
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
       - name: Measure provider scheduler with mock transport
         run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
+      - name: Run preregistered public development benchmark (explicit branch experiment)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/independent-benchmark-v1.1'
+        run: |
+          python benchmarks/independent_data.py --dataset programmers --output "$RUNNER_TEMP/programmers"
+          python benchmarks/independent_retrieval.py --data "$RUNNER_TEMP/programmers" --split development --output "$RUNNER_TEMP/independent-development.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -68,32 +73,7 @@ jobs:
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
             ${{ runner.temp }}/discovery-schedule.json
-          retention-days: 14
-          if-no-files-found: warn
-
-  independent_development:
-    # This branch-only public-data experiment is explicitly authorized by the maintainer.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/independent-benchmark-v1.1'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
-        with:
-          python-version: '3.12'
-      - run: python -m pip install --only-binary=:all: pyarrow==20.0.0
-      - name: Download pinned official programmers corpus
-        run: python benchmarks/independent_data.py --dataset programmers --output "$RUNNER_TEMP/programmers"
-      - name: Evaluate development bucket only
-        run: python benchmarks/independent_retrieval.py --data "$RUNNER_TEMP/programmers" --split development --output "$RUNNER_TEMP/independent-development.json"
-      - if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: independent-development
-          path: |
             ${{ runner.temp }}/independent-development.json
             ${{ runner.temp }}/programmers/manifest.json
-          retention-days: 30
+          retention-days: 14
           if-no-files-found: warn

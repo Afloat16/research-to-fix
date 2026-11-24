@@ -2,6 +2,7 @@
 """Fetch only pinned public BEIR files, never user data; benchmark-only."""
 import argparse
 import hashlib
+import gzip
 import json
 from pathlib import Path
 import urllib.request
@@ -51,12 +52,88 @@ def fetch(dataset, output):
     return manifest
 
 
+# Standard-library fallback: pinned Tevatron repackaging of the same BEIR
+# collections, and original BEIR qrels. Verify publisher file digests before
+# decompressing; do not download or execute the dataset loader scripts.
+TEV_CORPUS = "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/"
+TEV_QUERIES = "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/"
+TEV = {
+    "programmers": ("cqadupstack-programmers",
+                    "2779027fdaaa5f578d9b8fe6488937bc3a042e387e927f20dbd0135ac1edf90d",
+                    "fcecbac2e3f7d86be8cc463f1bb49fa35d276f35e3a294bbec84c79c1f7a3065"),
+    "stats": ("cqadupstack-stats",
+              "c3ce74fe9bf8024deb09f1dd6c1812daa1674a3faf0a9a5fce219b2d21c90077",
+              "4937ef43aedc8539581d663b715079d59f88f2ce7948d18de839c2d81bdb0204"),
+    "scifact": ("scifact",
+                "8dd268826be9694e5e369bcc426551e1ae8cc6651a8fa69186475e20effae841",
+                "6066e4eae863e603cca3379f2da04812b092c2b689b321c80a0491c02a37647d"),
+}
+
+
+def download_bytes(url, limit, expected=None):
+    with urllib.request.urlopen(url, timeout=90) as response:
+        if not response.url.startswith("https://"):
+            raise ValueError("Non-HTTPS response")
+        data = response.read(limit + 1)
+    if not data or len(data) > limit:
+        raise ValueError("Dataset file missing or exceeds budget")
+    digest = hashlib.sha256(data).hexdigest()
+    if expected is not None and digest != expected:
+        raise ValueError("Pinned publisher digest mismatch")
+    return data, {"url": url, "sha256": digest, "bytes": len(data)}
+
+
+def fetch_jsonl(dataset, output):
+    _, qbase, docs, queries = DATASETS[dataset]
+    stem, corpus_sha, query_sha = TEV[dataset]
+    output.mkdir(parents=True, exist_ok=False)
+    corpus, cm = download_bytes(TEV_CORPUS + stem + ".jsonl.gz", 64 * 1024 * 1024, corpus_sha)
+    query, qm = download_bytes(TEV_QUERIES + stem + ".jsonl", 4 * 1024 * 1024, query_sha)
+    qrel, rm = download_bytes(qbase + "test.tsv", 1024 * 1024)
+    if not qrel.startswith(b"query-id\tcorpus-id\tscore"):
+        raise ValueError("Invalid qrels header")
+    # Gzip is bounded on decompression as well as the wire.
+    import io
+    with gzip.GzipFile(fileobj=io.BytesIO(corpus)) as handle:
+        raw = handle.read(256 * 1024 * 1024 + 1)
+    if len(raw) > 256 * 1024 * 1024:
+        raise ValueError("Decompressed corpus exceeds budget")
+    files = {}
+    for name, data, id_key, text_key in (("corpus.jsonl", raw, "docid", "text"),
+                                          ("queries.jsonl", query, "query_id", "query")):
+        target = output / name
+        count = 0
+        with target.open("x", encoding="utf-8", newline="\n") as out:
+            for line in data.splitlines():
+                if not line.strip():
+                    continue
+                item = json.loads(line)
+                row = {"_id": str(item[id_key]), "title": item.get("title") or "", "text": item[text_key]}
+                if not isinstance(row["title"], str) or not isinstance(row["text"], str):
+                    raise ValueError("Unexpected dataset fields")
+                out.write(json.dumps(row, ensure_ascii=True, separators=(",", ":")) + "\n")
+                count += 1
+        if name == "corpus.jsonl" and count != docs:
+            raise ValueError("Unexpected complete corpus count")
+        files[name] = {"sha256": hashlib.sha256(target.read_bytes()).hexdigest(), "rows": count}
+        print(dataset, name, count, files[name]["sha256"], flush=True)
+    (output / "qrels").mkdir()
+    (output / "qrels" / "test.tsv").write_bytes(qrel)
+    files["test.tsv"] = rm
+    manifest = {"dataset": dataset, "license": "CC-BY-SA-4.0", "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+                "expected_documents": docs, "expected_test_queries": queries, "files": files,
+                "original_downloads": {"corpus.jsonl.gz": cm, "queries.jsonl": qm, "test.tsv": rm}}
+    (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", choices=DATASETS, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--format", choices=("jsonl", "parquet"), default="jsonl")
     args = parser.parse_args()
-    fetch(args.dataset, args.output)
+    (fetch_jsonl if args.format == "jsonl" else fetch)(args.dataset, args.output)
 
 
 if __name__ == "__main__":

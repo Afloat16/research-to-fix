@@ -75,7 +75,13 @@ def run_tests(destination, phase, sources, implementation):
         "observed": f"{report['tests_run']} test methods: {observed}; exit {process.returncode}.",
         "test_results": outcomes, "evidence_ids": [],
         "implementation_sha256": digest(implementation),
-        "artifacts": {name: f"runs/{phase}/{name}" for name in ("stdout.log", "stderr.log", "results.json")},
+        "artifacts": {name: f"runs/{phase}/{name}" for name in ("stdout.log", "stderr.log", "results.json", *snapshots)},
+        "capture": {"schema_version": 1, "format": "unittest-json-v1",
+                    "report": f"runs/{phase}/results.json",
+                    "stdout": f"runs/{phase}/stdout.log",
+                    "stderr": f"runs/{phase}/stderr.log",
+                    "implementation_files": {f"runs/{phase}/metrics.py": digest(implementation)},
+                    "comparison_files": {name + ".sha256": f"runs/{phase}/{name}" for name in sources}},
     }, report
 
 

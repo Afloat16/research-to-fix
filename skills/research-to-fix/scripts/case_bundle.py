@@ -156,7 +156,7 @@ def seal(directory, artifacts=()):
     return report("seal", rows, manifest)
 
 
-def verify(directory, expected_digest=None):
+def _verify_details(directory, expected_digest=None):
     if expected_digest is not None and not valid_digest(expected_digest):
         raise BundleError("invalid_expected_digest")
     root = checked_root(directory)
@@ -187,7 +187,131 @@ def verify(directory, expected_digest=None):
     case = read_record(raw)
     if not declared_artifacts(case).issubset(names):
         raise BundleError("unsealed_artifact", 1)
-    return report("verify", rows, manifest, expected_digest is not None)
+    return report("verify", rows, manifest, expected_digest is not None), case, {row["path"]: row for row in rows}
+
+
+def verify(directory, expected_digest=None):
+    return _verify_details(directory, expected_digest)[0]
+
+
+CAPTURE_NOTICE = ("Cross-checks the explicitly declared unittest capture format, sealed report bytes, "
+                  "test outcomes, environment labels and file digests. Does not execute tests, "
+                  "authenticate authors or detect coordinated fabrication. Keep an independent manifest digest.")
+CAPTURE_REPORT_MAX = 256 * 1024
+CAPTURE_MAX_TESTS = 2000
+
+
+def capture_error(code):
+    raise BundleError(code, 1)
+
+
+def checked_capture_json(root, name, rows):
+    """Read only a sealed, bounded file; compare bytes to the verified row again."""
+    if name not in rows:
+        capture_error("capture_member_not_sealed")
+    row = rows[name]
+    try:
+        raw = read_member(root, name, CAPTURE_REPORT_MAX)
+    except (OSError, BundleError):
+        capture_error("capture_report_unreadable")
+    if len(raw) != row["bytes"] or digest(raw) != row["sha256"]:
+        capture_error("capture_member_changed")
+    try:
+        value, _ = decode_case_bytes(raw)
+    except (ValueError, RecursionError):
+        capture_error("capture_report_invalid")
+    return value
+
+
+def audit_capture(directory, expected_digest=None):
+    """Audit all executed runs in an explicitly captured, sealed case."""
+    integrity, case, rows = _verify_details(directory, expected_digest)
+    root = Path(directory)
+    runs = [run for run in case["validation"]["runs"] if run["result"] != "not_run"]
+    if not runs:
+        capture_error("capture_no_executed_runs")
+    used_paths = set()
+    paired_inputs = {}
+    audited_tests = 0
+    for run in runs:
+        capture = run.get("capture")
+        if not isinstance(capture, dict) or set(capture) != {
+                "schema_version", "format", "report", "stdout", "stderr",
+                "implementation_files", "comparison_files"}:
+            capture_error("capture_missing_or_invalid")
+        if type(capture["schema_version"]) is not int or capture["schema_version"] != 1 or capture["format"] != "unittest-json-v1":
+            capture_error("capture_format_unsupported")
+        artifacts = run.get("artifacts")
+        if not isinstance(artifacts, dict) or not artifacts:
+            capture_error("capture_artifacts_required")
+        declared = set(artifacts.values())
+        implementation, comparison = capture["implementation_files"], capture["comparison_files"]
+        if not isinstance(implementation, dict) or not implementation or not isinstance(comparison, dict) or not comparison:
+            capture_error("capture_snapshot_required")
+        # Require explicit distinct paths for all capture members, including
+        # separate before/after copies; never follow paths from arbitrary logs.
+        paths = [portable_path(capture[k]) for k in ("report", "stdout", "stderr")]
+        paths.extend(portable_path(name) for name in implementation)
+        paths.extend(portable_path(name) for name in comparison.values())
+        if CASE in paths or len({name.casefold() for name in paths}) != len(paths) or set(paths) & used_paths:
+            capture_error("capture_member_alias")
+        used_paths.update(paths)
+        if not set(paths) <= declared or not set(paths) <= rows.keys():
+            capture_error("capture_member_not_sealed")
+        for name, expected in implementation.items():
+            if not valid_digest(expected) or rows[name]["sha256"] != expected:
+                capture_error("capture_implementation_digest_mismatch")
+        if "implementation_sha256" in run and (
+                len(implementation) != 1 or run["implementation_sha256"] != next(iter(implementation.values()))):
+            capture_error("capture_implementation_digest_mismatch")
+        context = run.get("comparison_context", {})
+        if not isinstance(context, dict):
+            capture_error("capture_context_missing")
+        # Every declared SHA-256 context key must be bound to a sealed member;
+        # no silently omitted test snapshot. Other labels remain declarations.
+        hash_keys = {k for k in context if k.endswith(".sha256")}
+        if not hash_keys or hash_keys != comparison.keys():
+            capture_error("capture_comparison_keys_mismatch")
+        for key, name in comparison.items():
+            expected = context[key]
+            if not valid_digest(expected) or rows[name]["sha256"] != expected:
+                capture_error("capture_comparison_digest_mismatch")
+        paired_key = (run["check_id"], run["kind"], run["command"])
+        # A comparison may be partial, but changing test bytes for the same
+        # check is a review blocker in this strict capture format.
+        current = {key: rows[name]["sha256"] for key, name in comparison.items()}
+        if paired_inputs.setdefault(paired_key, current) != current:
+            capture_error("capture_comparison_changed")
+        report_value = checked_capture_json(root, capture["report"], rows)
+        stdout_value = checked_capture_json(root, capture["stdout"], rows)
+        if not isinstance(report_value, dict) or report_value != stdout_value:
+            capture_error("capture_stdout_report_mismatch")
+        if set(report_value) != {"python_version", "python_implementation", "tests_run", "successful", "test_results"}:
+            capture_error("capture_report_invalid")
+        outcomes = report_value["test_results"]
+        if (not isinstance(outcomes, dict) or not 1 <= len(outcomes) <= CAPTURE_MAX_TESTS
+                or any(not isinstance(key, str) or not key.strip() or len(key) > 500
+                       or type(value) is not str or value not in ("pass", "fail", "error", "skipped")
+                       for key, value in outcomes.items())
+                or type(report_value["tests_run"]) is not int or report_value["tests_run"] != len(outcomes)
+                or type(report_value["successful"]) is not bool
+                or report_value["successful"] != all(value in ("pass", "skipped") for value in outcomes.values())):
+            capture_error("capture_report_invalid")
+        if run.get("test_results") != outcomes:
+            capture_error("capture_test_results_mismatch")
+        success = report_value["successful"]
+        if (run["exit_code"] != (0 if success else 1) or run.get("expected_exit_code", 0) != 0
+                or run["result"] != ("pass" if success and all(v == "pass" for v in outcomes.values()) else "fail")):
+            capture_error("capture_exit_result_mismatch")
+        for key in ("python_version", "python_implementation"):
+            val = report_value[key]
+            if not isinstance(val, str) or not val.strip() or context.get(key) != val:
+                capture_error("capture_environment_mismatch")
+        audited_tests += len(outcomes)
+    return {**integrity, "operation": "audit", "scope": "local_capture_consistency",
+            "capture_consistency": True, "executed_runs_audited": len(runs),
+            "test_outcomes_audited": audited_tests, "declared_status": case["validation"]["status"],
+            "review_required": True, "notice": CAPTURE_NOTICE}
 
 
 def main(argv=None):
@@ -200,12 +324,17 @@ def main(argv=None):
     check = sub.add_parser("verify", help="Check manifest, members and case structure")
     check.add_argument("--directory", required=True, type=Path)
     check.add_argument("--expected-manifest-sha256", help="Optional independently retained lowercase SHA-256")
+    audit = sub.add_parser("audit", help="Verify a sealed bundle and its explicit unittest JSON captures")
+    audit.add_argument("--directory", required=True, type=Path)
+    audit.add_argument("--expected-manifest-sha256", help="Optional independently retained lowercase SHA-256")
     args = parser.parse_args(argv)
     try:
         if args.operation == "seal":
             result = seal(args.directory, args.artifact)
-        else:
+        elif args.operation == "verify":
             result = verify(args.directory, args.expected_manifest_sha256)
+        else:
+            result = audit_capture(args.directory, args.expected_manifest_sha256)
         status = 0
     except BundleError as error:
         status = error.exit_code
@@ -216,7 +345,9 @@ def main(argv=None):
         status, result = 2, {"ok": False, "error": "file_operation"}
     except (ValueError, RecursionError):
         status, result = 2, {"ok": False, "error": "invalid_json"}
-    result.update({"operation": args.operation, "scope": "local_bundle_integrity", "notice": NOTICE})
+    result.update({"operation": args.operation,
+                   "scope": "local_capture_consistency" if args.operation == "audit" else "local_bundle_integrity",
+                   "notice": CAPTURE_NOTICE if args.operation == "audit" else NOTICE})
     print(json.dumps(result, ensure_ascii=True, indent=2))
     return status
 

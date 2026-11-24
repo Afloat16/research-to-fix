@@ -7,6 +7,7 @@
 | `research_case.py validate` | Schema v1 declarations and reference consistency | Truth, causality, source availability |
 | `research_case.py review` | Coverage of declared checks, context, test details, artifacts and source support | A quality score, actual artifact existence, actual source content |
 | `case_bundle.py verify` | Listed file bytes and sizes against SHA-256 manifest; case consistency | Authorship, actual execution, completeness of unlisted material |
+| `case_bundle.py audit` | Explicit unittest JSON captures: report/stdout equality, declared outcomes/exit, snapshot/context digests and complete capture coverage | Actual execution, coordinated fabrication, arbitrary log interpretation |
 
 A valid blocked or partial case is useful. A verified bundle can still contain invented results. An independently retained manifest digest detects replacement relative to that digest; it is not a signature or identity proof.
 
@@ -26,6 +27,14 @@ For complete replay of the streaming example, add all four snapshot names (`metr
 The seal command prints its digest, file count and total bytes. Save the digest separately. The verifier accepts the optional `--expected-manifest-sha256 HASH` argument. Both commands print JSON and return 0 on success; 1 for a structurally inconsistent case or integrity mismatch; 2 for malformed input, unsafe paths, resource limits, file operations or an existing manifest. Missing or unreadable listed members during verification count as integrity failures.
 
 `review` returns 0 for structurally valid records (including blocked/partial), 1 for record errors, 2 for input errors. In multi-attempt mode only the selected final attempt contributes to final check counts. Test detail and artifact declaration counts are presence indicators, not independent tests. Matching context is literal equality, not an environment audit. For valid partial records, review also flags changed acceptance criteria/expected exit codes and missing or nonpassing baseline test IDs; these are review prompts, not evidence that a repair has failed. External mappings without a read source declaring a viable route or solved report receive a review prompt; such prompts do not invalidate legacy records. Findings are stable identifiers to support integrations, not weights or probabilities.
+
+## Strict capture consistency (opt-in)
+
+New recording helpers can declare `capture` on every executed validation run. Existing schema-v1 cases and ordinary seal/verify remain compatible. Run `case_bundle.py audit --directory DIR --expected-manifest-sha256 HASH` after seal; omit the digest only for a local consistency diagnostic, not independent replacement detection. The streaming recorder now declares all snapshot files automatically. No commands or test code are executed by audit.
+
+The `capture` object has exactly schema_version 1, format `unittest-json-v1`, report/stdout/stderr (distinct artifact paths), implementation_files (path to SHA-256), and comparison_files (comparison_context key ending in .sha256 to sealed path). All paths must also occur in that run's artifacts mapping. Every declared .sha256 comparison key must be bound, and matched checks must have the same actual snapshot digests. Use distinct paths for each run. The report is a JSON object with python_version, python_implementation, tests_run, successful and test_results; stdout must parse to the same object. The strict format requires complete per-method outcomes (pass/fail/error/skipped), tests_run equals count, successful iff no fail/error, exit 0 iff successful, and case result pass iff every method passes. Expected-failure semantics, incomplete test reports and other formats are not supported; use normal verify and manual review instead. The report and stdout are independently re-read with size/hash checks against the verified manifest. A partial repair can pass the consistency audit; it remains partial. The stderr file is sealed, not interpreted.
+
+The new check catches contradictions even when someone inadvertently regenerates a manifest from inconsistent artifacts. An attacker who consistently rewrites the case, reports, snapshots and manifest can still pass without an independent pin; no authenticity or actual execution guarantee.
 
 ## Scope and limits
 

@@ -29,6 +29,8 @@ def load_module(name, path):
 recorder = load_module("metrics_case_recorder", SCRIPT)
 runner = load_module("metrics_test_runner", EXAMPLE / "_record_tests.py")
 validator = load_module("recording_validator", ROOT / "skills/research-to-fix/scripts/research_case.py")
+sys.path.insert(0, str(ROOT / "skills/research-to-fix/scripts"))
+import case_bundle as bundle
 
 
 class CaseRecordingTests(unittest.TestCase):
@@ -57,6 +59,45 @@ class CaseRecordingTests(unittest.TestCase):
             self.assertEqual(report["python_version"], platform.python_version())
             self.assertNotIn("metrics-record-", (artifacts / "stderr.log").read_text(encoding="utf-8"))
         self.assertNotIn(self.temporary.name, json.dumps(self.case))
+
+    def test_sealed_recording_semantic_audit_and_resealed_test_mutation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "bundle"
+            shutil.copytree(self.output, root)
+            pin = bundle.seal(root)["manifest_sha256"]
+            report = bundle.audit_capture(root, pin)
+            self.assertEqual(report["executed_runs_audited"], 2)
+            self.assertEqual(report["test_outcomes_audited"], 12)
+            self.assertTrue(report["capture_consistency"])
+            self.assertTrue(report["expected_digest_checked"])
+            (root / "runs/after/test_metrics.py").write_bytes(b"# changed test\n")
+            with self.assertRaises(bundle.BundleError):
+                bundle.verify(root, pin)
+            (root / "manifest.json").unlink()
+            bundle.seal(root)
+            self.assertTrue(bundle.verify(root)["ok"])
+            with self.assertRaisesRegex(bundle.BundleError, "capture_comparison_digest_mismatch"):
+                bundle.audit_capture(root)
+
+    def test_sealed_report_mismatch_and_legacy_bundle_compatibility(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "bundle"
+            shutil.copytree(self.output, root)
+            path = root / "runs/after/results.json"
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["python_version"] = "different"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            bundle.seal(root)
+            self.assertTrue(bundle.verify(root)["ok"])
+            with self.assertRaisesRegex(bundle.BundleError, "capture_stdout_report_mismatch"):
+                bundle.audit_capture(root)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "case.json").write_text(json.dumps(validator.new_case()), encoding="utf-8")
+            bundle.seal(root)
+            self.assertTrue(bundle.verify(root)["ok"])
+            with self.assertRaisesRegex(bundle.BundleError, "capture_no_executed_runs"):
+                bundle.audit_capture(root)
 
     def test_real_fail_to_pass_and_pass_to_pass_transitions_are_preserved(self):
         before, after = self.case["validation"]["runs"]

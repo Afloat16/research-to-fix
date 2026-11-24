@@ -74,6 +74,7 @@ jobs:
           python "$script_dir/case_bundle.py" seal --directory "$case_dir" "${artifacts[@]}" > "$RUNNER_TEMP/research-to-fix-seal.json"
           manifest_hash=$(python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["manifest_sha256"])' "$RUNNER_TEMP/research-to-fix-seal.json")
           python "$script_dir/case_bundle.py" verify --directory "$case_dir" --expected-manifest-sha256 "$manifest_hash" > "$RUNNER_TEMP/research-to-fix-verify.json"
+          python "$script_dir/case_bundle.py" audit --directory "$case_dir" --expected-manifest-sha256 "$manifest_hash" > "$RUNNER_TEMP/research-to-fix-audit.json"
       - name: Save example run artifacts
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -85,6 +86,7 @@ jobs:
             ${{ runner.temp }}/research-to-fix-review.json
             ${{ runner.temp }}/research-to-fix-seal.json
             ${{ runner.temp }}/research-to-fix-verify.json
+            ${{ runner.temp }}/research-to-fix-audit.json
           retention-days: 7
           if-no-files-found: error
 

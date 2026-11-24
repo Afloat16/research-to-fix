@@ -21,7 +21,7 @@ from retrieval import load_beir, text_fields, SQLiteBaseline, metrics, percentil
 import research_case as rc
 
 METHODS = ("v1_bm25", "v1_technical", "v1_stemmed", "v1_hybrid", "v1_contextual",
-           "sqlite_unicode", "sqlite_porter")
+           "sqlite_unicode", "sqlite_porter", "field2", "field4", "field8", "title_only")
 K = 10
 SEED = "r2f-independent-v1:2026-11-24:"
 BOOTSTRAPS = 2000
@@ -56,6 +56,15 @@ def build(corpus, method):
     if method.startswith("sqlite_"):
         sqlite = SQLiteBaseline(corpus, porter=method == "sqlite_porter")
         return sqlite.search, sqlite.db.close
+    if method in ("field2", "field4", "field8", "title_only"):
+        weights = {"field2": (2., 1.), "field4": (4., 1.), "field8": (8., 1.), "title_only": (1., 0.)}
+        docs = [(row["id"], *rc.field_counts(rc._recall_excerpt(row["title"], 1000),
+                                             rc._recall_excerpt(row["text"], 9000))) for row in corpus]
+        index = rc.FieldIndex(docs, *weights[method])
+        del docs
+        def search(text, k):
+            return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, "stemmed"), k, False)]
+        return search, lambda: None
     mode = method.removeprefix("v1_")
     if mode not in rc.RANKING_MODES:
         raise ValueError("Unknown method")

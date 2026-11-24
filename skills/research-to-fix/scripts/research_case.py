@@ -1163,6 +1163,52 @@ class PostingIndex:
                 for index in order]
 
 
+def field_counts(primary, secondary):
+    """Separate title/symptom and body/mechanism fields with the same tokenizer."""
+    return (Counter(ranking_tokens(primary, "stemmed")),
+            Counter(ranking_tokens(secondary, "stemmed")))
+
+
+class FieldIndex(PostingIndex):
+    """Compact BM25F: field normalization before saturation, union document IDF.
+
+    Fields contain nonnegative term counts. The query is the same stemmed
+    token set as v1.0.0. No network, labels, learned model or external package.
+    """
+
+    def __init__(self, documents, title_weight=4.0, body_weight=1.0):
+        if not 0 < title_weight <= 16 or not 0 <= body_weight <= 4:
+            raise ValueError("invalid field weights")
+        documents = list(documents)
+        self.ids = tuple(identifier for identifier, _, _ in documents)
+        if len(set(self.ids)) != len(self.ids):
+            raise ValueError("duplicate document ID")
+        n = len(documents)
+        title_lengths = [sum(title.values()) for _, title, _ in documents]
+        body_lengths = [sum(body.values()) for _, _, body in documents]
+        title_mean = sum(title_lengths) / n if n else 1.0
+        body_mean = sum(body_lengths) / n if n else 1.0
+        df = Counter(term for _, title, body in documents
+                     for term in (title.keys() | body.keys()) if body_weight or term in title)
+        inverse = {term: math.log1p((n - count + .5) / (count + .5)) for term, count in df.items()}
+        self.postings = {}
+        for i, (_, title, body) in enumerate(documents):
+            title_norm = .7 + .3 * title_lengths[i] / (title_mean or 1.0)
+            body_norm = .25 + .75 * body_lengths[i] / (body_mean or 1.0)
+            # Body and title lengths are normalized independently. Repeating a
+            # description in a long body does not alter the title normalization.
+            for term in (title.keys() | body.keys()) if body_weight else title:
+                frequency = title_weight * title.get(term, 0) / title_norm + body_weight * body.get(term, 0) / body_norm
+                if frequency <= 0:
+                    continue
+                contribution = inverse[term] * 2.5 * frequency / (frequency + 1.5)
+                if term not in self.postings:
+                    self.postings[term] = (array("I"), array("d"))
+                ids, values = self.postings[term]
+                ids.append(i)
+                values.append(contribution)
+
+
 def scan_rank(documents, query_terms):
     """One-shot scan avoids building postings for never-queried vocabulary."""
     query_terms = set(query_terms)

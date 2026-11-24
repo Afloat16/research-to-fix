@@ -89,3 +89,7 @@ See [INDEPENDENT_PROTOCOL.md](INDEPENDENT_PROTOCOL.md) and [independent_selectio
 [AGENT_TRIAL_PROTOCOL.md](AGENT_TRIAL_PROTOCOL.md) defines a distinct same-model, same-scaffold, same-budget SWE-bench evaluation. Its offline result importer does not run models or repairs and its synthetic tests are not repair success measurements.
 
 [Completed independent holdout results](INDEPENDENT_RESULTS.md) include all four datasets and six frozen methods, full uncertainty and cost tradeoffs, plus actual CI provenance.
+
+## Specialized competitor and optional vector scoring
+
+See [COMPETITOR_RESULTS.md](COMPETITOR_RESULTS.md) and [BM25S_PROTOCOL.md](BM25S_PROTOCOL.md) for actual pinned BM25S comparisons, matched corpus and relevance labels, and the optional vector parity benchmark. These are post-holdout diagnostics, not blind or agent trials. Dependency installation is benchmark-only and explicit; ordinary CI remains offline.

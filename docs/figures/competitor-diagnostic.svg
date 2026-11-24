@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 1180 645">
+<title id="title">Specialized retrieval baseline and scoring acceleration</title><desc id="desc">SciFact and NASA scientific software diagnostics; prepared-token scoring speedup is not end-to-end repair speedup.</desc>
+<rect x="0" y="0" width="1180" height="645" fill="#F5F8FB" stroke="#D9E3EC" rx="14" />
+<text x="28" y="41" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="27" font-weight="700" fill="#18334D" text-anchor="start">Specialized retrieval baseline and scoring acceleration</text>
+<text x="28" y="67" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="400" fill="#526579" text-anchor="start">Post-holdout diagnostic · same documents and Top-10 · separate quality and speed</text>
+<rect x="26" y="86" width="552" height="319" fill="#fff" stroke="#D9E3EC" rx="10" />
+<text x="44" y="117" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">SciFact</text>
+<text x="44" y="140" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">5,183 docs · 300 queries</text>
+<text x="46" y="168" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#18334D" text-anchor="start">nDCG@10 ↑</text>
+<text x="501" y="168" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="400" fill="#526579" text-anchor="start">0–1</text>
+<text x="45" y="197" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="700" fill="#18334D" text-anchor="start">R2F Precision</text>
+<rect x="201" y="182" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="182" width="192.98172171890644" height="17" fill="#007F83" stroke="none" rx="3" data-dataset="scifact" data-method="precision_field4" data-value="0.6771288481365139"/>
+<text x="556" y="196" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.6771</text>
+<text x="45" y="237" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">R2F Contextual</text>
+<rect x="201" y="222" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="222" width="197.2041415627689" height="17" fill="#315B9A" stroke="none" rx="3" data-dataset="scifact" data-method="v1_contextual" data-value="0.6919443563605927"/>
+<text x="556" y="236" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.6919</text>
+<text x="45" y="277" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">BM25S English</text>
+<rect x="201" y="262" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="262" width="197.69538391492077" height="17" fill="#A8661C" stroke="none" rx="3" data-dataset="scifact" data-method="bm25s_native" data-value="0.6936680137365641"/>
+<text x="556" y="276" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.6937</text>
+<text x="45" y="317" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">BM25S Matched</text>
+<rect x="201" y="302" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="302" width="196.16538478964824" height="17" fill="#8290A1" stroke="none" rx="3" data-dataset="scifact" data-method="bm25s_matched" data-value="0.6882995957531517"/>
+<text x="556" y="316" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.6883</text>
+<text x="45" y="357" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">SQLite Porter</text>
+<rect x="201" y="342" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="342" width="197.59727994898643" height="17" fill="#67758E" stroke="none" rx="3" data-dataset="scifact" data-method="sqlite_porter" data-value="0.6933237892946892"/>
+<text x="556" y="356" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.6933</text>
+<text x="44" y="392" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="500" fill="#526579" text-anchor="start">95% delta vs BM25S Matched: [-0.0305, 0.0077]</text>
+<rect x="26" y="418" width="552" height="165" fill="#fff" stroke="#D9E3EC" rx="10" />
+<text x="44" y="449" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#18334D" text-anchor="start">Same postings · prepared-token score P50</text>
+<text x="44" y="483" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="500" fill="#18334D" text-anchor="start">Pure Python</text>
+<rect x="201" y="469" width="285" height="16" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="469" width="285" height="16" fill="#8290A1" stroke="none" rx="3" />
+<text x="556" y="483" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">2.000 ms</text>
+<text x="44" y="518" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="500" fill="#18334D" text-anchor="start">NumPy (opt-in)</text>
+<rect x="201" y="504" width="285" height="16" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="201" y="504" width="54.559974357923" height="16" fill="#007F83" stroke="none" rx="3" />
+<text x="556" y="518" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.383 ms</text>
+<text x="44" y="562" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#007F83" text-anchor="start">5.22× score speedup · exact Top-11 ID/score parity</text>
+<rect x="595" y="86" width="552" height="319" fill="#fff" stroke="#D9E3EC" rx="10" />
+<text x="613" y="117" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">NASA Science Repos</text>
+<text x="613" y="140" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">5,264 docs · 212 queries</text>
+<text x="615" y="168" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#18334D" text-anchor="start">nDCG@10 ↑</text>
+<text x="1070" y="168" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="400" fill="#526579" text-anchor="start">0–1</text>
+<text x="614" y="197" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="700" fill="#18334D" text-anchor="start">R2F Precision</text>
+<rect x="770" y="182" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="182" width="132.94504448045907" height="17" fill="#007F83" stroke="none" rx="3" data-dataset="nasa" data-method="precision_field4" data-value="0.46647384028231254"/>
+<text x="1125" y="196" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.4665</text>
+<text x="614" y="237" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">R2F Contextual</text>
+<rect x="770" y="222" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="222" width="128.55553507052983" height="17" fill="#315B9A" stroke="none" rx="3" data-dataset="nasa" data-method="v1_contextual" data-value="0.451072052879052"/>
+<text x="1125" y="236" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.4511</text>
+<text x="614" y="277" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">BM25S English</text>
+<rect x="770" y="262" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="262" width="124.87395408187697" height="17" fill="#A8661C" stroke="none" rx="3" data-dataset="nasa" data-method="bm25s_native" data-value="0.43815422484869115"/>
+<text x="1125" y="276" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.4382</text>
+<text x="614" y="317" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">BM25S Matched</text>
+<rect x="770" y="302" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="302" width="125.09944116173786" height="17" fill="#8290A1" stroke="none" rx="3" data-dataset="nasa" data-method="bm25s_matched" data-value="0.43894540758504513"/>
+<text x="1125" y="316" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.4389</text>
+<text x="614" y="357" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="400" fill="#18334D" text-anchor="start">SQLite Porter</text>
+<rect x="770" y="342" width="285" height="17" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="342" width="127.36539736818033" height="17" fill="#67758E" stroke="none" rx="3" data-dataset="nasa" data-method="sqlite_porter" data-value="0.4468961311164222"/>
+<text x="1125" y="356" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.4469</text>
+<text x="613" y="392" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="500" fill="#526579" text-anchor="start">95% delta vs BM25S Matched: [0.0036, 0.0525]</text>
+<rect x="595" y="418" width="552" height="165" fill="#fff" stroke="#D9E3EC" rx="10" />
+<text x="613" y="449" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="17" font-weight="700" fill="#18334D" text-anchor="start">Same postings · prepared-token score P50</text>
+<text x="613" y="483" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="500" fill="#18334D" text-anchor="start">Pure Python</text>
+<rect x="770" y="469" width="285" height="16" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="469" width="285" height="16" fill="#8290A1" stroke="none" rx="3" />
+<text x="1125" y="483" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">5.036 ms</text>
+<text x="613" y="518" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="500" fill="#18334D" text-anchor="start">NumPy (opt-in)</text>
+<rect x="770" y="504" width="285" height="16" fill="#E8EEF2" stroke="none" rx="3" />
+<rect x="770" y="504" width="42.512927237799516" height="16" fill="#007F83" stroke="none" rx="3" />
+<text x="1125" y="518" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#18334D" text-anchor="end">0.751 ms</text>
+<text x="613" y="562" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="15" font-weight="700" fill="#007F83" text-anchor="start">6.70× score speedup · exact Top-11 ID/score parity</text>
+<text x="28" y="610" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="400" fill="#526579" text-anchor="start">BM25S raw queries remain faster than R2F Python; memory, build cost and end-to-end performance are separate.</text>
+<text x="28" y="629" font-family="Arial, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="400" fill="#526579" text-anchor="start">Frozen run 45361899401 · pointwise intervals without multiplicity adjustment.</text>
+</svg>

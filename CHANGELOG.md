@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased — external retrieval evaluation and precision-field ranking
+## 1.1.0 — 2026-11-24 · external retrieval evaluation and precision-field ranking
 
 - Complete 4 public holdout corpora, 84,892 documents and 1,864 judged queries. Record positive pointwise intervals versus development-tuned SQLite on 3/4, inconclusive SciFact, higher index-build cost and no clear gain over v1 Contextual; no global or repair-rate claim. Persist exact data manifests, full measured results, and bilingual charts.
 
+- Compare installed BM25S on SciFact and NASA, report wins and losses, and provide an optional NumPy scoring adapter with exact Top-11 parity and measured prepared-token speedups (5.22× / 6.70×). No mandatory runtime dependency.
 - Add a frozen independent external retrieval protocol, official public qrels, revision-pinned dataset downloads and original/normalized SHA-256 manifests. Keep development selection separate from final holdout reporting.
 - Add optional `precision_field` ranking in case recall and evidence triage; preserve all existing default modes. BM25F-style independent field normalization combines exact, stem and ordered-phrase features; title/body weights were selected on the designated development set only.
 - Accelerate common ASCII tokenization with exact old-token-sequence parity, including mixed Unicode and Chinese tests.

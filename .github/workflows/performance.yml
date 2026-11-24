@@ -23,7 +23,7 @@ concurrency:
 jobs:
   offline:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     env:
       PYTHONUTF8: '1'
     steps:
@@ -53,18 +53,6 @@ jobs:
         run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
       - name: Measure provider scheduler with mock transport
         run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
-      - name: Optional pinned BM25S diagnostics on scientific transfer sets
-        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/independent-benchmark-v1.1'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --only-binary=:all: -r benchmarks/requirements-bm25s.txt
-          python -m unittest discover -s tests -p test_numpy_rank.py -v
-          for dataset in scifact nasa; do
-            python benchmarks/independent_data.py --dataset "$dataset" --output "$RUNNER_TEMP/bm25s-$dataset"
-            python benchmarks/compare_bm25s.py --data "$RUNNER_TEMP/bm25s-$dataset" --output "$RUNNER_TEMP/bm25s-$dataset.json"
-            python benchmarks/vector_parity.py --data "$RUNNER_TEMP/bm25s-$dataset" --output "$RUNNER_TEMP/vector-$dataset.json"
-          done
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -80,7 +68,5 @@ jobs:
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
             ${{ runner.temp }}/discovery-schedule.json
-            ${{ runner.temp }}/bm25s-*.json
-            ${{ runner.temp }}/vector-*.json
           retention-days: 14
           if-no-files-found: warn

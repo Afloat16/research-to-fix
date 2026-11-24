@@ -95,3 +95,7 @@ The NASA dataset card identifies 5,264 repositories and 219 expert queries; seve
 End-to-end same-model paired SWE-bench evaluation remains **not executed**: see [AGENT_TRIAL_PROTOCOL.md](AGENT_TRIAL_PROTOCOL.md). The importer and its synthetic tests verify result-accounting semantics only. Real model runs, fixed budgets, isolated processes, official evaluator reports, and cost tracking are required. Dense retrieval competitors and live provider accuracy have not been tested here. Treat final-set failures as future development evidence; a newly tuned algorithm requires another independently held-out set.
 
 中文：本轮冻结测试在四套公开语料上全部完成。对预先选定的 SQLite 方案，程序设计、统计学和 NASA 的点态置信区间均为正；SciFact 未证明显著优势。新版与旧 Contextual 四组差值区间均跨零，故不强制替换默认算法。已加入可选精确字段排序和语义完全一致的分词/特征提取优化。不得将排序准确率解释为 Agent 实际修复率。
+
+## Subsequent competitor and parity diagnostics
+
+[COMPETITOR_RESULTS.md](COMPETITOR_RESULTS.md) compares actual BM25S 0.2.14 on the two scientific datasets after opening the holdout. It also measures an optional exact-score NumPy adapter. No holdout retuning was performed. Treat the new diagnostics as additional descriptive evidence, not independent replication.

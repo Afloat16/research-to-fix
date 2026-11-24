@@ -1,0 +1,393 @@
+{
+  "source": {
+    "run_id": 45361899401,
+    "job_id": 138333776080,
+    "commit": "bd4595cd1e31a82611ef2afd8561716c72d19f77",
+    "url": "https://github.com/Afloat16/research-to-fix/actions/runs/45361899401"
+  },
+  "diagnostics": {
+    "scifact": {
+      "scope": "Post-holdout diagnostic, not blind test or agent repair evaluation.",
+      "dataset": {
+        "dataset": "scifact",
+        "license": "CC-BY-SA-4.0",
+        "source": "BEIR via Tevatron repackaging; official BEIR qrels",
+        "expected_documents": 5183,
+        "expected_test_queries": 300,
+        "files": {
+          "corpus.jsonl": {
+            "sha256": "be43af4cbb73b9e44c4f43138c8bbd63afd9ce328870ce223467a408eb349355",
+            "rows": 5183
+          },
+          "queries.jsonl": {
+            "sha256": "f88984d1fcb9862c1af67c53485718b30f749b8527685907096d696d2ed6245a",
+            "rows": 300
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029/test.tsv",
+            "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c",
+            "bytes": 5389
+          }
+        },
+        "original_downloads": {
+          "corpus.jsonl.gz": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir-corpus/resolve/b593902224034c884d791b8ab357e4dc10ff98bb/scifact.jsonl.gz",
+            "sha256": "8dd268826be9694e5e369bcc426551e1ae8cc6651a8fa69186475e20effae841",
+            "bytes": 2753754
+          },
+          "queries.jsonl": {
+            "url": "https://huggingface.co/datasets/Tevatron/beir/resolve/da4d656f2c8fbcac8810e4ea016ff3bf8b289c4e/scifact.jsonl",
+            "sha256": "6066e4eae863e603cca3379f2da04812b092c2b689b321c80a0491c02a37647d",
+            "bytes": 36513
+          },
+          "test.tsv": {
+            "url": "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029/test.tsv",
+            "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c",
+            "bytes": 5389
+          }
+        }
+      },
+      "documents": 5183,
+      "queries": 300,
+      "methods": {
+        "bm25s_native": {
+          "mrr@10": 0.6564034391534391,
+          "ndcg@10": 0.6936680137365641,
+          "recall@10": 0.8311666666666667,
+          "hit@10": 0.85,
+          "build_ms": 2263.997812,
+          "query_p50_ms": 0.162259,
+          "query_p95_ms": 0.467693,
+          "total_query_ms": 60.134595
+        },
+        "bm25s_matched": {
+          "mrr@10": 0.6525740740740741,
+          "ndcg@10": 0.6882995957531517,
+          "recall@10": 0.8281111111111111,
+          "hit@10": 0.85,
+          "build_ms": 1748.31845,
+          "query_p50_ms": 0.12646000000000002,
+          "query_p95_ms": 0.434433,
+          "total_query_ms": 47.206406
+        },
+        "precision_field4": {
+          "mrr@10": 0.6396084656084656,
+          "ndcg@10": 0.6771288481365139,
+          "recall@10": 0.8171666666666667,
+          "hit@10": 0.84,
+          "build_ms": 5986.726733,
+          "query_p50_ms": 2.0783275000000003,
+          "query_p95_ms": 4.205228,
+          "total_query_ms": 647.759067
+        },
+        "v1_contextual": {
+          "mrr@10": 0.6528214285714286,
+          "ndcg@10": 0.6919443563605927,
+          "recall@10": 0.8365,
+          "hit@10": 0.8566666666666667,
+          "build_ms": 4625.007859,
+          "query_p50_ms": 1.628801,
+          "query_p95_ms": 3.144011,
+          "total_query_ms": 510.967939
+        },
+        "sqlite_porter": {
+          "mrr@10": 0.657681216931217,
+          "ndcg@10": 0.6933237892946892,
+          "recall@10": 0.8261666666666667,
+          "hit@10": 0.8466666666666667,
+          "build_ms": 734.898472,
+          "query_p50_ms": 5.585516500000001,
+          "query_p95_ms": 9.711698,
+          "total_query_ms": 1683.635495
+        },
+        "sqlite_unicode4": {
+          "mrr@10": 0.6416124338624338,
+          "ndcg@10": 0.674135916867367,
+          "recall@10": 0.7949444444444445,
+          "hit@10": 0.8166666666666667,
+          "build_ms": 736.374059,
+          "query_p50_ms": 3.996481,
+          "query_p95_ms": 8.205843,
+          "total_query_ms": 1238.0409769999999
+        }
+      },
+      "paired_ndcg": {
+        "precision_field4_vs_bm25s_native": {
+          "mean_delta": -0.01653916560005023,
+          "ci95_low": -0.03707876738377811,
+          "ci95_high": 0.0026547380381883832,
+          "win": 41,
+          "tie": 213,
+          "loss": 46,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_bm25s_matched": {
+          "mean_delta": -0.011170747616637848,
+          "ci95_low": -0.03045131652449465,
+          "ci95_high": 0.007661402795790673,
+          "win": 35,
+          "tie": 215,
+          "loss": 50,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_bm25s_native": {
+          "mean_delta": -0.0017236573759713818,
+          "ci95_low": -0.018105792640616052,
+          "ci95_high": 0.01398521185872433,
+          "win": 34,
+          "tie": 230,
+          "loss": 36,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_bm25s_matched": {
+          "mean_delta": 0.0036447606074410015,
+          "ci95_low": -0.00967957466792381,
+          "ci95_high": 0.01741738523282669,
+          "win": 29,
+          "tie": 236,
+          "loss": 35,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        }
+      },
+      "environment": {
+        "python": "3.13.18",
+        "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+        "bm25s": "0.2.14",
+        "numpy": "2.2.6",
+        "scipy": "1.15.3",
+        "tqdm": "4.67.1"
+      }
+    },
+    "nasa": {
+      "scope": "Post-holdout diagnostic, not blind test or agent repair evaluation.",
+      "dataset": {
+        "dataset": "nasa",
+        "source": "NASA IMPACT Science Repos SME Benchmark",
+        "license": "Dataset card: Apache-2.0; source repository content retains its own terms",
+        "revision": "f26b9c9a4060d759b0ae44354059b37387dd414e",
+        "expected_documents": 5264,
+        "expected_test_queries": 212,
+        "published_queries": 219,
+        "unjudged_queries": 7,
+        "fields": "title/name and text (README); no query metadata, qrel URLs or enriched context",
+        "files": {
+          "corpus.jsonl": {
+            "sha256": "2cf10b0dcdc835212449748f5d4cd5c99c0626aac5812dc036dcf3c1b4af69b2",
+            "rows": 5264
+          },
+          "queries.jsonl": {
+            "sha256": "9b0b172bb9805588b5b0463b1e74aef1d50f8de49daec5aef7bbbce2e9944fec",
+            "rows": 219
+          },
+          "test.tsv": {
+            "sha256": "cea871e1672b41263e68b49567d40a3d0d5547e28ebf10bb25f3ae0b4ee61105",
+            "rows": 258
+          }
+        },
+        "original_downloads": {
+          "corpus.jsonl": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/corpus.jsonl",
+            "sha256": "71a4ef9604bf18db1d26a4157398385722275ca3fb1e3cf458e5d0b2ecf730b9",
+            "bytes": 72155484
+          },
+          "queries.jsonl": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/queries.jsonl",
+            "sha256": "650607e351752ce6dac4332b559685e100f26bf649a4df25f93bea2a683e7c34",
+            "bytes": 37924
+          },
+          "qrels/earth.tsv": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/qrels/earth.tsv",
+            "sha256": "bfc015079220b380c2f12fd864adf4ff70a5ea30c43f4dbe7fbc7479f3118ff0",
+            "bytes": 1556
+          },
+          "qrels/astro.tsv": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/qrels/astro.tsv",
+            "sha256": "7a78b8883eec837bb52b8b498e7ff219d5c483a215fbcc8415b5e4c939a5c275",
+            "bytes": 532
+          },
+          "qrels/planetary.tsv": {
+            "url": "https://huggingface.co/datasets/nasa-impact/nasa-science-repos-sme-benchmark/resolve/f26b9c9a4060d759b0ae44354059b37387dd414e/qrels/planetary.tsv",
+            "sha256": "c8e7b82e92f79c7810529ceb5f30ecdacd5922fd170c9e55d103113dceb1eba6",
+            "bytes": 361
+          }
+        }
+      },
+      "documents": 5264,
+      "queries": 212,
+      "methods": {
+        "bm25s_native": {
+          "mrr@10": 0.4046626984126984,
+          "ndcg@10": 0.43815422484869115,
+          "recall@10": 0.5622248427672956,
+          "hit@10": 0.5849056603773585,
+          "build_ms": 4323.606841,
+          "query_p50_ms": 0.1735615,
+          "query_p95_ms": 0.217097,
+          "total_query_ms": 37.474897
+        },
+        "bm25s_matched": {
+          "mrr@10": 0.40397574123989216,
+          "ndcg@10": 0.43894540758504513,
+          "recall@10": 0.5720911949685534,
+          "hit@10": 0.589622641509434,
+          "build_ms": 5353.282648,
+          "query_p50_ms": 0.14349099999999998,
+          "query_p95_ms": 0.184778,
+          "total_query_ms": 30.868948
+        },
+        "precision_field4": {
+          "mrr@10": 0.4331498951781971,
+          "ndcg@10": 0.46647384028231254,
+          "recall@10": 0.5993317610062893,
+          "hit@10": 0.6179245283018868,
+          "build_ms": 16078.889797,
+          "query_p50_ms": 5.7306395,
+          "query_p95_ms": 9.154159,
+          "total_query_ms": 1267.668226
+        },
+        "v1_contextual": {
+          "mrr@10": 0.4160489667565139,
+          "ndcg@10": 0.451072052879052,
+          "recall@10": 0.5847091194968553,
+          "hit@10": 0.6037735849056604,
+          "build_ms": 12405.921739,
+          "query_p50_ms": 3.6900005,
+          "query_p95_ms": 5.439412,
+          "total_query_ms": 793.946785
+        },
+        "sqlite_porter": {
+          "mrr@10": 0.41074797843665767,
+          "ndcg@10": 0.4468961311164222,
+          "recall@10": 0.5825078616352202,
+          "hit@10": 0.6037735849056604,
+          "build_ms": 2621.786582,
+          "query_p50_ms": 13.746808,
+          "query_p95_ms": 17.938193,
+          "total_query_ms": 2906.157051
+        },
+        "sqlite_unicode4": {
+          "mrr@10": 0.39576781970649894,
+          "ndcg@10": 0.4306568227201444,
+          "recall@10": 0.5511006289308176,
+          "hit@10": 0.5707547169811321,
+          "build_ms": 2565.165369,
+          "query_p50_ms": 11.825223000000001,
+          "query_p95_ms": 14.781168,
+          "total_query_ms": 2478.978036
+        }
+      },
+      "paired_ndcg": {
+        "precision_field4_vs_bm25s_native": {
+          "mean_delta": 0.02831961543362137,
+          "ci95_low": 0.003103553913825074,
+          "ci95_high": 0.05536711271045978,
+          "win": 41,
+          "tie": 147,
+          "loss": 24,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "precision_field4_vs_bm25s_matched": {
+          "mean_delta": 0.027528432697267426,
+          "ci95_low": 0.003600182511059622,
+          "ci95_high": 0.05248175456208691,
+          "win": 43,
+          "tie": 148,
+          "loss": 21,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_bm25s_native": {
+          "mean_delta": 0.01291782803036082,
+          "ci95_low": -0.008452016122186963,
+          "ci95_high": 0.037106684482168514,
+          "win": 31,
+          "tie": 155,
+          "loss": 26,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        },
+        "v1_contextual_vs_bm25s_matched": {
+          "mean_delta": 0.012126645294006876,
+          "ci95_low": -0.004629904900603157,
+          "ci95_high": 0.030165010184909736,
+          "win": 33,
+          "tie": 156,
+          "loss": 23,
+          "resamples": 2000,
+          "method": "paired percentile bootstrap, fixed seed; query-level descriptive interval"
+        }
+      },
+      "environment": {
+        "python": "3.13.18",
+        "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+        "bm25s": "0.2.14",
+        "numpy": "2.2.6",
+        "scipy": "1.15.3",
+        "tqdm": "4.67.1"
+      }
+    }
+  },
+  "vector": {
+    "scifact": {
+      "dataset_sha256": {
+        "corpus.jsonl": "be43af4cbb73b9e44c4f43138c8bbd63afd9ce328870ce223467a408eb349355",
+        "queries.jsonl": "f88984d1fcb9862c1af67c53485718b30f749b8527685907096d696d2ed6245a",
+        "test.tsv": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+      },
+      "documents": 5183,
+      "queries": 300,
+      "repeats": 3,
+      "exact_top11_scores_and_ids": true,
+      "index_build_ms": 6045.776037,
+      "vector_wrapper_ms": 1846.500081,
+      "methods": {
+        "python": {
+          "p50_ms": 1.999838,
+          "p95_ms": 4.305787,
+          "total_ms_per_repeat": 727.2199096666667
+        },
+        "numpy": {
+          "p50_ms": 0.382846,
+          "p95_ms": 0.725071,
+          "total_ms_per_repeat": 122.21278733333332
+        }
+      },
+      "p50_speedup": 5.223609493112113,
+      "p95_speedup": 5.938434994641903,
+      "scope": "Prepared-token score-only query path; same postings and exact Top-K, not full retrieval/build speed. Optional NumPy, O(document count) scratch."
+    },
+    "nasa": {
+      "dataset_sha256": {
+        "corpus.jsonl": "2cf10b0dcdc835212449748f5d4cd5c99c0626aac5812dc036dcf3c1b4af69b2",
+        "queries.jsonl": "9b0b172bb9805588b5b0463b1e74aef1d50f8de49daec5aef7bbbce2e9944fec",
+        "test.tsv": "cea871e1672b41263e68b49567d40a3d0d5547e28ebf10bb25f3ae0b4ee61105"
+      },
+      "documents": 5264,
+      "queries": 212,
+      "repeats": 3,
+      "exact_top11_scores_and_ids": true,
+      "index_build_ms": 15589.326011,
+      "vector_wrapper_ms": 4234.734208,
+      "methods": {
+        "python": {
+          "p50_ms": 5.035588499999999,
+          "p95_ms": 7.820212,
+          "total_ms_per_repeat": 1091.9165886666667
+        },
+        "numpy": {
+          "p50_ms": 0.7511495,
+          "p95_ms": 1.060825,
+          "total_ms_per_repeat": 158.447432
+        }
+      },
+      "p50_speedup": 6.703843242923012,
+      "p95_speedup": 7.3718209883816845,
+      "scope": "Prepared-token score-only query path; same postings and exact Top-K, not full retrieval/build speed. Optional NumPy, O(document count) scratch."
+    }
+  }
+}

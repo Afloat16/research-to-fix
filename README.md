@@ -18,11 +18,17 @@
 Concept and workflow design: [Afloat16](https://github.com/Afloat16). MIT licensed. **No mandatory Python third-party packages, hosted search service, or embedding model.**
 
 
-## External holdouts — measured retrieval evidence
+## v1.1.0 — External holdouts and precision retrieval
 
 ![External holdout retrieval comparison and paired intervals](docs/figures/independent-holdout.svg)
 
 **84,892 documents · 1,864 held-out judged queries · four public corpora.** Opt-in `precision_field` combines exact, stem and phrase features with independently normalized title/body fields. The frozen scorer improves nDCG@10 over the development-tuned SQLite baseline on Programmers (+11.52%), Stats (+11.49%), and NASA (+8.32%), with positive pointwise paired 95% intervals. SciFact is inconclusive; SQLite Porter has the strongest measured SciFact score, and v1 Contextual has the strongest Stats score. No clear improvement over v1 Contextual is established on these holdouts. Defaults stay compatible. Index build cost remains higher than SQLite. [Actual CI](https://github.com/Afloat16/research-to-fix/actions/runs/45359141496) · [full evidence and reproduction](benchmarks/INDEPENDENT_RESULTS.md) · [frozen reports](docs/figures/independent-snapshot.json).
+
+### Specialized open-source competitor and exact scoring acceleration
+
+![BM25S competitor and optional exact scoring acceleration](docs/figures/competitor-diagnostic.svg)
+
+The post-holdout diagnostic compares the actual BM25S 0.2.14 library against R2F and SQLite on SciFact and NASA. Precision Field leads the measured NASA methods (nDCG@10 0.4665 vs BM25S Matched 0.4389; +6.27%, pointwise paired 95% interval [0.0036, 0.0525]); SciFact does not establish a R2F advantage. BM25S raw queries and index builds are faster. An explicit optional NumPy score-only adapter achieves 5.22× / 6.70× median prepared-token scoring speedups with exact Top-11 ID/score equality across 512 queries, excluding additional adapter setup, memory and index build. No default dependency or agent-repair claim. [Full comparison and tradeoffs](benchmarks/COMPETITOR_RESULTS.md) · [Actual CI](https://github.com/Afloat16/research-to-fix/actions/runs/45361899401).
 
 ## v1.0.0 — multi-round research and verified decisions
 
@@ -57,7 +63,7 @@ Read the [source playbook](skills/research-to-fix/references/source-playbook.md)
 
 ## Installation
 
-Release archive: [v1.0.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.0.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
+Release archive: [v1.1.0 release and SHA-256 checksum](https://github.com/Afloat16/research-to-fix/releases/tag/v1.1.0). Extract the `research-to-fix/` directory into your host's skill directory. The archive contains the committed skill, license and version; it does not include experiment logs or local user data.
 
 Use a host supporting the Agent Skills format. Verify your host's installation tool, then:
 

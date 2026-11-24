@@ -22,3 +22,7 @@ Regenerate from the repository root with `node docs/figures/render.cjs`. Check c
 ## External holdout figure
 
 `independent-holdout*.svg` is rendered from `independent-snapshot.json`: actual holdout run 45359141496 (job 138324408563) and parity run 45360121033 (job 138327753247). `node docs/figures/render-independent.cjs --check` verifies deterministic SVGs. Three selected methods are visualized, all six are preserved in the JSON and full report. Pointwise bootstrap intervals are unadjusted; not agent repair scores.
+
+## Specialized competitor figure
+
+`competitor-diagnostic*.svg` derives from `competitor-snapshot.json`, the actual completed [CI run 45361899401](https://github.com/Afloat16/research-to-fix/actions/runs/45361899401), job 138333776080. Run `node docs/figures/render-competitor.cjs --check` to verify both localized figures. nDCG bars and prepared-token scoring times have separate axes and scopes. Full build times and limitations are preserved in the JSON and [report](../../benchmarks/COMPETITOR_RESULTS.md).

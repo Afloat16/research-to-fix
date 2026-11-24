@@ -77,3 +77,7 @@ recall 只考虑通过现有校验器且 validation.status 为 solved 的记录�
 借鉴的是可解释筛选、逐项验收和保留运行产物的做法。检索、结构校验与真实修复效果分别核对；案例复用不是模型训练，也不能自动认证历史记录。
 
 `precision_field` 需要语料字段统计，单次召回也构建内存索引；批量召回复用一次索引。旧 `bm25` 默认及其他模式不变。外部检索评测比较原始 Top-K 排序，本地案例还受 solved、版本复核及相对得分阈值限制，不保证相同召回率。
+
+### 大语料可选评分 API（不属于默认 CLI）
+
+`numpy_rank.NumpyRanker(index)` 可显式包装已构建且保持不变的 `PostingIndex` 或 `FieldIndex`。需自行在隔离环境安装 NumPy；不自动安装、不改变默认排序。`rank(terms, limit=10, explain=False)` 使用 float64 与确定性 ID 排序，解释模式回退原实现。额外适配器视图及 O(文档数) 暂存数组增加开销；小案例目录不必启用。SciFact 与 NASA 专项验证在 Linux CPython 3.13 / NumPy 2.2.6 上通过；其他解释器/组合不应假定已实测。参考仓库 `benchmarks/COMPETITOR_RESULTS.md`。不得从评分加速推断整个 Agent 修复速度或语义相关性。

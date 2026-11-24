@@ -2,6 +2,7 @@
 """离线检索计划与证据案例检查；不会联网、上传或执行记录中的命令。"""
 
 import argparse
+import copy
 import hashlib
 import ipaddress
 import json
@@ -827,8 +828,8 @@ def _recall_summary(case, filename, requested_version):
     }
 
 
-def recall_cases(cases_dir, error, component="", version="", limit=5):
-    """Rank consistent solved records in one explicit directory, using no service."""
+def _check_recall_query(error, component, version, limit):
+    """Validate before touching the selected directory."""
     if any(not isinstance(value, str) for value in (error, component, version)):
         raise RecallInputError("query")
     if sum(map(len, (error, component, version))) > RECALL_MAX_QUERY_CHARS or not error.strip():
@@ -838,6 +839,10 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
         raise RecallInputError("query")
     if type(limit) is not int or not 1 <= limit <= RECALL_MAX_RESULTS:
         raise RecallInputError("limit")
+    return query_terms
+
+
+def _load_recall_corpus(cases_dir, component, version):
     component, version = component.strip().casefold(), version.strip()
     try:
         directory = Path(cases_dir)
@@ -898,35 +903,110 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
         documents.append(Counter(recall_tokens(_recall_document(case))))
         summaries.append(_recall_summary(case, entry.name, version))
 
-    # Independent standard-library BM25 implementation. Per-corpus scores are
-    # retrieval aids, not calibrated probabilities or compatibility judgments.
-    lengths = [sum(terms.values()) for terms in documents]
-    mean_length = sum(lengths) / len(lengths) if lengths else 1.0
-    frequencies = Counter(term for document in documents for term in query_terms.intersection(document))
-    ranked = []
-    for document, length, summary in zip(documents, lengths, summaries):
-        normalization = 1.5 * (0.25 + 0.75 * length / (mean_length or 1.0))
-        contributions = {}
-        for term in sorted(query_terms.intersection(document)):
-            inverse_frequency = math.log1p((len(documents) - frequencies[term] + 0.5) / (frequencies[term] + 0.5))
-            contributions[term] = inverse_frequency * (2.5 * document[term]) / (document[term] + normalization)
-        score = sum(contributions.values())
-        if score > 0:
-            summary["score"] = round(score, 6)
-            summary["matched_terms"] = sorted(contributions, key=lambda term: (-contributions[term], term))[:20]
-            ranked.append((score, summary))
-    ranked.sort(key=lambda pair: (-pair[0], pair[1]["file"]))
-    best = ranked[0][0] if ranked else 0.0
-    retained = [summary for score, summary in ranked if score >= RECALL_RELATIVE_THRESHOLD * best]
-    return {
-        "scope": "local_case_recall", "review_required": True, "notice": RECALL_NOTICE,
-        "scanned": len(entries), "eligible": len(documents), "skipped": skipped,
-        "matched_candidates": len(retained), "truncated": len(retained) > limit,
-        "matches": retained[:limit],
-        "limits": {"files": RECALL_MAX_FILES, "directory_entries": RECALL_MAX_DIRECTORY_ENTRIES,
-                   "file_bytes": RECALL_MAX_FILE_BYTES, "query_characters": RECALL_MAX_QUERY_CHARS,
-                   "results": RECALL_MAX_RESULTS, "relative_threshold": RECALL_RELATIVE_THRESHOLD},
-    }
+    return documents, summaries, skipped, len(entries)
+
+
+class PostingIndex:
+    """In-memory inverted BM25 index. Exact legacy formula, no I/O.
+
+    IDs are unique strings, used as the deterministic tie breaker.
+    Each posting stores its precomputed contribution; queries visit only
+    the postings for distinct matching terms, in sorted term order.
+    """
+
+    def __init__(self, documents):
+        self.ids = tuple(identifier for identifier, _ in documents)
+        if len(set(self.ids)) != len(self.ids):
+            raise ValueError("duplicate document ID")
+        counts = [terms for _, terms in documents]
+        lengths = [sum(terms.values()) for terms in counts]
+        mean = sum(lengths) / len(lengths) if lengths else 1.0
+        frequencies = Counter(term for terms in counts for term in terms)
+        inverse = {term: math.log1p((len(counts) - count + 0.5) / (count + 0.5))
+                   for term, count in frequencies.items()}
+        self.postings = {}
+        for index, (terms, length) in enumerate(zip(counts, lengths)):
+            normalization = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
+            for term, frequency in terms.items():
+                contribution = inverse[term] * (2.5 * frequency) / (frequency + normalization)
+                self.postings.setdefault(term, []).append((index, contribution))
+
+    def rank(self, query_terms, limit=None, explain=True):
+        scores, matches = {}, {}
+        for term in sorted(set(query_terms)):
+            for index, contribution in self.postings.get(term, ()):
+                scores[index] = scores.get(index, 0.0) + contribution
+                if explain:
+                    matches.setdefault(index, []).append((term, contribution))
+        order = sorted(scores, key=lambda index: (-scores[index], self.ids[index]))
+        if limit is not None:
+            order = order[:limit]
+        return [(scores[index], self.ids[index],
+                 [term for term, _ in sorted(matches.get(index, ()),
+                                              key=lambda pair: (-pair[1], pair[0]))[:20]])
+                for index in order]
+
+
+class RecallSnapshot:
+    """One validated corpus snapshot for several queries, never persisted.
+
+    Rebuild after files change. Retaining a snapshot is not a claim that the
+    source files have remained unchanged or that their assertions are true.
+    """
+
+    def __init__(self, cases_dir, component="", version=""):
+        if not isinstance(component, str) or not isinstance(version, str):
+            raise RecallInputError("query")
+        if len(component) + len(version) > RECALL_MAX_QUERY_CHARS:
+            raise RecallInputError("query")
+        self.component, self.version = component, version
+        documents, summaries, self.skipped, self.scanned = _load_recall_corpus(
+            cases_dir, component, version)
+        self.summaries = {row["file"]: row for row in summaries}
+        self.index = PostingIndex(list(zip(self.summaries, documents)))
+
+    def search(self, error, limit=5):
+        terms = _check_recall_query(error, self.component, self.version, limit)
+        ranked = self.index.rank(terms)
+        best = ranked[0][0] if ranked else 0.0
+        retained = [(score, identifier, matched) for score, identifier, matched in ranked
+                    if score >= RECALL_RELATIVE_THRESHOLD * best]
+        results = []
+        for score, identifier, matched in retained[:limit]:
+            summary = copy.deepcopy(self.summaries[identifier])
+            summary.update(score=round(score, 6), matched_terms=matched)
+            results.append(summary)
+        return {
+            "scope": "local_case_recall", "review_required": True, "notice": RECALL_NOTICE,
+            "scanned": self.scanned, "eligible": len(self.summaries), "skipped": dict(self.skipped),
+            "matched_candidates": len(retained), "truncated": len(retained) > limit,
+            "matches": results,
+            "limits": {"files": RECALL_MAX_FILES, "directory_entries": RECALL_MAX_DIRECTORY_ENTRIES,
+                       "file_bytes": RECALL_MAX_FILE_BYTES, "query_characters": RECALL_MAX_QUERY_CHARS,
+                       "results": RECALL_MAX_RESULTS, "relative_threshold": RECALL_RELATIVE_THRESHOLD},
+        }
+
+
+RECALL_MAX_BATCH = 128
+
+
+def recall_cases(cases_dir, error, component="", version="", limit=5):
+    """One-shot retrieval retains the original result contract."""
+    _check_recall_query(error, component, version, limit)
+    return RecallSnapshot(cases_dir, component, version).search(error, limit)
+
+
+def recall_batch(cases_dir, errors, component="", version="", limit=5):
+    """Validate all queries before reading any cases; reuse one snapshot."""
+    if not isinstance(errors, list) or not 1 <= len(errors) <= RECALL_MAX_BATCH:
+        raise RecallInputError("batch")
+    for error in errors:
+        _check_recall_query(error, component, version, limit)
+    snapshot = RecallSnapshot(cases_dir, component, version)
+    return {"scope": "local_case_recall_batch", "review_required": True,
+            "notice": RECALL_NOTICE, "snapshot": "validated_once_in_memory",
+            "queries": len(errors),
+            "results": [snapshot.search(error, limit) for error in errors]}
 
 
 def emit_recall(report, output_format):

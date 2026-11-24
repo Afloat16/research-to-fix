@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FIGURES = ROOT / "docs" / "figures"
 NS = {"svg": "http://www.w3.org/2000/svg"}
-NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision")
+NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1")
 
 
 class ReadmeFiguresTest(unittest.TestCase):
@@ -38,6 +38,16 @@ class ReadmeFiguresTest(unittest.TestCase):
                 for element in document.iter():
                     local = element.tag.rsplit("}", 1)[-1]
                     self.assertNotIn(local, {"script", "image", "foreignObject", "iframe"})
+                if name == "release-v1":
+                    snapshot = json.loads((FIGURES / "v1-snapshot.json").read_text(encoding="utf-8"))
+                    self.assertTrue(snapshot["gate"]["passed"])
+                    self.assertTrue(snapshot["attention"]["design_lock_checked"])
+                    bars = {(e.get("data-corpus"), e.get("data-method"), e.get("data-metric")): float(e.get("data-value"))
+                            for e in document.iter() if e.get("data-corpus")}
+                    self.assertEqual(bars, {(corpus, method, metric): snapshot[corpus]["methods"][method]["overall"][metric]
+                                            for corpus in ("original", "transfer")
+                                            for method in ("stemmed_bm25", "sqlite_porter", "paired_rank")
+                                            for metric in ("recall", "complete_pair_recall")})
                 if name not in ("synthetic-ranking", "github-ranking"):
                     continue
                 expected = data["synthetic" if name.startswith("synthetic") else "github"]["methods"]

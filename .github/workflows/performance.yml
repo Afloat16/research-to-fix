@@ -5,12 +5,14 @@ on:
       - 'benchmarks/**'
       - 'skills/research-to-fix/scripts/**'
       - 'examples/numerical-variance/**'
+      - 'examples/exact-attention/**'
       - '.github/workflows/performance.yml'
   pull_request:
     paths:
       - 'benchmarks/**'
       - 'skills/research-to-fix/scripts/**'
       - 'examples/numerical-variance/**'
+      - 'examples/exact-attention/**'
       - '.github/workflows/performance.yml'
   workflow_dispatch:
 permissions:
@@ -41,8 +43,16 @@ jobs:
         run: python benchmarks/regression.py --synthetic "$RUNNER_TEMP/retrieval.json" --github "$RUNNER_TEMP/github-titles.json" --scale "$RUNNER_TEMP/scale.json" --output "$RUNNER_TEMP/regression.json"
       - name: Evaluate paper and code evidence reranking
         run: python benchmarks/discovery.py --output "$RUNNER_TEMP/discovery.json"
+      - name: Evaluate additional algorithm transfer and bilingual queries
+        run: python benchmarks/discovery.py --dataset transfer --output "$RUNNER_TEMP/discovery-transfer.json"
+      - name: Enforce source identity and paired-ranking regression gates
+        run: python benchmarks/discovery_regression.py --original "$RUNNER_TEMP/discovery.json" --transfer "$RUNNER_TEMP/discovery-transfer.json" --output "$RUNNER_TEMP/discovery-regression.json"
       - name: Compare actual numerical repair candidates
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
+      - name: Compare exact attention workspace algorithms
+        run: python examples/exact-attention/compare_attention.py --output "$RUNNER_TEMP/attention-comparison"
+      - name: Measure provider scheduler with mock transport
+        run: python benchmarks/discovery_schedule.py --output "$RUNNER_TEMP/discovery-schedule.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -53,6 +63,10 @@ jobs:
             ${{ runner.temp }}/scale.json
             ${{ runner.temp }}/regression.json
             ${{ runner.temp }}/discovery.json
+            ${{ runner.temp }}/discovery-transfer.json
+            ${{ runner.temp }}/discovery-regression.json
             ${{ runner.temp }}/variance-comparison/
+            ${{ runner.temp }}/attention-comparison/
+            ${{ runner.temp }}/discovery-schedule.json
           retention-days: 14
           if-no-files-found: warn

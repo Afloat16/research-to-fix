@@ -2,6 +2,8 @@
 """Opt-in, bounded public metadata discovery. Never fetch or execute result URLs."""
 import http.client
 import json
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 import re
 import socket
 import sys
@@ -29,12 +31,16 @@ API = {
     "arxiv": "https://export.arxiv.org/api/query",
     "huggingface_models": "https://huggingface.co/api/models",
     "huggingface_datasets": "https://huggingface.co/api/datasets",
+    "semantic_scholar": "https://api.semanticscholar.org/graph/v1/paper/search",
+    "openalex": "https://api.openalex.org/works",
+    "dblp": "https://dblp.org/search/publ/api",
 }
 GROUPS = {provider: ("github" if provider.startswith("github_") else
                     "huggingface" if provider.startswith("huggingface_") else provider)
           for provider in API}
 # A single arXiv request per invocation avoids concurrent or rapid polling.
-GROUP_LIMITS = {"github": 4, "crossref": 2, "arxiv": 1, "huggingface": 2}
+GROUP_LIMITS = {"github": 4, "crossref": 2, "arxiv": 1, "huggingface": 2,
+                "semantic_scholar": 1, "openalex": 1, "dblp": 1}
 DISCOVERY_NOTICE = ("Only the explicitly approved public fingerprint queries are transmitted to fixed public APIs. "
                     "No credentials, private repo contents, result URL fetches, downloads, code execution, or auto-retries. "
                     "Metadata and excerpts are leads, not read/verified original evidence. Host search is needed for other sources.")
@@ -66,8 +72,22 @@ def make_request(query, limit):
                                   if word.casefold() not in w.GENERIC and len(word) > 1))[:5]
         if not terms:
             raise ProviderError("invalid_response")
-        params = {"search_query": " AND ".join('all:"' + term + '"' for term in terms),
-                  "start": 0, "max_results": limit, "sortBy": "relevance", "sortOrder": "descending"}
+        clauses = ['all:"' + term + '"' for term in terms]
+        # Require an anchor and a second signal, not every word of a verbose
+        # problem description. The local ranker can filter the broader pool.
+        expression = clauses[0] if len(clauses) == 1 else clauses[0] + " AND (" + " OR ".join(clauses[1:]) + ")"
+        params = {"search_query": expression, "start": 0, "max_results": limit,
+                  "sortBy": "relevance", "sortOrder": "descending"}
+    elif provider == "semantic_scholar":
+        params = {"query": native.replace("-", " "), "limit": limit,
+                  "fields": "paperId,title,abstract,externalIds,url,year,venue,publicationTypes"}
+    elif provider == "openalex":
+        # Keyless casual use only; if the service requires authentication,
+        # report the restriction and let the host use its approved tools.
+        params = {"search": native, "per_page": limit,
+                  "select": "id,doi,title,publication_year,type,primary_location,is_retracted"}
+    elif provider == "dblp":
+        params = {"q": native, "format": "json", "h": limit, "c": 0}
     else:
         params = {"search": native, "limit": limit}
     return API[provider] + "?" + urllib.parse.urlencode(params)
@@ -104,7 +124,7 @@ def request_metadata(url, provider):
         if error.code == 429 or (error.code == 403 and error.headers and
                                  error.headers.get("X-RateLimit-Remaining") == "0"):
             raise ProviderError("rate_limited") from None
-        if error.code in (401, 403, 451) or 300 <= error.code < 400:
+        if error.code in (401, 403, 409, 451) or 300 <= error.code < 400:
             raise ProviderError("access_blocked") from None
         raise ProviderError("unavailable") from None
     except (urllib.error.URLError, TimeoutError, socket.timeout, OSError, http.client.HTTPException):
@@ -118,10 +138,32 @@ def excerpt(value, limit):
     return value if core.safe_search_input([value]) and not w.PRIVATE_PATH.search(value) else ""
 
 
+def metadata_links(*values):
+    # Strictly extract explicit repository or paper mentions. No fetches,
+    # fuzzy link inference, or claim of official implementation.
+    found = {}
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        for raw in re.findall(r"https?://[^\s<>\"']{1,600}", value[:16000]):
+            raw = raw.rstrip(".,;:!?)]}")
+            try:
+                url = w.canonical_url(raw)
+            except w.WorkflowError:
+                continue
+            parts = urllib.parse.urlsplit(url)
+            if ((parts.hostname == "github.com" and len(parts.path.strip("/").split("/")) == 2)
+                    or url.startswith(("https://arxiv.org/abs/", "https://doi.org/"))):
+                found[url] = {"url": url, "relation": "mentions", "basis": "metadata"}
+            if len(found) >= w.MAX_LINKS:
+                return list(found.values())
+    return list(found.values())
+
+
 def base_row(query, url, title, snippet="", **extra):
     row = {"query_id": query["id"], "origin": query["provider"], "kind": query["kind"],
            "url": url, "title": excerpt(title, 300), "snippet": excerpt(snippet, 700),
-           "access": "metadata", **extra}
+           "access": "metadata", "links": metadata_links(snippet), **extra}
     try:
         w.normalize_result(row, {query["id"]: query})
     except w.WorkflowError:
@@ -144,7 +186,8 @@ def parse_github(query, payload, limit):
             row = base_row(query, item.get("html_url"), item.get("full_name"),
                            item.get("description"), revision=excerpt(item.get("default_branch"), 100),
                            license_hint=excerpt(license_hint, 120),
-                           maintenance_hint="archived; historical implementation only" if item.get("archived") is True else "")
+                           maintenance_hint="archived; historical implementation only" if item.get("archived") is True else "",
+                           links=metadata_links(item.get("description"), item.get("homepage")))
         else:
             is_pr = isinstance(item.get("pull_request"), dict)
             if is_pr != (query["provider"] == "github_prs"):
@@ -241,10 +284,107 @@ def parse_hf(query, payload, limit):
     return results, False
 
 
+def paper_hint(provider, kind, venue, year):
+    year = str(year) if type(year) is int else (year if isinstance(year, str) and year.isdigit() else "")
+    return excerpt(" ".join(part for part in (provider + " metadata:", kind, venue, year) if part), 120)
+
+
+def parse_semantic_scholar(query, payload, limit):
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+        raise ProviderError("invalid_response")
+    rows = []
+    for item in payload["data"][:limit]:
+        if not isinstance(item, dict):
+            continue
+        external = item.get("externalIds")
+        external = external if isinstance(external, dict) else {}
+        doi = w.normalized_doi(external.get("DOI"))
+        aid = w.normalized_arxiv(external.get("ArXiv"))
+        pid = item.get("paperId")
+        if doi:
+            url = "https://doi.org/" + urllib.parse.quote(doi, safe="/:;()[]-._")
+        elif aid:
+            url = "https://arxiv.org/abs/" + aid
+        elif isinstance(pid, str) and re.fullmatch(r"[0-9a-f]{40}", pid):
+            url = "https://www.semanticscholar.org/paper/" + pid
+        else:
+            continue
+        types = item.get("publicationTypes")
+        types = ", ".join(t for t in types[:5] if isinstance(t, str)) if isinstance(types, list) else ""
+        row = base_row(query, url, item.get("title"), item.get("abstract"), doi=doi, arxiv_id=aid,
+                       publication_hint=paper_hint("Semantic Scholar", types, excerpt(item.get("venue"), 60), item.get("year")))
+        if row:
+            rows.append(row)
+    return rows, False
+
+
+def parse_openalex(query, payload, limit):
+    if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+        raise ProviderError("invalid_response")
+    rows = []
+    for item in payload["results"][:limit]:
+        if not isinstance(item, dict):
+            continue
+        doi = w.normalized_doi(item.get("doi"))
+        identifier = item.get("id")
+        if doi:
+            url = "https://doi.org/" + urllib.parse.quote(doi, safe="/:;()[]-._")
+        elif isinstance(identifier, str) and re.fullmatch(r"https://openalex\.org/W\d+", identifier):
+            url = identifier
+        else:
+            continue
+        location = item.get("primary_location")
+        location = location if isinstance(location, dict) else {}
+        source = location.get("source")
+        source = source if isinstance(source, dict) else {}
+        venue = excerpt(source.get("display_name"), 60)
+        # Retraction metadata is a review flag, not an authoritative decision.
+        kind = "RETRACTED flag; verify original" if item.get("is_retracted") is True else excerpt(item.get("type"), 40)
+        row = base_row(query, url, item.get("title"), "", doi=doi,
+                       publication_hint=paper_hint("OpenAlex", kind, venue, item.get("publication_year")),
+                       publication_flag="retracted_or_withdrawn" if item.get("is_retracted") is True else
+                                        "not_flagged" if item.get("is_retracted") is False else "unknown")
+        if row:
+            rows.append(row)
+    return rows, False
+
+
+def parse_dblp(query, payload, limit):
+    try:
+        hits = payload["result"]["hits"]
+    except (KeyError, TypeError):
+        raise ProviderError("invalid_response") from None
+    if not isinstance(hits, dict):
+        raise ProviderError("invalid_response")
+    entries = hits.get("hit", [])
+    if not isinstance(entries, list):
+        raise ProviderError("invalid_response")
+    rows = []
+    for hit in entries[:limit]:
+        info = hit.get("info") if isinstance(hit, dict) else None
+        if not isinstance(info, dict):
+            continue
+        doi = w.normalized_doi(info.get("doi"))
+        url = "https://doi.org/" + urllib.parse.quote(doi, safe="/:;()[]-._") if doi else info.get("url")
+        if not doi and (not isinstance(url, str) or not url.startswith("https://dblp.org/rec/")):
+            continue
+        row = base_row(query, url, info.get("title"), "", doi=doi,
+                       publication_hint=paper_hint("DBLP", excerpt(info.get("type"), 40),
+                                                   excerpt(info.get("venue"), 60), info.get("year")))
+        if row:
+            rows.append(row)
+    return rows, False
+
+
 def parse_response(query, raw, limit):
     if not isinstance(raw, bytes) or not raw or len(raw) > MAX_RESPONSE_BYTES:
         raise ProviderError("invalid_response")
     provider = query["provider"]
+    # Some providers return HTML access challenges with HTTP 200. Never
+    # treat them as empty successful searches or attempt to bypass them.
+    prefix = raw[:1024].lstrip().lower()
+    if prefix.startswith((b"<!doctype html", b"<html")):
+        raise ProviderError("access_blocked")
     if provider == "arxiv":
         return parse_arxiv(query, raw, limit)
     try:
@@ -257,16 +397,45 @@ def parse_response(query, raw, limit):
         return parse_crossref(query, payload, limit)
     if provider.startswith("huggingface_"):
         return parse_hf(query, payload, limit)
+    if provider == "semantic_scholar":
+        return parse_semantic_scholar(query, payload, limit)
+    if provider == "openalex":
+        return parse_openalex(query, payload, limit)
+    if provider == "dblp":
+        return parse_dblp(query, payload, limit)
     raise ProviderError("unavailable")
 
 
-def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=None, transport=request_metadata):
-    # Validate and refuse before making a single outbound request.
+def reserve_queries(query_list, maximum, schedule):
+    """Reserve bounded requests before executing, with optional provider diversity."""
+    native = [q for q in query_list if q["provider"] in API]
+    if schedule == "balanced":
+        groups = defaultdict(list)
+        for q in native:
+            groups[GROUPS[q["provider"]]].append(q)
+        native = [group[index] for index in range(max(map(len, groups.values()), default=0))
+                  for group in groups.values() if index < len(group)]
+    reserved, counts = [], defaultdict(int)
+    for q in native:
+        group = GROUPS[q["provider"]]
+        if len(reserved) < maximum and counts[group] < GROUP_LIMITS[group]:
+            reserved.append(q)
+            counts[group] += 1
+    return reserved
+
+
+def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=None,
+             transport=request_metadata, workers=1, schedule="plan"):
+    # Validate before any transport; no automatic retry or redistribution of
+    # requests after provider failure. Each provider group is serialized.
     if approve_public is not True:
         w.fail("explicit_public_approval_required")
     plan = w.validate_plan(plan)
     w.integer(max_requests, 1, MAX_REQUESTS)
     w.integer(per_query, 1, MAX_PER_QUERY)
+    w.integer(workers, 1, 4)
+    if schedule not in ("plan", "balanced"):
+        w.fail("invalid_schedule")
     queries = {query["id"]: query for query in plan["queries"]}
     if query_ids is not None:
         selected = w.str_list(query_ids, len(queries), 8)
@@ -275,36 +444,59 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
         query_list = [queries[qid] for qid in selected]
     else:
         query_list = list(queries.values())
-    requests, results, searches, host_pending = 0, [], [], []
-    provider_counts, stopped = {}, {}
-    for query in query_list:
-        provider = query["provider"]
+    reserved = reserve_queries(query_list, max_requests, schedule)
+    reserved_ids = {q["id"] for q in reserved}
+    host_pending = [q["id"] for q in query_list if q["provider"] not in API]
+
+    def execute_sequence(sequence):
+        output, stopped = [], {}
+        for q in sequence:
+            provider, qid = q["provider"], q["id"]
+            group = GROUPS[provider]
+            record = {"query_id": qid, "provider": provider, "returned": 0}
+            if group in stopped:
+                output.append((qid, [], dict(record, status="skipped_budget",
+                               reason="provider_stopped_after_" + stopped[group]), False))
+                continue
+            record["searched_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            try:
+                url = make_request(q, per_query)
+                found, partial = parse_response(q, transport(url, provider), per_query)
+                output.append((qid, found, dict(record, status="partial" if partial else "completed",
+                               returned=len(found),
+                               reason="provider_incomplete_results" if partial else "metadata_only"), True))
+            except ProviderError as error:
+                output.append((qid, [], dict(record, status=error.code, reason=error.code), True))
+                if error.code in ("rate_limited", "access_blocked"):
+                    stopped[group] = error.code
+        return output
+
+    if workers == 1:
+        executions = execute_sequence(reserved)
+    else:
+        groups = defaultdict(list)
+        for q in reserved:
+            groups[GROUPS[q["provider"]]].append(q)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            executions = [row for sequence in pool.map(execute_sequence, groups.values()) for row in sequence]
+    by_id = {qid: (found, status, attempted) for qid, found, status, attempted in executions}
+    requests, results, searches = 0, [], []
+    # Stable output ordering follows reviewed query IDs, not completion time.
+    for q in query_list:
+        qid, provider = q["id"], q["provider"]
         if provider not in API:
-            host_pending.append(query["id"])
             continue
-        group = GROUPS[provider]
-        record = {"query_id": query["id"], "provider": provider, "returned": 0}
-        if group in stopped:
-            searches.append(dict(record, status="skipped_budget", reason="provider_stopped_after_" + stopped[group]))
+        if qid not in reserved_ids:
+            searches.append({"query_id": qid, "provider": provider, "returned": 0,
+                             "status": "skipped_budget", "reason": "request_or_provider_limit"})
             continue
-        if requests >= max_requests or provider_counts.get(group, 0) >= GROUP_LIMITS[group]:
-            searches.append(dict(record, status="skipped_budget", reason="request_or_provider_limit"))
-            continue
-        record["searched_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        requests += 1
-        provider_counts[group] = provider_counts.get(group, 0) + 1
-        try:
-            url = make_request(query, per_query)
-            found, partial = parse_response(query, transport(url, provider), per_query)
-            results.extend(found)
-            searches.append(dict(record, status="partial" if partial else "completed", returned=len(found),
-                                 reason="provider_incomplete_results" if partial else "metadata_only"))
-        except ProviderError as error:
-            searches.append(dict(record, status=error.code, reason=error.code))
-            if error.code in ("rate_limited", "access_blocked"):
-                stopped[group] = error.code
-    return {"schema_version": 1, "scope": "public_metadata_discovery",
-            "notice": DISCOVERY_NOTICE, "requests": requests, "results": results,
+        found, status, attempted = by_id[qid]
+        requests += int(attempted)
+        results.extend(found)
+        searches.append(status)
+    return {"schema_version": 1, "scope": "public_metadata_discovery", "plan_sha256": w.plan_digest(plan),
+            "notice": DISCOVERY_NOTICE, "requests": requests, "reserved_requests": len(reserved),
+            "schedule": schedule, "workers": workers, "results": results,
             "searches": searches, "host_required_queries": host_pending,
             "unselected_queries": [qid for qid in queries if qid not in {q["id"] for q in query_list}],
             "complete": not host_pending and len(query_list) == len(queries)
@@ -313,11 +505,15 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
 
 def main(argv=None):
     parser = core.SafeArgumentParser(description=__doc__)
-    parser.add_argument("--plan", required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--plan", type=Path)
+    source.add_argument("--proposal", type=Path, help="Research-session proposal; only selected query IDs may be sent")
     parser.add_argument("--approve-public", action="store_true",
                         help="I have reviewed the public fingerprint and consent to these fixed API queries")
     parser.add_argument("--max-requests", type=int, default=6)
     parser.add_argument("--per-query", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=1, help="1–4 independent provider groups; no concurrent requests within a provider")
+    parser.add_argument("--schedule", choices=("plan", "balanced"), default="plan")
     parser.add_argument("--query-id", action="append")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
@@ -326,8 +522,25 @@ def main(argv=None):
             w.fail("explicit_public_approval_required")
         if args.output.exists() or args.output.is_symlink():
             w.fail("output_exists")
-        report = discover(w.read_json(args.plan), args.approve_public, args.max_requests,
-                          args.per_query, args.query_id)
+        if args.proposal:
+            proposal = w.object_(w.read_json(args.proposal))
+            if proposal.get("scope") != "research_round_proposal":
+                w.fail("invalid_round_proposal")
+            plan = w.validate_plan(proposal.get("plan"))
+            if proposal.get("plan_sha256") != w.plan_digest(plan):
+                w.fail("round_plan_mismatch")
+            permitted = w.str_list(proposal.get("query_ids"), w.MAX_QUERIES, 8)
+            selected = args.query_id if args.query_id is not None else permitted
+            if not permitted or not set(selected) <= set(permitted):
+                w.fail("query_outside_proposal")
+            expected_rows = [next((q for q in plan["queries"] if q["id"] == qid), None) for qid in permitted]
+            if None in expected_rows or proposal.get("selected_queries") != expected_rows:
+                w.fail("round_proposal_changed")
+        else:
+            plan = w.read_json(args.plan)
+            selected = args.query_id
+        report = discover(plan, args.approve_public, args.max_requests,
+                          args.per_query, selected, workers=args.workers, schedule=args.schedule)
         w.write_json(report, args.output)
         return 0
     except (w.WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

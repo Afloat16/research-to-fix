@@ -27,7 +27,11 @@ This checklist is a review contract, not a claim that every item has passed. Kee
 - Move Unreleased changelog entries to the chosen version, note intentional input-policy changes and migration/workarounds.
 - Verify installation through a supported agent host and document host-dependent behavior.
 - Choose release notes with verified improvements, limitations, and links to evidence. Do not claim an independent benchmark or security certification.
-- Tag only a reviewed, passing commit; release assets must not include secrets. A tag or publication is a separate maintainer action.
+- Tag only a reviewed, passing commit; release assets must not include secrets. Changing VERSION on reviewed main is the explicit maintainer publication action. Checks builds the exact-commit deterministic skill ZIP, runs quality gates before publication, and refuses existing tags. Confirm the actual release and checksum assets; CI success alone does not prove a release exists. Runtime host compatibility still depends on the host.
+
+## Reproducible package
+
+From a committed release version: `python tools/build_release.py --commit FULL_COMMIT_SHA --output /tmp/r2f-release`. Check the ZIP SHA-256. The package includes only tracked skill files, LICENSE and VERSION, not the worktree. The release job runs only after a main push and detects a VERSION change relative to its first parent; no release on PRs or routine unchanged-version pushes.
 
 ## After release
 

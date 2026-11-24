@@ -65,3 +65,19 @@ python examples/numerical-variance/compare_methods.py --output /tmp/r2f-variance
 The variance example actually runs a raw-moment baseline and three alternatives with five fixed seeds and an exact integer oracle. It checks every replicate against a fixed accuracy threshold and regression criteria, then compares latency, relative error and traced allocations. It is a small local experiment, not a general GPU or NumPy benchmark. See [the decision guide](../skills/research-to-fix/references/research-decision.md) and [example methodology](../examples/numerical-variance/README.md).
 
 Measured snapshot: [CI 45343672697](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [frozen discovery and variance reports](../docs/figures/research-snapshot.json). The final shortlist achieves 92.19% recall@6, 100% MRR@6, 100% paper-and-code coverage and 87.5% complete pair recall; stemmed BM25 matches these metrics and has slightly higher nDCG (0.941939 vs 0.939178). Mechanism-formulated queries achieve 96.875% recall vs 87.5% for symptom-only queries, both on the fixed development set. The initial facet-only approach and forced family coverage were not selected as defaults after comparison. Do not infer superiority from these small development samples.
+
+## v1.0.0 transfer and release gates
+
+The [transfer fixture](datasets/algorithm_transfer_v1.json) adds 24 source-linked paper/repository identities and six different algorithm tasks. With the original 32 identities as unjudged background, it contains 56 distinct sources, 68 observations and 18 queries (symptom, mechanism and explicitly bilingual formulations). Relevance labels and explicit paper–code links are authored, not held out. Source availability does not imply an open-source license; inspect individual license restrictions. Both suites evaluate the same candidate corpus/Top-6 budget per method; paired ranking also uses declared links, an additional signal unavailable to lexical baselines. The method comparison does not estimate live search coverage or end-to-end repair success.
+
+```bash
+python benchmarks/discovery.py --output /tmp/r2f-original-v1.json
+python benchmarks/discovery.py --dataset transfer --output /tmp/r2f-transfer-v1.json
+python benchmarks/discovery_regression.py --original /tmp/r2f-original-v1.json --transfer /tmp/r2f-transfer-v1.json --output /tmp/r2f-discovery-gate.json
+python benchmarks/discovery_schedule.py --output /tmp/r2f-schedule.json
+python examples/exact-attention/compare_attention.py --output /tmp/r2f-attention
+```
+
+[Offline CI 45355977079](https://github.com/Afloat16/research-to-fix/actions/runs/45355977079) · [frozen snapshot](../docs/figures/v1-snapshot.json). The paired method achieves Recall@6 of 98.44% and 95.83%, complete pair recall 100% and 94.44%, respectively. Fusion and facet were retained as optional, not selected as defaults. The scheduling experiment uses fixed 40 ms mock delays, not measured internet speed. The attention experiment tests exact forward results and allocation/time tradeoffs, not GPU acceleration.
+
+The separate explicitly approved public known-item probe ran six requests in [CI 45355435962](https://github.com/Afloat16/research-to-fix/actions/runs/45355435962). Three completed; three had provider errors. Fifteen observations, 14 unique identities, target paper DOI and repository found. This single known item is not a quality benchmark. Reproduce only with explicit network consent: `python benchmarks/live_probe.py --approve-public --output /tmp/r2f-live-probe.json`. Normal CI does not invoke it.

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 1180 748">
+<title id="title">v1.0.0 Measured research and algorithm experiments</title>
+<desc id="desc">Two development retrieval corpora, mock request scheduling and a CPU attention experiment; not independent repair success.</desc>
+<rect x="0" y="0" width="1180" height="748" rx="20" fill="#f6f9fb"/>
+<text x="36" y="43" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="28" fill="#172b40" font-weight="700" text-anchor="start">Research to Fix · v1.0.0 measured results</text>
+<text x="36" y="70" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#526b82" font-weight="400" text-anchor="start">Same corpus and Top-6 budget; explicit paper–code relations inform ranking</text>
+<rect x="36" y="92" width="546" height="300" rx="13" fill="#ffffff"/>
+<text x="56" y="124" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" fill="#172b40" font-weight="700" text-anchor="start">A · Original algorithm corpus</text>
+<text x="56" y="148" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" fill="#526b82" font-weight="400" text-anchor="start">32 identities · 16 queries</text>
+<text x="56" y="177" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="start">Recall@6</text>
+<text x="56" y="207" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Stemmed BM25</text>
+<rect x="56" y="214" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="56" y="214" width="212.0313" height="13" rx="3" fill="#8fa6b7" data-corpus="original" data-method="stemmed_bm25" data-metric="recall" data-value="0.921875"/>
+<text x="286" y="206" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">92.19%</text>
+<text x="56" y="261" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">SQLite Porter</text>
+<rect x="56" y="268" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="56" y="268" width="212.0313" height="13" rx="3" fill="#136f92" data-corpus="original" data-method="sqlite_porter" data-metric="recall" data-value="0.921875"/>
+<text x="286" y="260" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">92.19%</text>
+<text x="56" y="315" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Paper–code paired</text>
+<rect x="56" y="322" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="56" y="322" width="226.4063" height="13" rx="3" fill="#087e78" data-corpus="original" data-method="paired_rank" data-metric="recall" data-value="0.984375"/>
+<text x="286" y="314" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">98.44%</text>
+<line x1="56" y1="361" x2="286" y2="361" stroke="#c5d4de" stroke-width="1"/>
+<text x="56" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="start">0</text>
+<text x="286" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="end">100%</text>
+<text x="321" y="177" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="start">Complete pair recall</text>
+<text x="321" y="207" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Stemmed BM25</text>
+<rect x="321" y="214" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="321" y="214" width="201.2500" height="13" rx="3" fill="#8fa6b7" data-corpus="original" data-method="stemmed_bm25" data-metric="complete_pair_recall" data-value="0.875"/>
+<text x="551" y="206" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">87.50%</text>
+<text x="321" y="261" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">SQLite Porter</text>
+<rect x="321" y="268" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="321" y="268" width="201.2500" height="13" rx="3" fill="#136f92" data-corpus="original" data-method="sqlite_porter" data-metric="complete_pair_recall" data-value="0.875"/>
+<text x="551" y="260" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">87.50%</text>
+<text x="321" y="315" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Paper–code paired</text>
+<rect x="321" y="322" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="321" y="322" width="230.0000" height="13" rx="3" fill="#087e78" data-corpus="original" data-method="paired_rank" data-metric="complete_pair_recall" data-value="1"/>
+<text x="551" y="314" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">100.00%</text>
+<line x1="321" y1="361" x2="551" y2="361" stroke="#c5d4de" stroke-width="1"/>
+<text x="321" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="start">0</text>
+<text x="551" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="end">100%</text>
+<rect x="602" y="92" width="546" height="300" rx="13" fill="#ffffff"/>
+<text x="622" y="124" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" fill="#172b40" font-weight="700" text-anchor="start">B · Transfer / bilingual</text>
+<text x="622" y="148" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="15" fill="#526b82" font-weight="400" text-anchor="start">56 identities · 18 queries</text>
+<text x="622" y="177" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="start">Recall@6</text>
+<text x="622" y="207" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Stemmed BM25</text>
+<rect x="622" y="214" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="214" width="214.0279" height="13" rx="3" fill="#8fa6b7" data-corpus="transfer" data-method="stemmed_bm25" data-metric="recall" data-value="0.930556"/>
+<text x="852" y="206" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">93.06%</text>
+<text x="622" y="261" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">SQLite Porter</text>
+<rect x="622" y="268" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="268" width="210.8334" height="13" rx="3" fill="#136f92" data-corpus="transfer" data-method="sqlite_porter" data-metric="recall" data-value="0.916667"/>
+<text x="852" y="260" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">91.67%</text>
+<text x="622" y="315" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Paper–code paired</text>
+<rect x="622" y="322" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="322" width="220.4166" height="13" rx="3" fill="#087e78" data-corpus="transfer" data-method="paired_rank" data-metric="recall" data-value="0.958333"/>
+<text x="852" y="314" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">95.83%</text>
+<line x1="622" y1="361" x2="852" y2="361" stroke="#c5d4de" stroke-width="1"/>
+<text x="622" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="start">0</text>
+<text x="852" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="end">100%</text>
+<text x="887" y="177" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="start">Complete pair recall</text>
+<text x="887" y="207" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Stemmed BM25</text>
+<rect x="887" y="214" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="887" y="214" width="204.4445" height="13" rx="3" fill="#8fa6b7" data-corpus="transfer" data-method="stemmed_bm25" data-metric="complete_pair_recall" data-value="0.888889"/>
+<text x="1117" y="206" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">88.89%</text>
+<text x="887" y="261" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">SQLite Porter</text>
+<rect x="887" y="268" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="887" y="268" width="198.0555" height="13" rx="3" fill="#136f92" data-corpus="transfer" data-method="sqlite_porter" data-metric="complete_pair_recall" data-value="0.861111"/>
+<text x="1117" y="260" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">86.11%</text>
+<text x="887" y="315" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="500" text-anchor="start">Paper–code paired</text>
+<rect x="887" y="322" width="230" height="13" rx="3" fill="#eaf1f5"/>
+<rect x="887" y="322" width="217.2221" height="13" rx="3" fill="#087e78" data-corpus="transfer" data-method="paired_rank" data-metric="complete_pair_recall" data-value="0.944444"/>
+<text x="1117" y="314" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="700" text-anchor="end">94.44%</text>
+<line x1="887" y1="361" x2="1117" y2="361" stroke="#c5d4de" stroke-width="1"/>
+<text x="887" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="start">0</text>
+<text x="1117" y="380" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="12" fill="#526b82" font-weight="400" text-anchor="end">100%</text>
+<rect x="36" y="410" width="546" height="276" rx="13" fill="#ffffff"/>
+<text x="56" y="443" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" fill="#172b40" font-weight="700" text-anchor="start">C · Scheduling (mock I/O)</text>
+<text x="56" y="467" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#526b82" font-weight="400" text-anchor="start">6 requests · mock 40 ms/request · 5 repetitions</text>
+<text x="56" y="491" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="start">Sequential</text>
+<text x="562" y="491" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="end">243.69 ms</text>
+<rect x="56" y="503" width="506" height="14" rx="4" fill="#eaf1f5"/>
+<rect x="56" y="503" width="506" height="14" rx="4" fill="#8fa6b7"/>
+<text x="56" y="546" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="start">3 independent workers</text>
+<text x="562" y="546" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="16" fill="#172b40" font-weight="600" text-anchor="end">83.17 ms</text>
+<rect x="56" y="558" width="506" height="14" rx="4" fill="#eaf1f5"/>
+<rect x="56" y="558" width="172.7045725939817" height="14" rx="4" fill="#087e78"/>
+<text x="56" y="631" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="26" fill="#087e78" font-weight="700" text-anchor="start">2.93× mock-latency speedup</text>
+<text x="56" y="659" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="13" fill="#526b82" font-weight="400" text-anchor="start">Balanced: 6 provider groups vs 3; not live network latency</text>
+<rect x="602" y="410" width="542" height="276" rx="13" fill="#ffffff"/>
+<text x="622" y="443" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="21" fill="#172b40" font-weight="700" text-anchor="start">D · Exact attention (CPU Python)</text>
+<text x="622" y="467" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#526b82" font-weight="400" text-anchor="start">Peak traced allocation · output included, inputs excluded</text>
+<text x="622" y="489" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="500" text-anchor="start">Full matrix</text>
+<text x="1124" y="489" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="600" text-anchor="end">620.04 KiB</text>
+<rect x="622" y="498" width="502" height="10" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="498" width="502" height="10" rx="3" fill="#8fa6b7"/>
+<text x="622" y="529" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="500" text-anchor="start">Row streaming</text>
+<text x="1124" y="529" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="600" text-anchor="end">40.35 KiB</text>
+<rect x="622" y="538" width="502" height="10" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="538" width="32.66969066969067" height="10" rx="3" fill="#087e78"/>
+<text x="622" y="569" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="500" text-anchor="start">Block merge</text>
+<text x="1124" y="569" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="600" text-anchor="end">26.91 KiB</text>
+<rect x="622" y="578" width="502" height="10" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="578" width="21.784010584010584" height="10" rx="3" fill="#087e78"/>
+<text x="622" y="609" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="500" text-anchor="start">Online recurrence</text>
+<text x="1124" y="609" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#172b40" font-weight="600" text-anchor="end">24.42 KiB</text>
+<rect x="622" y="618" width="502" height="10" rx="3" fill="#eaf1f5"/>
+<rect x="622" y="618" width="19.772594972594973" height="10" rx="3" fill="#087e78"/>
+<text x="622" y="662" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#087e78" font-weight="700" text-anchor="start">96.06% lower online allocation; all accuracy gates passed</text>
+<text x="36" y="714" font-family="Arial, Noto Sans CJK SC, sans-serif" font-size="14" fill="#526b82" font-weight="400" text-anchor="start">Frozen report: GitHub Actions 45355977079 · Development fixtures, not held-out. CPU example, not GPU speedup.</text>
+</svg>

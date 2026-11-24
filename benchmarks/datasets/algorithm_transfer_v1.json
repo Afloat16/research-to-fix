@@ -1,0 +1,620 @@
+{
+  "name": "algorithm-transfer-v1",
+  "kind": "source_linked_transfer_development",
+  "collected_at": "2026-11-24",
+  "description": "Six further public algorithm tasks with English symptom/mechanism and explicitly bilingual fingerprints; 24 new paper/repository identities. Sources and implementation links were checked against public paper metadata, author pages or repositories. Snippets are independent concise summaries, not copied full abstracts. Topic relevance is authored; original v1 sources are additional unjudged distractors. This is a transfer development fixture, not blind or live-provider evaluation. Public source availability is not an open-source license determination.",
+  "background": "algorithm_discovery_v1.json",
+  "documents": [
+    {
+      "id": "raft-p",
+      "title": "RAFT: Recurrent All-Pairs Field Transforms for Optical Flow",
+      "url": "https://arxiv.org/abs/2003.12039",
+      "snippet": "Dense motion estimation with recurrent updates over multiscale pixel correlation volumes.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "raft-c",
+      "title": "princeton-vl/RAFT",
+      "url": "https://github.com/princeton-vl/RAFT",
+      "snippet": "Image-pair motion fields with iterative updates of all-pairs feature correlations.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2003.12039",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "pwc-p",
+      "title": "PWC-Net: CNNs for Optical Flow Using Pyramid, Warping, and Cost Volume",
+      "url": "https://arxiv.org/abs/1709.02371",
+      "snippet": "Compact optical flow network builds a cost volume after warping pyramid features.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "pwc-c",
+      "title": "NVlabs/PWC-Net",
+      "url": "https://github.com/NVlabs/PWC-Net",
+      "snippet": "Pyramidal convolutional image-motion estimation implementations in Caffe and PyTorch.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1709.02371",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "license_hint": "CC BY-NC-SA 4.0; source-available, restricted commercial use; verify license.",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "loftr-p",
+      "title": "LoFTR: Detector-Free Local Feature Matching with Transformers",
+      "url": "https://arxiv.org/abs/2104.00680",
+      "snippet": "Coarse-to-fine correspondences between images using global attention without separate interest-point detection.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "loftr-c",
+      "title": "zju3dv/LoFTR",
+      "url": "https://github.com/zju3dv/LoFTR",
+      "snippet": "Pairwise image correspondence inference and training with a detector-free transformer architecture.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2104.00680",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "superglue-p",
+      "title": "SuperGlue: Learning Feature Matching with Graph Neural Networks",
+      "url": "https://arxiv.org/abs/1911.11763",
+      "snippet": "Sparse keypoint correspondence using learned graph message passing and optimal matching.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "superglue-c",
+      "title": "magicleap/SuperGluePretrainedNetwork",
+      "url": "https://github.com/magicleap/SuperGluePretrainedNetwork",
+      "snippet": "Inference and evaluation of a learned sparse image matcher on top of SuperPoint features.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1911.11763",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "license_hint": "Repository-specific terms; inspect license before reuse.",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "pointnet-p",
+      "title": "PointNet++: Deep Hierarchical Feature Learning on Point Sets in a Metric Space",
+      "url": "https://arxiv.org/abs/1706.02413",
+      "snippet": "Nested neighborhoods and multiscale aggregation for classification and segmentation of irregular point sets.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "pointnet-c",
+      "title": "charlesq34/pointnet2",
+      "url": "https://github.com/charlesq34/pointnet2",
+      "snippet": "Hierarchical point-cloud feature learning with local metric neighborhoods.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1706.02413",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "minkowski-p",
+      "title": "4D Spatio-Temporal ConvNets: Minkowski Convolutional Neural Networks",
+      "url": "https://arxiv.org/abs/1904.08755",
+      "snippet": "Generalized sparse convolution over occupied high-dimensional tensor coordinates for spatial and temporal perception.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "minkowski-c",
+      "title": "NVIDIA/MinkowskiEngine",
+      "url": "https://github.com/NVIDIA/MinkowskiEngine",
+      "snippet": "Automatic differentiation library and sparse convolution kernels for high-dimensional sparse tensors.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/1904.08755",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "patchtst-p",
+      "title": "A Time Series is Worth 64 Words: Long-term Forecasting with Transformers",
+      "url": "https://arxiv.org/abs/2211.14730",
+      "snippet": "Segment time series into patches and use shared channel-independent transformer weights for forecasting.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "patchtst-c",
+      "title": "yuqinie98/PatchTST",
+      "url": "https://github.com/yuqinie98/PatchTST",
+      "snippet": "Supervised and self-supervised patch-based time series forecasting.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2211.14730",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "timesnet-p",
+      "title": "TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis",
+      "url": "https://arxiv.org/abs/2210.02186",
+      "snippet": "Period-dependent rearrangement of temporal signals into two-dimensional tensors for convolutional modeling.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "timesnet-c",
+      "title": "thuml/TimesNet",
+      "url": "https://github.com/thuml/TimesNet",
+      "snippet": "Code release for periodic two-dimensional variation modeling across forecasting and other time-series tasks.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2210.02186",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "s4-p",
+      "title": "Efficiently Modeling Long Sequences with Structured State Spaces",
+      "url": "https://arxiv.org/abs/2111.00396",
+      "snippet": "Structured state-space parameterization with low-rank correction enables efficient long-range sequence models.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "s4-c",
+      "title": "state-spaces/s4",
+      "url": "https://github.com/state-spaces/s4",
+      "snippet": "Official structured state-space sequence modeling experiments and kernels.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2111.00396",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "mamba-p",
+      "title": "Mamba: Linear-Time Sequence Modeling with Selective State Spaces",
+      "url": "https://arxiv.org/abs/2312.00752",
+      "snippet": "Input-dependent selective state-space sequence processing with hardware-aware linear-time algorithms.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "mamba-c",
+      "title": "state-spaces/mamba",
+      "url": "https://github.com/state-spaces/mamba",
+      "snippet": "Selective state-space model architecture and optimized scan implementations.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2312.00752",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "teaser-p",
+      "title": "TEASER: Fast and Certifiable Point Cloud Registration",
+      "url": "https://arxiv.org/abs/2001.07715",
+      "snippet": "Robust rigid registration via truncated least squares, decoupled transformations and certifiable estimation.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "teaser-c",
+      "title": "MIT-SPARK/TEASER-plusplus",
+      "url": "https://github.com/MIT-SPARK/TEASER-plusplus",
+      "snippet": "Robust three-dimensional rigid point-cloud registration library with Python bindings.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://arxiv.org/abs/2001.07715",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "fgr-p",
+      "title": "Fast Global Registration",
+      "url": "https://doi.org/10.1007/978-3-319-46475-6_47",
+      "snippet": "Joint alignment and outlier suppression over candidate matches without initial local registration.",
+      "kind": "paper",
+      "access": "metadata",
+      "source_checked": "2026-11-24"
+    },
+    {
+      "id": "fgr-c",
+      "title": "isl-org/FastGlobalRegistration",
+      "url": "https://github.com/isl-org/FastGlobalRegistration",
+      "snippet": "Reference C++ implementation of robust global alignment for partially overlapping 3D surfaces.",
+      "kind": "repository",
+      "access": "metadata",
+      "links": [
+        {
+          "url": "https://doi.org/10.1007/978-3-319-46475-6_47",
+          "relation": "implements",
+          "basis": "metadata",
+          "note": "Paper/implementation relationship identified in public author/repository or paper metadata; verify exact revision and permission."
+        }
+      ],
+      "license_hint": "MIT reported by repository; archived.",
+      "source_checked": "2026-11-24"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "flow",
+      "problem": {
+        "task": "dense optical flow",
+        "symptom": "Estimating per-pixel motion between video frames fails on large displacement",
+        "concepts": [
+          "recurrent correlation volume",
+          "optical flow estimation"
+        ],
+        "alternative_concepts": [
+          "pyramid feature warping",
+          "cost volume"
+        ],
+        "focus": "algorithm"
+      },
+      "bilingual_problem": {
+        "symptom": "视频帧之间逐像素位移估计在大运动下失效",
+        "task": "dense optical flow",
+        "concepts": [
+          "recurrent correlation volume",
+          "optical flow estimation"
+        ],
+        "alternative_concepts": [
+          "pyramid feature warping",
+          "cost volume"
+        ],
+        "aliases": [
+          "optical flow",
+          "motion estimation"
+        ],
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "raft-p",
+        "raft-c",
+        "pwc-p",
+        "pwc-c"
+      ],
+      "pairs": [
+        [
+          "raft-p",
+          "raft-c"
+        ],
+        [
+          "pwc-p",
+          "pwc-c"
+        ]
+      ]
+    },
+    {
+      "id": "correspondence",
+      "problem": {
+        "task": "local image feature matching",
+        "symptom": "Too few reliable correspondences between images in low-texture areas",
+        "concepts": [
+          "detector free image matching",
+          "coarse fine correspondence"
+        ],
+        "alternative_concepts": [
+          "graph neural network keypoint matching",
+          "optimal matching"
+        ],
+        "focus": "algorithm"
+      },
+      "bilingual_problem": {
+        "symptom": "低纹理图像之间找不到足够可靠的匹配点",
+        "task": "local image feature matching",
+        "concepts": [
+          "detector free image matching",
+          "coarse fine correspondence"
+        ],
+        "alternative_concepts": [
+          "graph neural network keypoint matching",
+          "optimal matching"
+        ],
+        "aliases": [
+          "local feature matching",
+          "image correspondence"
+        ],
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "loftr-p",
+        "loftr-c",
+        "superglue-p",
+        "superglue-c"
+      ],
+      "pairs": [
+        [
+          "loftr-p",
+          "loftr-c"
+        ],
+        [
+          "superglue-p",
+          "superglue-c"
+        ]
+      ]
+    },
+    {
+      "id": "point_geometry",
+      "problem": {
+        "task": "point cloud representation learning",
+        "symptom": "Dense voxel memory is excessive and irregularly sampled local geometry is lost",
+        "concepts": [
+          "hierarchical point set neighborhoods",
+          "point cloud segmentation"
+        ],
+        "alternative_concepts": [
+          "sparse convolution",
+          "occupied voxel tensors"
+        ],
+        "focus": "algorithm"
+      },
+      "bilingual_problem": {
+        "symptom": "不规则点云的局部几何丢失而密集体素显存太高",
+        "task": "point cloud representation learning",
+        "concepts": [
+          "hierarchical point set neighborhoods",
+          "point cloud segmentation"
+        ],
+        "alternative_concepts": [
+          "sparse convolution",
+          "occupied voxel tensors"
+        ],
+        "aliases": [
+          "point cloud",
+          "sparse convolution"
+        ],
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "pointnet-p",
+        "pointnet-c",
+        "minkowski-p",
+        "minkowski-c"
+      ],
+      "pairs": [
+        [
+          "pointnet-p",
+          "pointnet-c"
+        ],
+        [
+          "minkowski-p",
+          "minkowski-c"
+        ]
+      ]
+    },
+    {
+      "id": "temporal",
+      "problem": {
+        "task": "long-term time series forecasting",
+        "symptom": "Prediction error grows for long horizons with seasonal patterns and many channels",
+        "concepts": [
+          "patch based transformer",
+          "channel independent forecasting"
+        ],
+        "alternative_concepts": [
+          "multi period temporal modeling",
+          "two dimensional variation"
+        ],
+        "focus": "algorithm"
+      },
+      "bilingual_problem": {
+        "symptom": "多变量周期序列长预测步长时误差变大",
+        "task": "long-term time series forecasting",
+        "concepts": [
+          "patch based transformer",
+          "channel independent forecasting"
+        ],
+        "alternative_concepts": [
+          "multi period temporal modeling",
+          "two dimensional variation"
+        ],
+        "aliases": [
+          "time series forecasting",
+          "seasonality"
+        ],
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "patchtst-p",
+        "patchtst-c",
+        "timesnet-p",
+        "timesnet-c"
+      ],
+      "pairs": [
+        [
+          "patchtst-p",
+          "patchtst-c"
+        ],
+        [
+          "timesnet-p",
+          "timesnet-c"
+        ]
+      ]
+    },
+    {
+      "id": "long_sequence",
+      "problem": {
+        "task": "long-range sequence modeling",
+        "symptom": "Attention quadratic memory limits processing of very long sequences",
+        "concepts": [
+          "structured state space model",
+          "long range dependencies"
+        ],
+        "alternative_concepts": [
+          "selective state space",
+          "linear time sequence"
+        ],
+        "focus": "algorithm"
+      },
+      "bilingual_problem": {
+        "symptom": "长序列建模受到注意力二次复杂度和显存限制",
+        "task": "long-range sequence modeling",
+        "concepts": [
+          "structured state space model",
+          "long range dependencies"
+        ],
+        "alternative_concepts": [
+          "selective state space",
+          "linear time sequence"
+        ],
+        "aliases": [
+          "state space models",
+          "long sequence"
+        ],
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "s4-p",
+        "s4-c",
+        "mamba-p",
+        "mamba-c"
+      ],
+      "pairs": [
+        [
+          "s4-p",
+          "s4-c"
+        ],
+        [
+          "mamba-p",
+          "mamba-c"
+        ]
+      ]
+    },
+    {
+      "id": "registration",
+      "problem": {
+        "task": "robust global point cloud registration",
+        "symptom": "Two partial scans need rigid alignment with many incorrect matches and poor initialization",
+        "concepts": [
+          "truncated least squares",
+          "robust rigid registration"
+        ],
+        "alternative_concepts": [
+          "global registration outlier suppression",
+          "partially overlapping surfaces"
+        ],
+        "focus": "algorithm"
+      },
+      "bilingual_problem": {
+        "symptom": "两个点云存在大量错误对应且初始位姿不准需要刚性配准",
+        "task": "robust global point cloud registration",
+        "concepts": [
+          "truncated least squares",
+          "robust rigid registration"
+        ],
+        "alternative_concepts": [
+          "global registration outlier suppression",
+          "partially overlapping surfaces"
+        ],
+        "aliases": [
+          "point cloud registration",
+          "outlier rejection"
+        ],
+        "focus": "algorithm"
+      },
+      "relevant": [
+        "teaser-p",
+        "teaser-c",
+        "fgr-p",
+        "fgr-c"
+      ],
+      "pairs": [
+        [
+          "teaser-p",
+          "teaser-c"
+        ],
+        [
+          "fgr-p",
+          "fgr-c"
+        ]
+      ]
+    }
+  ]
+}

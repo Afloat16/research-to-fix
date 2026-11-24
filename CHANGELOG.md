@@ -1,12 +1,25 @@
 # Changelog
 
-## Unreleased — research discovery and measured multi-solution decision
+## 1.0.0 — 2026-11-24
+
+### Multi-round research, paired evidence, and locked decisions
+
+- Add bounded, immutable-output research sessions with per-round query IDs, plan digests, distinct-query budgets, coverage diagnostics and targeted follow-up.
+- Extend opt-in metadata adapters with Semantic Scholar, OpenAlex and DBLP; retain fixed allowlisted endpoints, per-provider budgets, explicit approval, no credentials or automatic retries.
+- Add balanced provider scheduling and bounded parallel workers; stable report ordering, serialized provider groups and recorded failures.
+- Isolate contradictory source aliases and reported retraction/withdrawal warnings; distinguish metadata mentions from explicit paper–code assertions. Add optional paired and experimental fusion ranking; preserve the default BM25.
+- Add independent protocol/design locks, precise supporting source locators, code revision/license/compatibility review, matched-replicate Pareto and declared metric resolutions.
+- Add six cross-domain algorithm tasks and bilingual query formulations, quality gates on both fixed corpora, and a five-seed actual exact-attention comparison.
+- Freeze actual benchmark reports and bilingual figures; retain a separate live known-item probe with failure states. No claim of independent repair accuracy.
+- Add reproducible exact-commit skill ZIP with SHA-256 and version-change-triggered GitHub publication after CI and benchmark gates.
+
+### Research discovery and measured multi-solution decision (included foundation)
 
 - Public-fingerprint research planner spanning symptom, mechanism, implementation, alternatives, verification and counterevidence; explicit source budgets and coverage gaps.
 - Optional, explicitly approved public metadata API adapter with fixed endpoints, bounded requests and mocked transport tests; host browsing remains preferred.
 - Provenance-preserving identity grouping, BM25 and facet rankers, paper-code graph and source access review.
 - Protocol-bound baseline/alternative measurement comparison, every-replicate acceptance gates, paired metrics, Pareto frontier and optional declared objective priority.
-- Source-linked 32-identity algorithm discovery development replay and measured numerical variance example in offline CI. No live-provider or universal repair-success claim.
+- Source-linked 32-identity algorithm discovery development replay and measured numerical variance example in offline CI. No representative live-provider accuracy or universal repair-success claim.
 - Agent Skills prompts, bilingual guides and reproducibility documentation.
 
 ## Previous upgrade — retrieval performance, ranking and reproducible benchmarks

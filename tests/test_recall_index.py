@@ -94,6 +94,28 @@ class IndexTests(unittest.TestCase):
             self.assertEqual(rc.recall_batch(path, ["DataLoader"], ranking="technical")["results"][0],
                              rc.recall_cases(path, "DataLoader", ranking="technical"))
 
+    def test_english_stemming_matches_inflections_and_preserves_other_tokens(self):
+        for forms in (("sorting", "sorted", "sort"), ("agents", "agent"),
+                      ("quoted", "quoting", "quote"), ("copying", "copied", "copy"),
+                      ("dismissing", "dismissed", "dismiss")):
+            self.assertEqual(len({rc.english_stem(form) for form in forms}), 1)
+        for token in ("缓存", "cuda11", "data_loader", "x", "a" * 65):
+            self.assertEqual(rc.english_stem(token), token)
+        self.assertIn("stem:sort", rc.ranking_tokens("sorting", "hybrid"))
+        self.assertIn("sorting", rc.ranking_tokens("sorting", "hybrid"))
+        self.assertIn("缓存", rc.ranking_tokens("缓存泄漏", "hybrid"))
+
+    def test_stemmed_and_hybrid_batch_equivalence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            (path / "case.json").write_text(json.dumps(recall_case("Sorting callback")), encoding="utf-8")
+            self.assertEqual(rc.recall_cases(path, "sorted")["matches"], [])
+            for mode in ("stemmed", "hybrid"):
+                report = rc.recall_cases(path, "sorted", ranking=mode)
+                self.assertEqual(report["matches"][0]["file"], "case.json")
+                self.assertEqual(report["ranking"], mode)
+                self.assertEqual(rc.recall_batch(path, ["sorted"], ranking=mode)["results"][0], report)
+
     def test_cli_batch_file_and_no_query_echo(self):
         script = Path(rc.__file__)
         with tempfile.TemporaryDirectory() as directory:

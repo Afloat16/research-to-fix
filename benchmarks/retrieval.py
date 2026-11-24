@@ -164,7 +164,8 @@ def percentile(values, fraction):
 def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
     methods = {}
     outputs = {}
-    for name in ("legacy_scan", "indexed_bm25", "technical", "sqlite_fts5", "sqlite_fts5_porter"):
+    for name in ("legacy_scan", "indexed_bm25", "technical", "stemmed", "hybrid",
+                 "sqlite_fts5", "sqlite_fts5_porter"):
         if name == "legacy_scan" and not include_scan:
             continue
         start = perf_counter_ns()
@@ -181,12 +182,12 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                 del docs
                 def search(text):
                     return [identifier for _, identifier, _ in index.rank(rc.recall_tokens(text), depth, False)]
-        elif name == "technical":
-            docs = [(row["id"], rc.technical_counts(*text_fields(row))) for row in corpus]
+        elif name in ("technical", "stemmed", "hybrid"):
+            docs = [(row["id"], rc.ranking_counts(*text_fields(row), name)) for row in corpus]
             index = rc.PostingIndex(docs)
             del docs
             def search(text):
-                return [identifier for _, identifier, _ in index.rank(rc.technical_tokens(text), depth, False)]
+                return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, name), depth, False)]
         else:
             try:
                 sqlite = SQLiteBaseline(corpus, porter=name == "sqlite_fts5_porter")
@@ -218,7 +219,7 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                          **summarize(expected, queries, k)}
         # Release each engine before building the next one.
         del search
-        if name in ("technical", "indexed_bm25"):
+        if name in ("technical", "stemmed", "hybrid", "indexed_bm25"):
             del index
         elif name == "legacy_scan":
             del docs

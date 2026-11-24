@@ -15,6 +15,7 @@ import sys
 import unicodedata
 from array import array
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlsplit
 
@@ -740,7 +741,7 @@ def recall_tokens(text):
     return tokens
 
 
-RANKING_MODES = ("bm25", "technical")
+RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid")
 TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
 ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
 CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
@@ -776,10 +777,131 @@ def technical_counts(primary, text):
     return counts
 
 
+# Independently implemented suffix normalization from the published Porter
+# algorithm (M. F. Porter, 1980, https://snowballstem.org/algorithms/porter/stemmer.html).
+# This is an IR token normalizer, not linguistic lemmatization or code parsing.
+PORTER_STEP2 = (
+    ("ational", "ate"), ("tional", "tion"), ("enci", "ence"), ("anci", "ance"),
+    ("izer", "ize"), ("bli", "ble"), ("alli", "al"), ("entli", "ent"),
+    ("eli", "e"), ("ousli", "ous"), ("ization", "ize"), ("ation", "ate"),
+    ("ator", "ate"), ("alism", "al"), ("iveness", "ive"), ("fulness", "ful"),
+    ("ousness", "ous"), ("aliti", "al"), ("iviti", "ive"), ("biliti", "ble"),
+    ("logi", "log"),
+)
+PORTER_STEP3 = (("icate", "ic"), ("ative", ""), ("alize", "al"), ("iciti", "ic"),
+                ("ical", "ic"), ("ful", ""), ("ness", ""))
+PORTER_STEP4 = ("al", "ance", "ence", "er", "ic", "able", "ible", "ant", "ement",
+                "ment", "ent", "ion", "ou", "ism", "ate", "iti", "ous", "ive", "ize")
+PORTER_STEP2 = tuple(sorted(PORTER_STEP2, key=lambda row: -len(row[0])))
+PORTER_STEP3 = tuple(sorted(PORTER_STEP3, key=lambda row: -len(row[0])))
+PORTER_STEP4 = tuple(sorted(PORTER_STEP4, key=lambda suffix: -len(suffix)))
+
+
+def _vowels(word):
+    flags = []
+    for char in word:
+        flags.append(char in "aeiou" or (char == "y" and bool(flags) and not flags[-1]))
+    return flags
+
+
+def _measure(word):
+    flags = _vowels(word)
+    return sum(left and not right for left, right in zip(flags, flags[1:]))
+
+
+def _cvc(word):
+    flags = _vowels(word)
+    return len(flags) >= 3 and flags[-3:] == [False, True, False] and word[-1] not in "wxy"
+
+
+def english_stem(word):
+    """Only bounded ASCII words are eligible; retain code tokens and Han terms."""
+    if not 3 <= len(word) <= 64 or not word.isascii() or not word.isalpha() or not word.islower():
+        return word
+    return _english_stem(word)
+
+
+@lru_cache(maxsize=8192)
+def _english_stem(word):
+    if word.endswith("sses"):
+        word = word[:-2]
+    elif word.endswith("ies"):
+        word = word[:-2]
+    elif word.endswith("s") and not word.endswith("ss"):
+        word = word[:-1]
+
+    if word.endswith("eed"):
+        if _measure(word[:-3]) > 0:
+            word = word[:-1]
+    else:
+        for ending in ("ed", "ing"):
+            if word.endswith(ending):
+                base = word[:-len(ending)]
+                if any(_vowels(base)):
+                    word = base
+                    if word.endswith(("at", "bl", "iz")):
+                        word += "e"
+                    elif (len(word) >= 2 and word[-1] == word[-2] and not _vowels(word)[-1]
+                          and word[-1] not in "lsz"):
+                        word = word[:-1]
+                    elif _measure(word) == 1 and _cvc(word):
+                        word += "e"
+                break
+
+    if word.endswith("y") and any(_vowels(word[:-1])):
+        word = word[:-1] + "i"
+    for rules in (PORTER_STEP2, PORTER_STEP3):
+        for ending, replacement in rules:
+            if word.endswith(ending):
+                base = word[:-len(ending)]
+                if _measure(base) > 0:
+                    word = base + replacement
+                break
+    for ending in PORTER_STEP4:
+        if word.endswith(ending):
+            base = word[:-len(ending)]
+            if _measure(base) > 1 and (ending != "ion" or base.endswith(("s", "t"))):
+                word = base
+            break
+    if word.endswith("e"):
+        base = word[:-1]
+        measure = _measure(base)
+        if measure > 1 or (measure == 1 and not _cvc(base)):
+            word = base
+    if word.endswith("ll") and _measure(word) > 1:
+        word = word[:-1]
+    return word
+
+
+def ranking_tokens(text, mode):
+    if mode == "bm25":
+        return recall_tokens(text)
+    tokens = technical_tokens(text)
+    if mode == "technical":
+        return tokens
+    if mode == "stemmed":
+        return [english_stem(token) for token in tokens]
+    if mode == "hybrid":
+        # Separate namespaces avoid collisions between exact terms and stems.
+        # Only alphabetic English words receive a stem channel; Chinese and
+        # identifiers retain their original technical tokens.
+        return tokens + ["stem:" + english_stem(token) for token in tokens
+                         if 3 <= len(token) <= 64 and token.isascii() and token.isalpha()]
+    raise RecallInputError("ranking")
+
+
+def ranking_counts(primary, text, mode):
+    counts = Counter(ranking_tokens(text, mode))
+    if mode != "bm25":
+        counts.update(ranking_tokens(primary, mode))
+    return counts
+
+
 def _rank_terms(error, mode):
     if not isinstance(mode, str) or mode not in RANKING_MODES:
         raise RecallInputError("ranking")
-    return set((technical_tokens if mode == "technical" else recall_tokens)(error))
+    return set(ranking_tokens(error, mode))
+
 
 
 def _recall_excerpt(text, maximum=500):
@@ -960,11 +1082,11 @@ def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
             continue
         seen.add(fingerprint)
         document = _recall_document(case)
-        if ranking == "technical":
+        if ranking != "bm25":
             problem = case["problem"]
             primary = "\n".join(_recall_excerpt(field, 1000) for field in
                                 [problem["summary"], problem["component"], *problem["symptoms"][:12]])[:10000]
-            documents.append(technical_counts(primary, document))
+            documents.append(ranking_counts(primary, document, ranking))
         else:
             documents.append(Counter(recall_tokens(document)))
         summaries.append(_recall_summary(case, entry.name, version))
@@ -1169,7 +1291,7 @@ def main(argv=None):
     recall_parser.add_argument("--version", default="", help="仅字面对比同组件的记录版本，不推断兼容性或影响排序")
     recall_parser.add_argument("--limit", type=int, default=5, help=f"返回数量，1–{RECALL_MAX_RESULTS}，默认 5；不凑足无关案例")
     recall_parser.add_argument("--ranking", choices=RANKING_MODES, default="bm25",
-                               help="technical 为实验性标识符扩展及症状加权；默认 bm25 保持排序兼容")
+                               help="technical 标识符扩展；stemmed 英文词形归一；hybrid 精确词与词干融合。默认 bm25 保持兼容")
     recall_parser.add_argument("--format", choices=("json", "markdown"), default="json")
     batch_parser = commands.add_parser("recall-batch", help="复用一次校验的内存索引，批量召回")
     batch_parser.add_argument("--cases-dir", required=True, type=Path)

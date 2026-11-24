@@ -67,4 +67,4 @@ description: Reuse locally recorded repairs and research similar solved problems
 - 验证：实际命令、退出码、前/后观测、回归结果；性能/科研补充阈值、重复实验与成本。
 - 状态：`solved`（原症状可比检查通过且相关回归符合标准）、`partial`（已有进展但未完整证明）、`blocked`（缺环境/权限/数据等）。
 
-小问题用简短记录，不必生成 JSON。复杂、多轮或需交接的问题用 `scripts/research_case.py init` 建立本地 case，按案例模板填写可选比较上下文、轮次与方案字段，再用 `validate` 检查；需要机器可读结果时加 `--format json`。验证器只检查声明与引用的一致性，不联网、不认证、不执行代码，不证明真实性或因果。含私有路径或实验数据的 case 留在本地，对外只提供脱敏副本。没有明确指示不要向维护者发帖、公开代码或发布项目。
+小问题用简短记录，不必生成 JSON。复杂、多轮或需交接的问题用 `scripts/research_case.py init` 建立本地 case，按案例模板填写可选比较上下文、轮次与方案字段，再用 `validate` 检查；需要机器可读结果时加 `--format json`。验证器只检查声明与引用的一致性，不联网、不认证、不执行代码，不证明真实性或因果。复杂案例交付前运行 `scripts/research_case.py review CASE --format json`，逐项解释复核提示；无提示也不能替代证据判断。需要在本地保留日志、逐测试报告及源码快照时，按 [证据包指南](references/evidence-bundle.md) 使用 `scripts/case_bundle.py seal` 和 `verify`；仅选择授权文件，独立保存 manifest SHA-256，不能把完整性校验当成实验真实性验证。不自动扫描目录、上传产物或重放外部命令。含私有路径或实验数据的 case 留在本地，对外只提供脱敏副本。没有明确指示不要向维护者发帖、公开代码或发布项目。

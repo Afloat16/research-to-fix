@@ -128,11 +128,29 @@ A solved record needs an after pass for **every recorded before check**, includi
 
 For test suites, record optional `test_results` with stable test IDs and outcomes. A pass cannot contain zero passing tests, failures, errors, or unexecuted tests. When details are supplied for a before/after comparison, final results must retain every baseline test ID and pass every test that previously passed, failed, or errored; previously skipped tests may remain skipped. Legacy records without these details remain supported, but the validator cannot detect deleted or skipped tests inside their suite from an aggregate exit code alone.
 
+## Review and preserve evidence
+
+After recording a case, inspect its declared completeness and optionally seal a local evidence bundle:
+
+```bash
+python skills/research-to-fix/scripts/research_case.py review /tmp/research-to-fix-example/case.json
+python skills/research-to-fix/scripts/case_bundle.py seal --directory /tmp/research-to-fix-example \
+  --artifact runs/before/metrics.py --artifact runs/after/metrics.py
+python skills/research-to-fix/scripts/case_bundle.py verify --directory /tmp/research-to-fix-example
+```
+
+- `review` reports baseline/final check coverage, comparison context, per-test details, artifact declarations, and external evidence gaps. Findings are review prompts, not a success score; valid incomplete cases still exit 0.
+- `seal` creates an exclusive `manifest.json` containing SHA-256 digests and byte lengths for `case.json`, files declared in run-level `artifacts` mappings, and explicit additional `--artifact` paths. Select all snapshots you intend to preserve; no automatic directory crawl occurs.
+- `verify` checks the recorded file bytes and case consistency. Pass `--expected-manifest-sha256` with an independently retained digest to detect replacement of the manifest itself. It does not run the tests, authenticate an author, or prove that the recorded observations occurred.
+
+The commands work offline without external dependencies. `validate` and `review` accept ordinary UTF-8 JSON files up to 4 MiB, not symbolic links or special files. The evidence bundle uses portable relative paths and bounded reads (128 members, 16 MiB per artifact, 64 MiB total). Keep the directory under your control; these checks are not a sandbox against concurrent hostile filesystem changes. Review data for secrets before sharing. See the [evidence bundle guide](skills/research-to-fix/references/evidence-bundle.md) and [security policy](SECURITY.md).
+
 ## Project structure
 
 - `skills/research-to-fix/SKILL.md`: core instructions.
 - `skills/research-to-fix/references/`: source selection, case reuse, evidence rules, repair workflow, and case template.
-- `skills/research-to-fix/scripts/research_case.py`: query planning, local case recall, and record validation.
+- `skills/research-to-fix/scripts/research_case.py`: query planning, local case recall, record validation, and completeness review.
+- `skills/research-to-fix/scripts/case_bundle.py`: explicit offline evidence integrity sealing and verification.
 - `tests/`: behavior checks for the helper tool.
 - `examples/`: small independently reproducible cases and practice inputs.
 
@@ -143,9 +161,9 @@ python -m unittest discover -s tests -v
 python -m unittest discover -s examples/streaming-metrics -v
 ```
 
-CI runs these checks on Python 3.10 and 3.13, then records, validates, and retrieves the streaming example. Successful jobs retain the case, source snapshots, raw test logs, per-test reports, and retrieval result as `repair-case-python-<version>` artifacts for 7 days. These are reviewable results for this small example, not a general repair-success benchmark.
+CI exercises Python 3.10–3.14 on Linux plus Python 3.13 on Windows and macOS. Linux jobs record, validate, review, recall, seal and verify the streaming example. Successful Linux jobs retain the case, source snapshots, raw test logs, per-test reports, manifest, review and retrieval reports as `repair-case-python-<version>` artifacts for 7 days. These are reviewable results for this small example, not a general repair-success benchmark.
 
-Contributions based on real problems are welcome. Include the triggering request, environment, redacted reproduction, actual research and local validation, and where the workflow wasted searches or misjudged applicability. Do not upload private code, secrets, or customer data. New sources should explain how to verify original content and record access failures; new scripts should include actual execution results.
+Contributions based on real problems are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and the [release checklist](docs/RELEASE_CHECKLIST.md). Changes are tracked in [CHANGELOG.md](CHANGELOG.md). Include the triggering request, environment, redacted reproduction, actual research and local validation, and where the workflow wasted searches or misjudged applicability. Do not upload private code, secrets, or customer data. New sources should explain how to verify original content and record access failures; new scripts should include actual execution results.
 
 The independently tried [streaming metrics case](examples/streaming-metrics/README.md) includes original evidence, a failing baseline, a compatible fix, and reproducible checks. It is a small synthetic case and does not establish effectiveness on large engineering or research problems. The current version cannot guarantee access to every platform, an external answer for every problem, or success for every repair. Record access restrictions and validation gaps.
 

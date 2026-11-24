@@ -125,11 +125,29 @@ python skills/research-to-fix/scripts/research_case.py validate \
 
 测试套件可用 `test_results` 记录稳定的测试 ID 与结果。pass 记录不能零通过，也不能包含失败、错误或未执行项。前后比较提供明细时，最终结果必须保留全部基线测试 ID；原先通过、失败或错误的测试都须最终通过，原本已跳过的测试可继续跳过。不提供明细的旧记录仍兼容，但校验器无法仅凭套件的总退出码识别内部删测或跳过。
 
+## 完整性复核与证据封存
+
+案例记录后，检查声明的完整度，并按需在本地封存证据包：
+
+```bash
+python skills/research-to-fix/scripts/research_case.py review /tmp/research-to-fix-example/case.json
+python skills/research-to-fix/scripts/case_bundle.py seal --directory /tmp/research-to-fix-example \
+  --artifact runs/before/metrics.py --artifact runs/after/metrics.py
+python skills/research-to-fix/scripts/case_bundle.py verify --directory /tmp/research-to-fix-example
+```
+
+- `review` 统计基线与最终检查覆盖、比较上下文、逐测试明细、已声明的产物与外部证据缺口。提示项用于复核，不是成功率评分；结构合法但不完整的案例仍返回 0。
+- `seal` 排他创建 `manifest.json`，记录 `case.json`、运行记录 `artifacts` 字段所引用文件与额外显式 `--artifact` 文件的 SHA-256 和字节长度。需要保留的源码快照须明确选择，不自动扫描目录。
+- `verify` 检查记录结构和文件字节是否匹配清单。可用 `--expected-manifest-sha256` 输入独立保存的摘要以检测清单本身被替换。不重跑测试、不认证作者、不证明所声明观测真实发生。
+
+全部命令离线、无第三方依赖。`validate` 与 `review` 接收最多 4 MiB 的普通 UTF-8 JSON 文件，不接收符号链接或特殊文件。证据包使用可移植相对路径和有限读取（128 个成员、单产物 16 MiB、总量 64 MiB）。请控制工作目录；检查不是防御并发恶意替换文件系统的沙箱。共享前仍需脱敏。参阅[证据包指南](skills/research-to-fix/references/evidence-bundle.md)与[安全政策](SECURITY.md)。
+
 ## 项目结构
 
 - `skills/research-to-fix/SKILL.md`：核心指令。
 - `skills/research-to-fix/references/`：来源检索、案例复用、证据判定、修复流程和记录模板。
-- `skills/research-to-fix/scripts/research_case.py`：检索计划、本地案例召回与记录检查工具。
+- `skills/research-to-fix/scripts/research_case.py`：检索计划、本地案例召回、记录检查与完整度复核工具。
+- `skills/research-to-fix/scripts/case_bundle.py`：离线证据封存与完整性校验。
 - `tests/`：辅助工具的行为验证。
 - `examples/`：独立可复现的小案例与练习输入。
 
@@ -140,9 +158,9 @@ python -m unittest discover -s tests -v
 python -m unittest discover -s examples/streaming-metrics -v
 ```
 
-CI 在 Python 3.10 和 3.13 上运行这些检查，再记录、校验并召回流式示例。成功任务将案例、源码快照、原始测试日志、逐测试报告及检索结果保存为 `repair-case-python-<版本>` 产物，保留 7 天。这些是可复查的小案例结果，不代表通用修复成功率。
+CI 在 Linux 上覆盖 Python 3.10–3.14，并在 Windows、macOS 上覆盖 Python 3.13。Linux 任务记录、校验、复核、召回、封存及验证流式示例，成功时将案例、源码快照、原始日志、逐测试报告、摘要清单、复核及检索结果保存为 `repair-case-python-<版本>` 产物，保留 7 天。这些是可复查的小案例结果，不代表通用修复成功率。
 
-欢迎提交真实问题中的改进：触发请求、环境、脱敏复现、实际调研与本地验证、哪里浪费了搜索或误判了适用性。不要上传私有代码、密钥或客户数据。新增来源应说明如何核验原始内容与访问失败；新增脚本应附实际运行结果。
+欢迎提交真实问题中的改进，参阅[贡献指南](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md)、[发布清单](docs/RELEASE_CHECKLIST.md)和[变更记录](CHANGELOG.md)：触发请求、环境、脱敏复现、实际调研与本地验证、哪里浪费了搜索或误判了适用性。不要上传私有代码、密钥或客户数据。新增来源应说明如何核验原始内容与访问失败；新增脚本应附实际运行结果。
 
 独立试用的 [流式统计案例](examples/streaming-metrics/README.md)包含原始证据、失败基线、兼容修复与可复现检查。这是小型合成案例，尚不代表大型工程或科研问题上的效果。当前版本不能保证所有平台可访问、每个问题都有外部答案或每项修复一定成功；访问受限与验证缺口应进入记录。
 

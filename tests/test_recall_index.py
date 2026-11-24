@@ -110,11 +110,25 @@ class IndexTests(unittest.TestCase):
             path = Path(directory)
             (path / "case.json").write_text(json.dumps(recall_case("Sorting callback")), encoding="utf-8")
             self.assertEqual(rc.recall_cases(path, "sorted")["matches"], [])
-            for mode in ("stemmed", "hybrid", "contextual"):
+            for mode in ("stemmed", "hybrid", "contextual", "fielded"):
                 report = rc.recall_cases(path, "sorted", ranking=mode)
                 self.assertEqual(report["matches"][0]["file"], "case.json")
                 self.assertEqual(report["ranking"], mode)
                 self.assertEqual(rc.recall_batch(path, ["sorted"], ranking=mode)["results"][0], report)
+
+    def test_fielded_formula_uses_document_df_and_field_norm(self):
+        docs = [("primary", (Counter({"dtype": 1}), Counter({"other": 1}))),
+                ("body", (Counter({"other": 1}), Counter({"dtype": 1})))]
+        index = rc.FieldedPostingIndex(docs)
+        hits = index.rank(["dtype", "dtype"])
+        idf = math.log1p((2 - 2 + .5) / (2 + .5))
+        self.assertEqual([row[1] for row in hits], ["primary", "body"])
+        self.assertAlmostEqual(hits[0][0], idf * 2.5 * 2 / 3.5)
+        self.assertAlmostEqual(hits[1][0], idf)
+        self.assertEqual(hits[0][2], ["dtype"])
+        self.assertEqual(index.rank(["absent"]), [])
+        self.assertEqual(rc.FieldedPostingIndex([]).rank(["dtype"]), [])
+        self.assertEqual(index.rank(["dtype"], limit=1, explain=False)[0][1], "primary")
 
     def test_contextual_phrases_are_bounded_and_do_not_cross_fields(self):
         terms = rc.ranking_tokens("folder picker\nnetwork timeout 缓存泄漏", "contextual")

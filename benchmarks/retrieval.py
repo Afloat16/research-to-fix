@@ -51,7 +51,7 @@ def load_github_titles():
     return load_bundled(DATASET.with_name("github_duplicate_titles_v1.json"))
 
 
-def load_beir(directory, query_limit):
+def load_beir(directory, query_limit, query_offset=0):
     """Consume local BEIR JSONL/TSV, or pinned HF parquet/TSV (optional pyarrow)."""
     directory = Path(directory)
     corpus_file = directory / "corpus.jsonl"
@@ -83,11 +83,13 @@ def load_beir(directory, query_limit):
     # Stable, preregistered ordering independent of labels/algorithm outputs.
     queries.sort(key=lambda row: hashlib.sha256(("r2f-eval-v1:" + row["id"]).encode()).digest())
     total_queries = len(queries)
-    if query_limit:
-        queries = queries[:query_limit]
+    if query_offset >= total_queries:
+        raise ValueError("BEIR query offset outside corpus")
+    queries = queries[query_offset:query_offset + query_limit if query_limit else None]
     return corpus, queries, {"name": "local-beir", "kind": "external_duplicate_question_retrieval",
                              "files_sha256": {p.name: digest(p) for p in (corpus_file, query_file, qrel_file)},
-                             "available_queries": total_queries, "selection": "sha256(r2f-eval-v1:query-id)"}
+                             "available_queries": total_queries, "selection": "sha256(r2f-eval-v1:query-id)",
+                             "query_offset": query_offset}
 
 
 def legacy_scan(documents, terms):
@@ -161,11 +163,16 @@ def percentile(values, fraction):
     return sorted(values)[max(0, math.ceil(len(values) * fraction) - 1)]
 
 
-def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
+def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True, selected_methods=None):
     methods = {}
     outputs = {}
-    for name in ("legacy_scan", "indexed_bm25", "technical", "stemmed", "hybrid", "contextual",
-                 "sqlite_fts5", "sqlite_fts5_porter"):
+    all_methods = ("legacy_scan", "indexed_bm25", "technical", "stemmed", "hybrid", "contextual",
+                   "fielded", "sqlite_fts5", "sqlite_fts5_porter")
+    if selected_methods is not None and (not selected_methods or not set(selected_methods) <= set(all_methods)):
+        raise ValueError("Invalid method selection")
+    for name in all_methods:
+        if selected_methods is not None and name not in selected_methods:
+            continue
         if name == "legacy_scan" and not include_scan:
             continue
         start = perf_counter_ns()
@@ -185,6 +192,14 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
         elif name in ("technical", "stemmed", "hybrid", "contextual"):
             docs = [(row["id"], rc.ranking_counts(*text_fields(row), name)) for row in corpus]
             index = rc.PostingIndex(docs)
+            del docs
+            def search(text):
+                return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, name), depth, False)]
+        elif name == "fielded":
+            docs = [(row["id"], (Counter(rc.ranking_tokens(text_fields(row)[0], name)),
+                                 Counter(rc.ranking_tokens(rc._recall_excerpt(row["text"], 9000), name))))
+                    for row in corpus]
+            index = rc.FieldedPostingIndex(docs)
             del docs
             def search(text):
                 return [identifier for _, identifier, _ in index.rank(rc.ranking_tokens(text, name), depth, False)]
@@ -219,15 +234,15 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                          **summarize(expected, queries, k)}
         # Release each engine before building the next one.
         del search
-        if name in ("technical", "stemmed", "hybrid", "contextual", "indexed_bm25"):
+        if name in ("technical", "stemmed", "hybrid", "contextual", "indexed_bm25", "fielded"):
             del index
         elif name == "legacy_scan":
             del docs
         else:
             sqlite.db.close()
-    parity = (outputs.get("legacy_scan") == outputs.get("indexed_bm25")
-              if include_scan else None)
-    if include_scan and not parity:
+    parity = (outputs["legacy_scan"] == outputs["indexed_bm25"]
+              if {"legacy_scan", "indexed_bm25"} <= outputs.keys() else None)
+    if parity is False:
         raise RuntimeError("Indexed BM25 changed legacy top-k results")
     return {"dataset": metadata, "documents": len(corpus), "queries": len(queries),
             "k": k, "repeats": repeats, "python": platform.python_version(),
@@ -243,20 +258,22 @@ def main():
     group.add_argument("--beir-dir", type=Path, help="Local BEIR directory; default is bundled synthetic data")
     group.add_argument("--github-titles", action="store_true", help="Public duplicate issue title sample")
     parser.add_argument("--query-limit", type=int, default=0, help="Stable hash sample for BEIR; 0 uses all")
+    parser.add_argument("--query-offset", type=int, default=0, help="Disjoint offset in BEIR hash ordering")
+    parser.add_argument("--methods", nargs="+", help="Explicit subset of methods, no unmeasured parity claim")
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--no-scan", action="store_true", help="Skip costly legacy scan (no parity claim)")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if not 1 <= args.k <= 100 or not 1 <= args.repeats <= 10 or args.query_limit < 0:
+    if not 1 <= args.k <= 100 or not 1 <= args.repeats <= 10 or args.query_limit < 0 or args.query_offset < 0 or (args.query_offset and not args.beir_dir):
         parser.error("invalid benchmark limits")
     if args.beir_dir:
-        corpus, queries, meta = load_beir(args.beir_dir, args.query_limit)
+        corpus, queries, meta = load_beir(args.beir_dir, args.query_limit, args.query_offset)
     elif args.github_titles:
         corpus, queries, meta = load_github_titles()
     else:
         corpus, queries, meta = load_synthetic()
-    report = run(corpus, queries, meta, args.k, args.repeats, not args.no_scan)
+    report = run(corpus, queries, meta, args.k, args.repeats, not args.no_scan, args.methods)
     with args.output.open("x", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
         handle.write("\n")

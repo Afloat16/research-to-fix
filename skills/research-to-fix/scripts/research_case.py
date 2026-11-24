@@ -741,7 +741,7 @@ def recall_tokens(text):
     return tokens
 
 
-RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual")
+RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual", "fielded")
 TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
 ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
 CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
@@ -879,7 +879,7 @@ def ranking_tokens(text, mode):
     tokens = technical_tokens(text)
     if mode == "technical":
         return tokens
-    if mode in ("stemmed", "contextual"):
+    if mode in ("stemmed", "contextual", "fielded"):
         stems = [english_stem(token) for token in tokens]
         if mode == "contextual":
             # Phrase features are independent of English identifier expansion.
@@ -935,11 +935,13 @@ def _recall_excerpt(text, maximum=500):
     return "".join(result)
 
 
-def _recall_document(case):
+def _recall_fields(case):
     # Search problem/mechanism descriptions, never raw commands, output logs,
     # unrelated search-query lists, or filesystem paths.
     problem = case["problem"]
     fields = [problem["summary"], problem["component"], *problem["symptoms"][:12]]
+    primary = "\n".join(_recall_excerpt(field, 1000) for field in fields)
+    fields = []
     for mapping in case["mapping"][:8]:
         fields.extend((mapping["symbol"], mapping["similarities"], mapping["hypothesis"]))
     solution = case.get("solution", {})
@@ -947,7 +949,13 @@ def _recall_document(case):
     for component in solution.get("components", [])[:8]:
         fields.extend((component["contribution"], component["adaptation"]))
     fields.append(case["validation"]["summary"])
-    return "\n".join(_recall_excerpt(field, 1000) for field in fields)[:10000]
+    body = "\n".join(_recall_excerpt(field, 1000) for field in fields)
+    return primary, body
+
+
+def _recall_document(case):
+    primary, body = _recall_fields(case)
+    return (primary + "\n" + body)[:10000]
 
 
 def plain_stat(metadata, kind):
@@ -1091,6 +1099,12 @@ def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
             skipped["duplicate"] += 1
             continue
         seen.add(fingerprint)
+        if ranking == "fielded":
+            primary, body = _recall_fields(case)
+            documents.append((Counter(ranking_tokens(primary[:10000], "fielded")),
+                              Counter(ranking_tokens(body[:max(0, 9999 - len(primary))], "fielded"))))
+            summaries.append(_recall_summary(case, entry.name, version))
+            continue
         document = _recall_document(case)
         if ranking != "bm25":
             problem = case["problem"]
@@ -1163,6 +1177,44 @@ class PostingIndex:
                 for index in order]
 
 
+class FieldedPostingIndex(PostingIndex):
+    """Two-field BM25F, with document-level DF and independent length norms.
+
+    Fixed weights: primary=2, supporting=1; b_primary=.3, b_support=.75;
+    k1=1.5. Primary means symptom/title, never popularity or authority.
+    Formula: Robertson & Zaragoza (2009), DOI 10.1561/1500000019.
+    Unlike duplicating title tokens, normalization occurs within each field.
+    """
+    def __init__(self, documents):
+        documents = list(documents)
+        self.ids = tuple(identifier for identifier, _ in documents)
+        if len(set(self.ids)) != len(self.ids):
+            raise ValueError("duplicate document ID")
+        fields = [value for _, value in documents]
+        if any(len(value) != 2 for value in fields):
+            raise ValueError("expected two term-count fields")
+        lengths = [(sum(first.values()), sum(second.values())) for first, second in fields]
+        means = [(sum(value[i] for value in lengths) / len(lengths) or 1.0)
+                 if lengths else 1.0 for i in range(2)]
+        frequencies = Counter(term for first, second in fields for term in first.keys() | second.keys())
+        inverse = {term: math.log1p((len(fields) - count + .5) / (count + .5))
+                   for term, count in frequencies.items()}
+        self.postings = {}
+        for index, ((first, second), (a, b)) in enumerate(zip(fields, lengths)):
+            primary_norm = .7 + .3 * a / means[0]
+            body_norm = .25 + .75 * b / means[1]
+            for term in first.keys() | second.keys():
+                weighted_tf = 2 * first.get(term, 0) / primary_norm + second.get(term, 0) / body_norm
+                contribution = inverse[term] * 2.5 * weighted_tf / (1.5 + weighted_tf)
+                if contribution <= 0:
+                    continue
+                if term not in self.postings:
+                    self.postings[term] = (array("I"), array("d"))
+                identifiers, values = self.postings[term]
+                identifiers.append(index)
+                values.append(contribution)
+
+
 def scan_rank(documents, query_terms):
     """One-shot scan avoids building postings for never-queried vocabulary."""
     query_terms = set(query_terms)
@@ -1201,8 +1253,10 @@ class RecallSnapshot:
             cases_dir, component, version, ranking)
         self.summaries = {row["file"]: row for row in summaries}
         pairs = list(zip(self.summaries, documents))
-        self.index = PostingIndex(pairs) if indexed else None
-        self.documents = None if indexed else pairs
+        # The optional fielded formula is identical for one-shot and batch;
+        # the legacy path still avoids building postings for one query.
+        self.index = FieldedPostingIndex(pairs) if ranking == "fielded" else PostingIndex(pairs) if indexed else None
+        self.documents = None if self.index is not None else pairs
 
     def search(self, error, limit=5):
         terms = _check_recall_query(error, self.component, self.version, limit)

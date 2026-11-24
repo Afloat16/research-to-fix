@@ -49,10 +49,16 @@ jobs:
         run: python examples/exact-topk/compare_methods.py --output "$RUNNER_TEMP/exact-topk"
       - name: Install optional catalog importer
         if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run route-fusion archive benchmark')
-        run: python -m pip install --only-binary=:all: pyarrow==20.0.0
+        run: |
+          python -m pip install --only-binary=:all: pyarrow==20.0.0
       - name: Compare broad problem retrieval on the pinned archive
         if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run route-fusion archive benchmark')
         run: python benchmarks/full_catalog.py --approve-public --output "$RUNNER_TEMP/full-catalog"
+      - name: Compare field-aware ranking on disjoint public query sample
+        if: github.event_name == 'push' && github.ref == 'refs/heads/upgrade/research-platform-v1' && startsWith(github.event.head_commit.message, 'Run route-fusion archive benchmark')
+        run: |
+          python benchmarks/fetch_beir.py --output "$RUNNER_TEMP/beir-programmers"
+          python benchmarks/retrieval.py --beir-dir "$RUNNER_TEMP/beir-programmers" --query-limit 128 --query-offset 128 --k 10 --repeats 2 --methods indexed_bm25 stemmed contextual fielded sqlite_fts5_porter --output "$RUNNER_TEMP/beir-fielded.json"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -66,5 +72,6 @@ jobs:
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/exact-topk/
             ${{ runner.temp }}/full-catalog/report.json
+            ${{ runner.temp }}/beir-fielded.json
           retention-days: 14
           if-no-files-found: warn

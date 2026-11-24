@@ -35,3 +35,15 @@ The fixed source-linked public duplicate-title sample exposed poor English infle
 Hybrid leads this synthetic sample, but stemmed is much stronger on actual English issue titles and still slightly behind SQLite Porter in MRR. All modes abstained on the three unrelated synthetic queries. This is why ranking choices remain explicit and the default remains compatible rather than selecting a universal winner from two small development sets. Later phrase-aware results are available in performance workflow reports.
 
 See [benchmark protocol](../benchmarks/README.md) for data provenance, external BEIR reproduction and limitations. No external BEIR or end-to-end SWE-bench success rate is claimed.
+
+## Frozen visual benchmark snapshot
+
+The bilingual [README figures](figures/README.md) use the exact JSON from the completed [run 45339912941](https://github.com/Afloat16/research-to-fix/actions/runs/45339912941), commit `672145cb26aadc9d7ac43e23a3f0e96ec8abbe0f`. That same run observed 683.454 ms repeated one-shot vs 25.266 ms batch (27.05×); 848.813 ms full scan vs 7.763 ms warm packed-index queries (109.341×); 22,013,956 vs 5,184,748 retained bytes (76.4% reduction). Exact batch reports and Top-10 scores matched. All quality/consistency gates passed without warnings. The full [source-linked snapshot](figures/benchmark-snapshot.json) contains every method's measured MRR, recall, nDCG, latency, dataset fingerprint and environment.
+
+![Synthetic ranking comparison](figures/synthetic-ranking.svg)
+
+![Public issue ranking comparison](figures/github-ranking.svg)
+
+![Paired efficiency measurements](figures/efficiency.svg)
+
+These figures deliberately use one completed run, rather than mixing the best timing from separate runs. The small fixed development datasets and generated scale loads are not independent repair-success evaluations.

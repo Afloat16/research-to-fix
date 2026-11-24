@@ -35,6 +35,9 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python }}
+      - name: Verify generated README figures
+        if: runner.os == 'Linux' && matrix.python == '3.13'
+        run: node docs/figures/render.cjs --check
       - run: python -m unittest discover -s tests -v
       - run: python -m unittest discover -s examples/streaming-metrics -v
       - name: Record, review, retrieve and verify a reproducible repair case

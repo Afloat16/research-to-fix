@@ -770,7 +770,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         for seed, partner in ((pair["paper_id"], pair["code_id"]), (pair["code_id"], pair["paper_id"])):
             if seed in selected_ids and partner not in selected_ids:
                 row = nodes[partner]
-                if row["access"] not in ("unavailable", "access_blocked"):
+                if row["access"] not in ("unavailable", "access_blocked") and not row["publication_warning"]:
                     followups.setdefault(partner, {"id": partner, "url": row["url"], "title": row["title"],
                                                    "kind": row["kind"], "access": row["access"],
                                                    "linked_from": seed, "relation": pair["relation"],
@@ -784,7 +784,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         if {left["family"], right["family"]} != {"paper", "code"}:
             continue
         for seed, partner in ((left, right), (right, left)):
-            if seed["id"] in selected_ids and partner["id"] not in selected_ids and partner["access"] not in ("unavailable", "access_blocked"):
+            if seed["id"] in selected_ids and partner["id"] not in selected_ids and partner["access"] not in ("unavailable", "access_blocked") and not partner["publication_warning"]:
                 followups.setdefault(partner["id"], {"id": partner["id"], "url": partner["url"],
                     "title": partner["title"], "kind": partner["kind"], "access": partner["access"],
                     "linked_from": seed["id"], "relation": edge["relation"], "basis": edge["basis"],

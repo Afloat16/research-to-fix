@@ -224,11 +224,13 @@ class TriageTests(unittest.TestCase):
     def test_publication_flag_is_review_only_in_all_rankers(self):
         flagged = self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention memory efficient attention",
                            publication_flag="retracted_or_withdrawn", publication_hint="provider flag")
-        code = self.row("github_repositories", "https://github.com/example/attention", "FlashAttention attention")
+        code = self.row("github_repositories", "https://github.com/example/attention", "FlashAttention attention",
+                        links=[{"url": flagged["url"], "relation": "implements", "basis": "metadata"}])
         for mode in ("bm25", "facet", "fusion", "paired"):
             result = w.rank_results(self.plan, [{"results": [flagged, code]}], 5, mode)
             self.assertNotIn(flagged["url"], {row["url"] for row in result["shortlist"]})
             self.assertEqual(result["publication_review"][0]["url"], flagged["url"])
+            self.assertNotIn(flagged["url"], {row["url"] for row in result["linked_followups"]})
 
     def test_no_search_claim_without_explicit_status_and_stable_order(self):
         rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention"),

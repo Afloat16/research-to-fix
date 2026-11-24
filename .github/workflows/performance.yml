@@ -45,6 +45,8 @@ jobs:
         run: python benchmarks/discovery.py --output "$RUNNER_TEMP/discovery.json"
       - name: Evaluate additional algorithm transfer and bilingual queries
         run: python benchmarks/discovery.py --dataset transfer --output "$RUNNER_TEMP/discovery-transfer.json"
+      - name: Enforce source identity and paired-ranking regression gates
+        run: python benchmarks/discovery_regression.py --original "$RUNNER_TEMP/discovery.json" --transfer "$RUNNER_TEMP/discovery-transfer.json" --output "$RUNNER_TEMP/discovery-regression.json"
       - name: Compare actual numerical repair candidates
         run: python examples/numerical-variance/compare_methods.py --output "$RUNNER_TEMP/variance-comparison"
       - name: Compare exact attention workspace algorithms
@@ -62,6 +64,7 @@ jobs:
             ${{ runner.temp }}/regression.json
             ${{ runner.temp }}/discovery.json
             ${{ runner.temp }}/discovery-transfer.json
+            ${{ runner.temp }}/discovery-regression.json
             ${{ runner.temp }}/variance-comparison/
             ${{ runner.temp }}/attention-comparison/
             ${{ runner.temp }}/discovery-schedule.json

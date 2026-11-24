@@ -18,6 +18,16 @@
 创意与工作流设计：[Afloat16](https://github.com/Afloat16)。MIT 开源。**不要求 Python 第三方运行时依赖、托管搜索服务或向量模型。**
 
 
+## v1.2.0 — 精确召回加速与研究审计
+
+![精确召回加速：六种负载、加速倍数及严格一致性](docs/figures/v12-recall.zh-CN.svg)
+
+**中位召回加速 2.85–4.83 倍 · 样本峰值分配减少 59.4–65.8% · 288/288 查询结果严格一致。** 新版索引路径保留全部阈值命中计数，仅选择并解释 Top-K 返回项；所有实测查询的评分、文档 ID、计数和解释均与旧版完整解释路径一致。六种生成负载、5,000 篇文档、每种 48 条查询、三次计时重复；比较预分词热索引，不代表端到端修复速度。无新增运行时依赖。
+
+研究账本新增阶段覆盖审计，区分未规划、未完成或混合状态、已完成但无有效观测、已完成且有有效观测；不能把未找到反证当作反证不存在。新增[同条件多臂 Agent 评测协议](benchmarks/AGENT_COMPARISON_PROTOCOL.md)，冻结模型、任务、种子、预算及干预摘要，不把未运行的 Agent 实验当成真实修复成绩。
+
+[真实 CI](https://github.com/Afloat16/research-to-fix/actions/runs/45366494938) · [详细结果与复现](benchmarks/V12_RESULTS.md) · [原始快照](docs/figures/v12-snapshot.json) · [独立迁移协议](benchmarks/TRANSFER_V12_PROTOCOL.md)。
+
 ## v1.1.0 — 外部保留集与精准检索
 
 ![外部保留集排序性能与配对区间](docs/figures/independent-holdout.zh-CN.svg)

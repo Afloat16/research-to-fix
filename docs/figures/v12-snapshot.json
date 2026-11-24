@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "relative_run": {
+    "id": 45366494938,
+    "job_id": 138349447314,
+    "commit": "0c65120111e94c1b4d964b231b3531bbf4233fa9",
+    "url": "https://github.com/Afloat16/research-to-fix/actions/runs/45366494938"
+  },
+  "relative_recall": {
+    "documents": 5000,
+    "queries_per_scenario": 48,
+    "repeats": 3,
+    "exact_parity_queries": 288,
+    "limit": 5,
+    "relative_threshold": 0.5,
+    "python": "3.13.18",
+    "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
+    "scenarios": {
+      "bm25_sparse": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 52,
+        "methods": {
+          "full": {
+            "p50_ms": 0.2599805,
+            "p95_ms": 0.299118,
+            "sample_query_peak_bytes": 41508
+          },
+          "bounded": {
+            "p50_ms": 0.090534,
+            "p95_ms": 0.116537,
+            "sample_query_peak_bytes": 16812
+          }
+        },
+        "p50_speedup": 2.8716338613117722,
+        "p95_speedup": 2.5667212988149686,
+        "sample_query_peak_reduction": 0.5949696444058976
+      },
+      "bm25_mixed": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 116.5,
+        "methods": {
+          "full": {
+            "p50_ms": 10.048303,
+            "p95_ms": 15.694683,
+            "sample_query_peak_bytes": 2211612
+          },
+          "bounded": {
+            "p50_ms": 2.1075619999999997,
+            "p95_ms": 2.296374,
+            "sample_query_peak_bytes": 779564
+          }
+        },
+        "p50_speedup": 4.767737793716153,
+        "p95_speedup": 6.834550034097233,
+        "sample_query_peak_reduction": 0.6475132166039974
+      },
+      "bm25_dense": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 4255.5,
+        "methods": {
+          "full": {
+            "p50_ms": 27.505358,
+            "p95_ms": 33.610912,
+            "sample_query_peak_bytes": 5286696
+          },
+          "bounded": {
+            "p50_ms": 7.935737,
+            "p95_ms": 8.137202,
+            "sample_query_peak_bytes": 1807148
+          }
+        },
+        "p50_speedup": 3.466011789453204,
+        "p95_speedup": 4.130524472662716,
+        "sample_query_peak_reduction": 0.6581706230129366
+      },
+      "field_sparse": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 45,
+        "methods": {
+          "full": {
+            "p50_ms": 0.2593235,
+            "p95_ms": 0.314798,
+            "sample_query_peak_bytes": 41444
+          },
+          "bounded": {
+            "p50_ms": 0.0909195,
+            "p95_ms": 0.115245,
+            "sample_query_peak_bytes": 16812
+          }
+        },
+        "p50_speedup": 2.8522319194452233,
+        "p95_speedup": 2.7315545142956315,
+        "sample_query_peak_reduction": 0.594344175272657
+      },
+      "field_mixed": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 86.5,
+        "methods": {
+          "full": {
+            "p50_ms": 10.187688,
+            "p95_ms": 15.391748,
+            "sample_query_peak_bytes": 2211612
+          },
+          "bounded": {
+            "p50_ms": 2.108764,
+            "p95_ms": 2.309819,
+            "sample_query_peak_bytes": 779564
+          }
+        },
+        "p50_speedup": 4.831118133655544,
+        "p95_speedup": 6.663616499820981,
+        "sample_query_peak_reduction": 0.6475132166039974
+      },
+      "field_dense": {
+        "exact_count_scores_ids_explanations": true,
+        "median_retained_candidates": 4077.5,
+        "methods": {
+          "full": {
+            "p50_ms": 27.529399,
+            "p95_ms": 34.729998,
+            "sample_query_peak_bytes": 5286696
+          },
+          "bounded": {
+            "p50_ms": 7.864001,
+            "p95_ms": 8.120331,
+            "sample_query_peak_bytes": 1807148
+          }
+        },
+        "p50_speedup": 3.5006861011335073,
+        "p95_speedup": 4.276919007365587,
+        "sample_query_peak_reduction": 0.6581706230129366
+      }
+    },
+    "scope": "Generated prepared-token warm-index recall, including threshold count and explanations; not index build, end-to-end file I/O, relevance or repair accuracy. Single fixed query allocation sample per scenario."
+  }
+}

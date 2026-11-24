@@ -159,22 +159,25 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
         if name == "legacy_scan" and not include_scan:
             continue
         start = perf_counter_ns()
+        # BEIR excludes self-matches when a query ID is also a document ID.
+        # Request one extra result for every engine, then remove the self-hit.
+        depth = k + 1
         if name in ("legacy_scan", "indexed_bm25"):
             docs = [(row["id"], Counter(rc.recall_tokens(text_fields(row)[1]))) for row in corpus]
             if name == "legacy_scan":
                 def search(text):
-                    return [identifier for _, identifier in legacy_scan(docs, set(rc.recall_tokens(text)))[:k]]
+                    return [identifier for _, identifier in legacy_scan(docs, set(rc.recall_tokens(text)))[:depth]]
             else:
                 index = rc.PostingIndex(docs)
                 del docs
                 def search(text):
-                    return [identifier for _, identifier, _ in index.rank(rc.recall_tokens(text), k, False)]
+                    return [identifier for _, identifier, _ in index.rank(rc.recall_tokens(text), depth, False)]
         elif name == "technical":
             docs = [(row["id"], rc.technical_counts(*text_fields(row))) for row in corpus]
             index = rc.PostingIndex(docs)
             del docs
             def search(text):
-                return [identifier for _, identifier, _ in index.rank(rc.technical_tokens(text), k, False)]
+                return [identifier for _, identifier, _ in index.rank(rc.technical_tokens(text), depth, False)]
         else:
             try:
                 sqlite = SQLiteBaseline(corpus)
@@ -184,7 +187,7 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
                     continue
                 raise
             def search(text):
-                return sqlite.search(text, k)
+                return sqlite.search(text, depth)
         build_ms = (perf_counter_ns() - start) / 1e6
         times = []
         expected = None
@@ -192,7 +195,8 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
             rankings = {}
             for row in queries:
                 start = perf_counter_ns()
-                rankings[row["id"]] = search(row["text"])
+                rankings[row["id"]] = [identifier for identifier in search(row["text"])
+                                       if identifier != row["id"]][:k]
                 times.append((perf_counter_ns() - start) / 1e6)
             if expected is not None and rankings != expected:
                 raise RuntimeError("Nondeterministic rankings")
@@ -219,7 +223,7 @@ def run(corpus, queries, metadata, k=10, repeats=3, include_scan=True):
             "k": k, "repeats": repeats, "python": platform.python_version(),
             "platform": platform.platform(), "sqlite_version": sqlite3.sqlite_version,
             "legacy_indexed_top_k_exact_match": parity, "methods": methods,
-            "scope": "ranking only, no relative-threshold filtering; timing includes query tokenization, excludes case validation and disk I/O",
+            "scope": "ranking only, exclude self-ID, no relative-threshold filtering; timing includes query tokenization, excludes case validation and disk I/O",
             "notice": "Synthetic examples and duplicate-question judgments do not establish repair success or universal ranking superiority."}
 
 

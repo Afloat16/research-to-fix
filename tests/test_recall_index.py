@@ -8,6 +8,7 @@ import sys
 import subprocess
 import tempfile
 import unittest
+import unicodedata
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/research-to-fix/scripts"))
@@ -69,6 +70,17 @@ class IndexTests(unittest.TestCase):
                     with self.assertRaises(rc.RecallInputError):
                         rc.recall_batch("unused", errors)
                     load.assert_not_called()
+
+    def test_excerpt_optimization_preserves_legacy_unicode_normalization(self):
+        rng = random.Random(902)
+        alphabet = "ab 中文éß\0\r\n\u200b\u2028\ue000\t\ud800"
+        for size in (0, 1, 50, 1000):
+            for limit in (1, 10, 500):
+                text = "".join(rng.choices(alphabet, k=size))
+                old = " ".join("".join(" " if unicodedata.category(char).startswith("C") else char
+                                       for char in text).split())
+                expected = old if len(old) <= limit else old[:limit - 1] + "…"
+                self.assertEqual(rc._recall_excerpt(text, limit), expected)
 
     def test_technical_aliases_and_chinese(self):
         self.assertIn("runtime", rc.technical_tokens("RuntimeError"))

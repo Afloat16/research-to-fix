@@ -13,6 +13,7 @@ import re
 import stat
 import sys
 import unicodedata
+from array import array
 from collections import Counter
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlsplit
@@ -740,6 +741,10 @@ def recall_tokens(text):
 
 
 RANKING_MODES = ("bm25", "technical")
+TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
+ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
+CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
+ASCII_CONTROLS = str.maketrans({char: " " for char in (*range(32), 127)})
 
 
 def technical_tokens(text):
@@ -748,10 +753,11 @@ def technical_tokens(text):
     Han bigrams remain the same as legacy recall.
     """
     tokens = recall_tokens(text)
-    for word in re.findall(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*",
-                           unicodedata.normalize("NFKC", text)):
-        spaced = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", word)
-        spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", spaced)
+    for word in TECHNICAL_WORD.findall(unicodedata.normalize("NFKC", text)):
+        if "_" not in word and (word.islower() or word.isupper() or word[1:].islower()):
+            continue
+        spaced = ACRONYM_BOUNDARY.sub(r"\1 \2", word)
+        spaced = CAMEL_BOUNDARY.sub(r"\1 \2", spaced)
         pieces = [part.casefold() for part in spaced.replace("_", " ").split()]
         if len(pieces) > 1:
             original = word.casefold()
@@ -777,9 +783,24 @@ def _rank_terms(error, mode):
 
 
 def _recall_excerpt(text, maximum=500):
-    text = "".join(" " if unicodedata.category(char).startswith("C") else char for char in text)
-    text = " ".join(text.split())
-    return text if len(text) <= maximum else text[:maximum - 1] + "…"
+    if text.isascii():
+        normalized = " ".join(text.translate(ASCII_CONTROLS).split())
+        return normalized if len(normalized) <= maximum else normalized[:maximum - 1] + "…"
+    # Stop once the normalized excerpt is known to be truncated. Avoid
+    # allocating a second full Unicode string for a long untrusted field.
+    result = []
+    pending_space = False
+    for char in text:
+        if char.isspace() or unicodedata.category(char).startswith("C"):
+            pending_space = bool(result)
+            continue
+        if pending_space:
+            result.append(" ")
+            pending_space = False
+        result.append(char)
+        if len(result) > maximum:
+            return "".join(result[:maximum - 1]) + "…"
+    return "".join(result)
 
 
 def _recall_document(case):
@@ -975,17 +996,25 @@ class PostingIndex:
             normalization = 1.5 * (0.25 + 0.75 * length / (mean or 1.0))
             for term, frequency in terms.items():
                 contribution = inverse[term] * (2.5 * frequency) / (frequency + normalization)
-                self.postings.setdefault(term, []).append((index, contribution))
+                if term not in self.postings:
+                    self.postings[term] = (array("I"), array("d"))
+                identifiers, values = self.postings[term]
+                identifiers.append(index)
+                values.append(contribution)
 
     def rank(self, query_terms, limit=None, explain=True):
         contributions = {}
         for term in sorted(set(query_terms)):
-            for index, value in self.postings.get(term, ()):
-                contributions.setdefault(index, []).append((term, value))
+            posting = self.postings.get(term)
+            if posting is None:
+                continue
+            for index, value in zip(*posting):
+                contributions.setdefault(index, []).append((term, value) if explain else value)
         # sum() retains the legacy summation semantics, including Python
         # 3.12+'s more accurate float summation.
-        scores = {index: sum(value for _, value in matches)
-                  for index, matches in contributions.items()}
+        scores = ({index: sum(value for _, value in matches)
+                   for index, matches in contributions.items()} if explain else
+                  {index: sum(matches) for index, matches in contributions.items()})
         key = lambda index: (-scores[index], self.ids[index])
         order = sorted(scores, key=key) if limit is None else heapq.nsmallest(limit, scores, key=key)
         return [(scores[index], self.ids[index],

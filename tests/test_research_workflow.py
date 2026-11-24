@@ -226,7 +226,7 @@ class TriageTests(unittest.TestCase):
                            publication_flag="retracted_or_withdrawn", publication_hint="provider flag")
         code = self.row("github_repositories", "https://github.com/example/attention", "FlashAttention attention",
                         links=[{"url": flagged["url"], "relation": "implements", "basis": "metadata"}])
-        for mode in ("bm25", "facet", "fusion", "paired"):
+        for mode in ("bm25", "facet", "fusion", "paired", "precision_field"):
             result = w.rank_results(self.plan, [{"results": [flagged, code]}], 5, mode)
             self.assertNotIn(flagged["url"], {row["url"] for row in result["shortlist"]})
             self.assertEqual(result["publication_review"][0]["url"], flagged["url"])

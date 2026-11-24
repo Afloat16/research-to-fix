@@ -756,7 +756,9 @@ def recall_tokens(text):
     return tokens
 
 
-RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual")
+RANKING_MODES = ("bm25", "technical", "stemmed", "hybrid", "contextual", "precision_field")
+PRECISION_TITLE_WEIGHT = 4.0
+PRECISION_BODY_WEIGHT = 1.0
 TECHNICAL_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")
 ACRONYM_BOUNDARY = re.compile(r"([A-Z]+)([A-Z][a-z])")
 CAMEL_BOUNDARY = re.compile(r"([a-z0-9])([A-Z])")
@@ -889,6 +891,8 @@ def _english_stem(word):
 
 
 def ranking_tokens(text, mode):
+    if mode == "precision_field":
+        return precision_tokens(text)
     if mode == "bm25":
         return recall_tokens(text)
     tokens = technical_tokens(text)
@@ -950,11 +954,11 @@ def _recall_excerpt(text, maximum=500):
     return "".join(result)
 
 
-def _recall_document(case):
+def _recall_document(case, include_problem=True):
     # Search problem/mechanism descriptions, never raw commands, output logs,
     # unrelated search-query lists, or filesystem paths.
     problem = case["problem"]
-    fields = [problem["summary"], problem["component"], *problem["symptoms"][:12]]
+    fields = [problem["summary"], problem["component"], *problem["symptoms"][:12]] if include_problem else []
     for mapping in case["mapping"][:8]:
         fields.extend((mapping["symbol"], mapping["similarities"], mapping["hypothesis"]))
     solution = case.get("solution", {})
@@ -1106,6 +1110,14 @@ def _load_recall_corpus(cases_dir, component, version, ranking="bm25"):
             skipped["duplicate"] += 1
             continue
         seen.add(fingerprint)
+        if ranking == "precision_field":
+            problem = case["problem"]
+            primary = "\n".join(_recall_excerpt(field, 1000) for field in
+                                [problem["summary"], problem["component"], *problem["symptoms"][:12]])[:1000]
+            secondary = _recall_document(case, include_problem=False)[:9000]
+            documents.append(field_counts(primary, secondary, "precision"))
+            summaries.append(_recall_summary(case, entry.name, version))
+            continue
         document = _recall_document(case)
         if ranking != "bm25":
             problem = case["problem"]
@@ -1269,8 +1281,15 @@ class RecallSnapshot:
             cases_dir, component, version, ranking)
         self.summaries = {row["file"]: row for row in summaries}
         pairs = list(zip(self.summaries, documents))
-        self.index = PostingIndex(pairs) if indexed else None
-        self.documents = None if indexed else pairs
+        if ranking == "precision_field":
+            # Field normalization requires corpus statistics; both paths use
+            # the same index for exact one-shot/batch semantics.
+            self.index = FieldIndex([(identifier, *counts) for identifier, counts in pairs],
+                                    PRECISION_TITLE_WEIGHT, PRECISION_BODY_WEIGHT)
+            self.documents = None
+        else:
+            self.index = PostingIndex(pairs) if indexed else None
+            self.documents = None if indexed else pairs
 
     def search(self, error, limit=5):
         terms = _check_recall_query(error, self.component, self.version, limit)

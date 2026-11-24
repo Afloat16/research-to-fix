@@ -497,7 +497,7 @@ def rank_results(plan, inputs, limit=12, ranking="bm25"):
 
 def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     """Internal scorer: caller validates all original round plans first."""
-    if ranking not in ("bm25", "facet", "fusion", "paired"):
+    if ranking not in ("bm25", "facet", "fusion", "paired", "precision_field"):
         fail("invalid_ranking")
     integer(limit, 1, MAX_SHORTLIST)
     if not isinstance(inputs, list) or not 1 <= len(inputs) <= 12:
@@ -585,6 +585,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
 
     access_order = {name: i for i, name in enumerate(("read", "snippet_only", "metadata", "access_blocked", "unavailable"))}
     ranked, graph_observations, lexical_documents, all_nodes = [], [], [], {}
+    precision_documents = []
     for group in groups:
         scored = [(score(row), row) for row in group]
         # Never sum duplicated pages into artificial evidence strength.
@@ -615,6 +616,14 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
         if not merged_counts:
             merged_counts = core.ranking_counts(winner["title"], winner["title"] + "\n" + winner["snippet"], "stemmed")
         lexical_documents.append((stable_id, merged_counts))
+        if ranking == "precision_field":
+            title_counts, body_counts = Counter(), Counter()
+            for observation in group:
+                if observation["access"] not in ("access_blocked", "unavailable"):
+                    title, body = core.field_counts(observation["title"], observation["snippet"], "precision")
+                    title_counts |= title
+                    body_counts |= body
+            precision_documents.append((stable_id, title_counts, body_counts))
         node = {"id": stable_id, "url": winner["url"], "title": winner["title"],
                        "snippet": winner["snippet"], "kind": winner["kind"], "family": winner["family"],
                        "access": winner["access"], "relevance": round(value, 6),
@@ -654,7 +663,15 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
             seen_views.add(terms)
             for rank, (_, identifier, _) in enumerate(index.rank(terms, limit=60, explain=False), 1):
                 fused[identifier] += weight / (60 + rank)
+    precision_scores = {}
+    if ranking == "precision_field":
+        field_index = core.FieldIndex(precision_documents, core.PRECISION_TITLE_WEIGHT,
+                                      core.PRECISION_BODY_WEIGHT)
+        precision_scores = {identifier: score for score, identifier, _ in
+                            field_index.rank(core.precision_tokens(full_query), explain=False)}
     for row in all_nodes.values():
+        if ranking == "precision_field":
+            row["precision_score"] = round(precision_scores.get(row["id"], 0), 9)
         row["bm25_score"] = round(lexical.get(row["id"], 0), 6)
         if ranking == "fusion":
             row["fusion_score"] = round(fused.get(row["id"], 0), 9)
@@ -663,6 +680,8 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
             primary = row.get("pair_score", row["bm25_score"])
         elif ranking == "fusion":
             primary = row["fusion_score"]
+        elif ranking == "precision_field":
+            primary = row["precision_score"]
         elif ranking == "facet":
             primary = row["relevance"]
         else:
@@ -682,6 +701,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
     eligible = [row for row in ranked if (ranking != "facet" or row["relevance"] >= max(.08, .30 * best))
                 and (ranking not in ("bm25", "paired") or row["bm25_score"] > 0)
                 and (ranking != "fusion" or row["fusion_score"] > 0)
+                and (ranking != "precision_field" or row["precision_score"] > 0)
                 and row["access"] not in ("unavailable", "access_blocked") and not row["publication_warning"]]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
     chosen = eligible[:limit]
@@ -830,7 +850,7 @@ def main(argv=None):
     triage.add_argument("--plan", required=True, type=Path)
     triage.add_argument("--results", action="append", required=True, type=Path)
     triage.add_argument("--limit", type=int, default=12)
-    triage.add_argument("--ranking", choices=("bm25", "facet", "fusion", "paired"), default="bm25")
+    triage.add_argument("--ranking", choices=("bm25", "facet", "fusion", "paired", "precision_field"), default="bm25")
     triage.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:

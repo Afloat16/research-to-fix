@@ -484,6 +484,55 @@ def plan_digest(plan):
     return hashlib.sha256(raw).hexdigest()
 
 
+def audit_search_coverage(queries, searches, returned, reads):
+    """Distinguish planned, attempted, completed, and actually read leads.
+
+    Statuses can come from different providers or attempts. A recorded
+    completion is not proof that the search is exhaustive or that a source
+    supports a repair. Count each query ID once; preserve mixed outcomes.
+    """
+    skipped = {"not_relevant", "skipped_budget"}
+    coverage = []
+    for qid, query in queries.items():
+        statuses = set(searches.get(qid, ()))
+        attempted = statuses - skipped
+        coverage.append({"query_id": qid, "source": query["source"], "family": query["family"],
+                         "stage": query["stage"], "status": sorted(statuses) or ["not_recorded"],
+                         "returned": returned[qid], "read_observations": reads[qid],
+                         "attempt_recorded": bool(attempted),
+                         "completion_recorded": "completed" in attempted,
+                         "mixed_attempt_outcomes": len(attempted) > 1})
+    stages = []
+    for stage in STAGES:
+        rows = [row for row in coverage if row["stage"] == stage]
+        completed = [row for row in rows if row["completion_recorded"]]
+        if not rows:
+            state = "not_planned"
+        elif not completed:
+            state = "no_completion_recorded"
+        elif len(completed) < len(rows) or any(row["mixed_attempt_outcomes"] for row in rows):
+            state = "partial_or_mixed"
+        elif not any(row["returned"] for row in completed):
+            state = "completed_no_valid_observations"
+        else:
+            state = "completed_with_valid_observations"
+        stages.append({"stage": stage, "state": state, "planned_queries": len(rows),
+                       "attempted_queries": sum(row["attempt_recorded"] for row in rows),
+                       "completed_queries": len(completed),
+                       "valid_observations": sum(row["returned"] for row in rows),
+                       "read_observations": sum(row["read_observations"] for row in rows),
+                       "completed_query_ids_without_valid_observations": [row["query_id"] for row in completed if not row["returned"]]})
+    return coverage, {
+        "stages": stages,
+        "stages_without_completed_search": [row["stage"] for row in stages if not row["completed_queries"]],
+        "mixed_attempt_queries": [row["query_id"] for row in coverage if row["mixed_attempt_outcomes"]],
+        "observations_without_completed_search": [row["query_id"] for row in coverage if row["returned"] and not row["completion_recorded"]],
+        "notice": ("Counts are reported search outcomes and valid observations, not exhaustive coverage, "
+                   "independent sources, or evidence that counterexamples do not exist. "
+                   "A completed search with no valid observations is not proof of absence.")
+    }
+
+
 def rank_results(plan, inputs, limit=12, ranking="bm25"):
     plan = validate_plan(plan)
     expected = plan_digest(plan)
@@ -522,7 +571,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                 fail("invalid_search_status")
             searches[qid].append(status)
     normalized = []
-    returned = Counter()
+    returned, reads = Counter(), Counter()
     for row in raw_rows:
         try:
             item = normalize_result(row, queries)
@@ -531,6 +580,8 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
             continue
         normalized.append(item)
         returned[item["query_id"]] += 1
+        if item["access"] == "read":
+            reads[item["query_id"]] += 1
     identity_diagnostics = {}
     groups = group_results(normalized, identity_diagnostics)
     f = facets(plan["problem"])
@@ -777,10 +828,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
                   row["access"] not in ("unavailable", "access_blocked")][:limit]
     # Make follow-up priorities explicit, without copying untrusted source text
     # into outbound queries. The host must extract a redacted new fingerprint.
-    coverage_rows = [{"query_id": qid, "source": q["source"], "family": q["family"],
-                      "status": sorted(set(searches[qid])) or ["not_recorded"],
-                      "returned": returned[qid]}
-                     for qid, q in queries.items()]
+    coverage_rows, coverage_audit = audit_search_coverage(queries, searches, returned, reads)
     family_gaps = [family for family in wanted if not any(row["family"] == family for row in chosen)]
     # Explicit related-source followups are an additional review lane, not
     # a claim that linked sources are relevant or independent evidence.
@@ -816,6 +864,7 @@ def _rank_validated(plan, inputs, limit=12, ranking="bm25"):
             "identity_conflicts": identity_diagnostics["identity_conflicts"],
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
             "ranking": ranking, "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
+            "coverage_audit": coverage_audit,
             "evidence_graph": {"ambiguous_aliases": sum(len(owners) > 1 for owners in url_owners.values()),
                                "nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in sorted(nodes.values(), key=lambda row: row["id"])
                                          if row["id"] in {key for edge in graph_edges[:100] for key in (edge["from"], edge["to"])}],

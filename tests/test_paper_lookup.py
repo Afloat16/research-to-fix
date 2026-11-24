@@ -44,7 +44,8 @@ class PaperLookupTests(unittest.TestCase):
         self.assertEqual(result["plan_id"], self.plan["plan_id"])
         self.assertEqual({row["kind"] for row in result["results"]}, {"paper", "repository"})
         report = w.rank_results(self.plan, [result])
-        self.assertEqual(report["evidence_graph"]["pair_count"], 2)
+        self.assertEqual(report["evidence_graph"]["pair_count"], 1)
+        self.assertEqual(report["evidence_graph"]["paper_code_pairs"][0]["assertion_count"], 2)
         self.assertEqual(report["unrecorded_queries"], [self.qid])
 
     def test_wrong_identity_and_rate_limit(self):

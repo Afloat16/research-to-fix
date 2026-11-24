@@ -728,7 +728,7 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
         return relevance, sorted(matched, key=lambda t: (-idf[t], t))[:20], cover
 
     access_order = {name: i for i, name in enumerate(("read", "snippet_only", "metadata", "access_blocked", "unavailable"))}
-    ranked, graph_observations, lexical_documents = [], [], []
+    ranked, graph_observations, lexical_documents, all_nodes = [], [], [], {}
     for group in groups:
         scored = [(score(row), row) for row in group]
         # Never sum duplicated pages into artificial evidence strength.
@@ -744,7 +744,6 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
         (value, terms, cover), winner = scored[0]
         if value <= 0:
             skipped["no_relevance"] += 1
-            continue
         ids = sorted(set().union(*(row["keys"] for row in group)))
         stable_id = "S-" + hashlib.sha256("\n".join(ids).encode()).hexdigest()[:16]
         provenance = sorted({(row["query_id"], row["source"], row["origin"], row["original_url"],
@@ -768,8 +767,9 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
                 merged_counts |= observation["lexical_counts"]
         if not merged_counts:
             merged_counts = winner["lexical_counts"]
-        lexical_documents.append((stable_id, merged_counts))
-        ranked.append({"id": stable_id, "url": winner["url"], "title": winner["title"],
+        if value > 0:
+            lexical_documents.append((stable_id, merged_counts))
+        node = {"id": stable_id, "url": winner["url"], "title": winner["title"],
                        "snippet": winner["snippet"], "kind": winner["kind"], "family": winner["family"],
                        "access": winner["access"], "relevance": round(value, 6),
                        "matched_terms": terms, "facet_coverage": {k: round(v, 6) for k, v in cover.items()},
@@ -781,7 +781,12 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
                        "license_hint": winner["license_hint"], "maintenance_hint": winner["maintenance_hint"], "identities": ids,
                        "observations": len(group), "provenance": sources,
                        "provenance_truncated": len(provenance) > len(sources),
-                       "review_required": True})
+                       "review_required": True}
+        # An explicitly linked implementation can have an opaque repository
+        # name and no snippet. Keep it in the graph, not the lexical shortlist.
+        all_nodes[stable_id] = node
+        if value > 0:
+            ranked.append(node)
     full_query = " ".join([plan["problem"]["symptom"], plan["problem"]["task"],
                            plan["problem"]["component"], *plan["problem"]["concepts"],
                            *plan["problem"]["alternative_concepts"], *plan["problem"]["aliases"]])
@@ -794,12 +799,13 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
                     key=lambda item: (-item[1], item[0])), 1)}
     facet_rank = {row["id"]: i for i, row in enumerate(sorted(ranked,
                   key=lambda row: (-row["relevance"], row["id"])), 1)}
-    for row in ranked:
+    for row in all_nodes.values():
         key = row["id"]
         row["bm25_score"] = round(lexical.get(key, 0), 6)
         provider_prior = sum(1 / (60 + rank) for rank in sorted(row["provider_ranks"].values())[:2])
         row["fusion_score"] = round((2 / (60 + lexical_rank[key]) if key in lexical_rank else 0)
-                                    + 1 / (60 + facet_rank[key]) + .35 * provider_prior, 9)
+                                    + (1 / (60 + facet_rank[key]) if key in facet_rank else 0)
+                                    + (.35 * provider_prior if key in facet_rank else 0), 9)
     def ordering(row):
         field = {"bm25": "bm25_score", "facet": "relevance", "fusion": "fusion_score"}[ranking]
         return (-row[field], -row["relevance"], row["id"])
@@ -816,7 +822,8 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
     chosen = eligible[:limit]
     # Match only explicit links to known URL identities. Do not infer
     # official implementation, equivalence, or support from title similarity.
-    nodes = {row["id"]: row for row in ranked}
+    nodes = all_nodes
+    relevant_ids = {row["id"] for row in ranked}
     by_url = {row["url"]: key for key, group in graph_observations for row in group}
     edges, unresolved = {}, set()
     for key, group in graph_observations:
@@ -824,29 +831,35 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
             for link in row["links"]:
                 target = by_url.get(link["url"])
                 if target is None:
-                    unresolved.add((key, link["url"], link["relation"], link["basis"]))
+                    if key in relevant_ids:
+                        unresolved.add((key, link["url"], link["relation"], link["basis"]))
                     continue
-                if target == key:
+                if target == key or not ({key, target} & relevant_ids):
                     continue
                 edge_key = (key, target, link["relation"], link["basis"], row["origin"], row["original_url"])
                 edges[edge_key] = {"from": key, "to": target, "relation": link["relation"],
                                    "basis": link["basis"], "asserted_by": row["original_url"],
                                    "assertion_origin": row["origin"], "note": link["note"]}
     graph_edges = [edges[key] for key in sorted(edges)]
-    pairs = []
-    seen_pairs = set()
+    pair_map = {}
     for edge in graph_edges:
         left, right = nodes[edge["from"]], nodes[edge["to"]]
         if ({left["family"], right["family"]} == {"paper", "code"}
                 and not any(row["identity_conflict"] or row["retraction_hint"] for row in (left, right))
                 and edge["relation"] in ("implements", "describes", "reproduces")):
             paper, code = (left, right) if left["family"] == "paper" else (right, left)
-            signature = (paper["id"], code["id"], edge["relation"], edge["basis"])
-            if signature not in seen_pairs:
-                seen_pairs.add(signature)
-                pairs.append({"paper_id": paper["id"], "code_id": code["id"],
-                              "relation": edge["relation"], "basis": edge["basis"],
-                              "review_required": True})
+            signature = (paper["id"], code["id"])
+            pair_map.setdefault(signature, []).append(edge)
+    pairs = []
+    for (paper_id, code_id), assertions in sorted(pair_map.items()):
+        # Count one distinct paper/code identity pair, retaining every
+        # assertion. Prefer a read source and an explicit implements edge.
+        ordered = sorted(assertions, key=lambda e: (e["basis"] != "read",
+                         e["relation"] != "implements", e["relation"], e["asserted_by"]))
+        pairs.append({"paper_id": paper_id, "code_id": code_id,
+                      "relation": ordered[0]["relation"], "basis": ordered[0]["basis"],
+                      "relations": sorted({e["relation"] for e in assertions}),
+                      "assertion_count": len(assertions), "review_required": True})
     # Make follow-up priorities explicit, without copying untrusted source text
     # into outbound queries. The host must extract a redacted new fingerprint.
     coverage_rows = [{"query_id": qid, "source": q["source"], "family": q["family"],
@@ -874,7 +887,7 @@ def _rank_results(plan, inputs, limit=12, ranking="bm25"):
             "identity_conflicts": identity_conflicts[:50], "identity_conflict_count": len(identity_conflicts),
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
             "ranking": ranking, "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
-            "evidence_graph": {"nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in ranked
+            "evidence_graph": {"nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in sorted(nodes.values(), key=lambda row: row["id"])
                                          if row["id"] in {key for edge in graph_edges[:100] for key in (edge["from"], edge["to"])}],
                                "edges": graph_edges[:100], "edge_count": len(graph_edges),
                                "paper_code_pairs": pairs[:50], "pair_count": len(pairs),

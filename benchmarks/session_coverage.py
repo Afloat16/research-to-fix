@@ -138,6 +138,14 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = evaluate()
+    # Broad deterministic regression floors on the published fixed-status suite.
+    old = result["overall"]["methods"]["legacy"]
+    new = result["overall"]["methods"]["coverage"]
+    if (new["completed_stages"] <= old["completed_stages"]
+            or new["completed_families"] <= old["completed_families"]
+            or new["all_stages_completed"] <= old["all_stages_completed"]
+            or new["counterevidence_completed"] < old["counterevidence_completed"]):
+        raise RuntimeError("coverage strategy regression")
     with args.output.open("x", encoding="utf-8") as out:
         json.dump(result, out, indent=2, sort_keys=True)
         out.write("\n")

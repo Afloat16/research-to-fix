@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — 2026-11-24 · frozen local repair execution and evidence consistency
+
+- Add opt-in trusted-local unittest capture, prospective plan pinning, explicit approval, bounded child execution, identical test snapshots, actual outcomes, and independently verifiable sealed bundles. Offline audit recomputes solved/partial decisions and validates exact frozen plan bindings. Not a sandbox or authenticity proof.
+- Semantic bundle audit cross-checks report/stdout, per-method outcomes, exit codes, environment labels, implementation and comparison hashes, and distinct sealed paths. 13/13 named contradictions rejected vs 0/13 by unpinned hash verification after resealing; independent original pins reject all 13 with either method.
+- Seven controlled Python repair cases, 21 candidate comparisons, 42 subprocesses, 174 method outcomes. Full frozen suites reject all seven symptom-only incomplete candidates and accept all seven designed fixes; all 21 bundles pass consistency audit.
+- Add compatible opt-in coverage-first research strategy; 272 paired fixed-status simulations yield 4.76 → 5.36 mean completed stages, 2.61 → 4.68 source families and 20.6% → 37.9% complete six-stage coverage. No live provider or model efficacy claim.
+- Include bilingual data-bound release dashboard, exact CI provenance, and release-time diagnostic reruns. Preserve standard-library-only runtime and prior lexical defaults.
+
 ## 1.2.0 — 2026-11-24 · exact bounded recall, external transfer and research audits
 
 - Default indexed recall uses exact threshold counts, bounded Top-K selection and deferred explanation reconstruction; no scorer/default changes or added runtime dependencies. Strict count/score/ID/order/explanation parity on 288 generated workload-query pairs and all 804 new external queries.

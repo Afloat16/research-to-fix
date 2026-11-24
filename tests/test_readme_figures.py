@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FIGURES = ROOT / "docs" / "figures"
 NS = {"svg": "http://www.w3.org/2000/svg"}
-NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1", "independent-holdout", "competitor-diagnostic", "v12-recall", "v12-transfer")
+NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision", "release-v1", "independent-holdout", "competitor-diagnostic", "v12-recall", "v12-transfer", "v13-evidence")
 
 
 class ReadmeFiguresTest(unittest.TestCase):
@@ -38,6 +38,18 @@ class ReadmeFiguresTest(unittest.TestCase):
                 for element in document.iter():
                     local = element.tag.rsplit("}", 1)[-1]
                     self.assertNotIn(local, {"script", "image", "foreignObject", "iframe"})
+                if name == "v13-evidence":
+                    s = json.loads((FIGURES / "v13-snapshot.json").read_text(encoding="utf-8"))
+                    bars = {e.get("data-metric"): float(e.get("data-value")) for e in document.iter() if e.get("data-metric")}
+                    self.assertEqual(bars, {
+                        "capture.verify_unpinned": s["capture"]["rejected_faults"]["verify_unpinned"],
+                        "capture.audit_unpinned": s["capture"]["rejected_faults"]["audit_unpinned"],
+                        "repair.symptom_only_incomplete": s["repair"]["symptom_only_accepted"] - s["repair"]["full_suite_accepted"],
+                        "repair.full_suite_incomplete": sum(row["variant"] == "narrow" and row["full_suite_accept"] for row in s["repair"]["rows"]),
+                        "planning.legacy_all_stages": s["planning"]["overall"]["methods"]["legacy"]["all_stages_completed"],
+                        "planning.coverage_all_stages": s["planning"]["overall"]["methods"]["coverage"]["all_stages_completed"],
+                    })
+                    self.assertEqual(s["repair"]["audited_bundles"], s["repair"]["candidate_comparisons"])
                 if name == "v12-transfer":
                     snapshot = json.loads((FIGURES / "v12-snapshot.json").read_text(encoding="utf-8"))["transfer"]
                     bars = {e.get("data-method"): float(e.get("data-value")) for e in document.iter() if e.get("data-method")}

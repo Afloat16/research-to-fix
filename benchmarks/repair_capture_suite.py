@@ -187,7 +187,7 @@ def evaluate():
                 full_accept = result["declared_status"] == "solved"
                 if not original_before or symptom_accept != (variant != "unchanged") or full_accept != (variant == "fixed"):
                     raise RuntimeError("Controlled repair classification changed: " + task["id"] + "/" + variant)
-                if not result["capture_audit"]["capture_consistency"]:
+                if not (result["capture_audit"]["capture_consistency"] and result["capture_audit"]["plan_consistency"]):
                     raise RuntimeError("Capture audit failed")
                 rows.append({"task": task["id"], "variant": variant, "before": left["test_results"],
                              "after": right["test_results"], "before_exit": left["exit_code"],

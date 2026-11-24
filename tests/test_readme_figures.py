@@ -8,11 +8,11 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 FIGURES = ROOT / "docs" / "figures"
 NS = {"svg": "http://www.w3.org/2000/svg"}
-NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency")
+NAMES = ("workflow", "retrieval-architecture", "synthetic-ranking", "github-ranking", "efficiency", "research-decision")
 
 
 class ReadmeFiguresTest(unittest.TestCase):
-    def test_landing_pages_embed_all_five_local_language_figures(self):
+    def test_landing_pages_embed_all_local_language_figures(self):
         for filename, suffix in (("README.md", ""), ("README.zh-CN.md", ".zh-CN")):
             content = (ROOT / filename).read_text(encoding="utf-8")
             for name in NAMES:

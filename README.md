@@ -83,6 +83,10 @@ implement the best justified option, then verify and record the repair.
 | Deduplicate, rank, link evidence and identify gaps | `research_workflow.py triage` |
 | Compare comparable measured alternatives | `solution_compare.py` |
 
+![Research decision: architecture, source retrieval comparison and measured Pareto candidates](docs/figures/research-decision.svg)
+
+*Source-linked development replay: 32 identities, 44 observations, 16 queries. The default evidence shortlist matches the stemmed BM25 baseline in Recall@6 (92.19%) and complete pair recall (87.5%); both achieve 100% paper-and-code coverage on this fixture. The standalone facet rank is weaker overall, so it remains optional. The five-replicate local variance experiment produces two eligible Pareto options, centered two-pass and online recurrence. [Measured CI run](https://github.com/Afloat16/research-to-fix/actions/runs/45343672697) · [Frozen report](docs/figures/research-snapshot.json). Not an independent evaluation of live APIs or general agent repair success.*
+
 See the [complete workflow and JSON examples](skills/research-to-fix/references/research-decision.md), the [public paper/code benchmark](benchmarks/README.md#algorithm-discovery-and-decision), and the [reproducible numerical variance experiment](examples/numerical-variance/README.md). Network access remains opt-in; execution depends on the host and authorization. A result can be partial or blocked; no guarantee of universal repair success.
 
 ## Performance & evaluation

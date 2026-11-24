@@ -1,0 +1,280 @@
+{
+  "source": {
+    "run_id": 45343672697,
+    "job_id": 138272992882,
+    "commit": "8d5d2aee6631cb165216069d51792ad8df7aafbb",
+    "environment": "GitHub Actions ubuntu-latest, Python 3.13.18",
+    "url": "https://github.com/Afloat16/research-to-fix/actions/runs/45343672697"
+  },
+  "discovery": {
+    "dataset": "algorithm-paper-code-discovery-v1",
+    "dataset_sha256": "aca6072e8aee51a4f0448d28a715f41ea07f00d648e4aad4324906a4fccd6899",
+    "tasks": 8,
+    "queries": 16,
+    "unique_sources": 32,
+    "observations": 44,
+    "k": 6,
+    "methods": {
+      "fixed_order": {
+        "overall": {
+          "mrr": 0.260417,
+          "recall": 0.1875,
+          "precision": 0.125,
+          "ndcg": 0.161259,
+          "paper_and_code": 0.25,
+          "complete_pair_recall": 0.0625
+        },
+        "symptom": {
+          "mrr": 0.260417,
+          "recall": 0.1875,
+          "precision": 0.125,
+          "ndcg": 0.161259,
+          "paper_and_code": 0.25,
+          "complete_pair_recall": 0.0625
+        },
+        "mechanism": {
+          "mrr": 0.260417,
+          "recall": 0.1875,
+          "precision": 0.125,
+          "ndcg": 0.161259,
+          "paper_and_code": 0.25,
+          "complete_pair_recall": 0.0625
+        }
+      },
+      "stemmed_bm25": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.921875,
+          "precision": 0.614583,
+          "ndcg": 0.941939,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.907032,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.976846,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "sqlite_porter": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.921875,
+          "precision": 0.614583,
+          "ndcg": 0.9395,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.900015,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.978984,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "facet_rank": {
+        "overall": {
+          "mrr": 0.96875,
+          "recall": 0.90625,
+          "precision": 0.604167,
+          "ndcg": 0.920301,
+          "paper_and_code": 0.9375,
+          "complete_pair_recall": 0.8125
+        },
+        "symptom": {
+          "mrr": 0.9375,
+          "recall": 0.84375,
+          "precision": 0.5625,
+          "ndcg": 0.861617,
+          "paper_and_code": 0.875,
+          "complete_pair_recall": 0.6875
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.978984,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      },
+      "evidence_shortlist": {
+        "overall": {
+          "mrr": 1,
+          "recall": 0.921875,
+          "precision": 0.614583,
+          "ndcg": 0.939178,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.875
+        },
+        "symptom": {
+          "mrr": 1,
+          "recall": 0.875,
+          "precision": 0.583333,
+          "ndcg": 0.899372,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.8125
+        },
+        "mechanism": {
+          "mrr": 1,
+          "recall": 0.96875,
+          "precision": 0.645833,
+          "ndcg": 0.978984,
+          "paper_and_code": 1,
+          "complete_pair_recall": 0.9375
+        }
+      }
+    },
+    "planner_comparison": {
+      "legacy_first_8_sources": [
+        "github_issues",
+        "github_prs",
+        "huggingface",
+        "huggingface_forum"
+      ],
+      "new_first_8_sources": [
+        "arxiv",
+        "author_code",
+        "crossref",
+        "github_issues",
+        "github_prs",
+        "github_repositories",
+        "official_docs",
+        "proceedings"
+      ],
+      "new_first_8_stages": [
+        "alternatives",
+        "exact",
+        "implementation",
+        "mechanism",
+        "verification"
+      ]
+    },
+    "triage_p50_ms": 14.795,
+    "scope": "Relevance replay over a curated development corpus; no live discovery or repair-success claim."
+  },
+  "variance": {
+    "protocol": "variance-v1",
+    "replicates": 5,
+    "frontier": [
+      "centered",
+      "online"
+    ],
+    "decision": "tradeoffs_require_choice",
+    "candidates": {
+      "centered": {
+        "eligible": true,
+        "metrics": {
+          "relative_error": {
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 0.725116,
+            "min": 0.71275,
+            "max": 0.728672,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 532,
+            "min": 532,
+            "max": 532,
+            "n": 5
+          }
+        }
+      },
+      "naive": {
+        "eligible": false,
+        "metrics": {
+          "relative_error": {
+            "median": 0.4055912682208218,
+            "min": 0.403410097498501,
+            "max": 1,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 0.224402,
+            "min": 0.220695,
+            "max": 0.251898,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 436,
+            "min": 436,
+            "max": 460,
+            "n": 5
+          }
+        }
+      },
+      "online": {
+        "eligible": true,
+        "metrics": {
+          "relative_error": {
+            "median": 7.089095708532547e-10,
+            "min": 1.4789827811355166e-10,
+            "max": 7.250154341719381e-9,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 0.522172,
+            "min": 0.517098,
+            "max": 0.528686,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 112,
+            "min": 112,
+            "max": 136,
+            "n": 5
+          }
+        }
+      },
+      "stdlib": {
+        "eligible": true,
+        "metrics": {
+          "relative_error": {
+            "median": 0,
+            "min": 0,
+            "max": 0,
+            "n": 5
+          },
+          "latency_ms": {
+            "median": 2.061652,
+            "min": 2.059146,
+            "max": 2.076131,
+            "n": 5
+          },
+          "peak_bytes": {
+            "median": 1980,
+            "min": 1980,
+            "max": 1980,
+            "n": 5
+          }
+        }
+      }
+    }
+  }
+}

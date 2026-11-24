@@ -170,7 +170,7 @@ class DiscoveryTests(unittest.TestCase):
             finally:
                 with lock:
                     active.remove(group)
-        report = d.discover(plan, True, 4, transport=transport, workers=2, schedule="balanced")
+        report = d.discover(plan, True, 8, transport=transport, workers=2, schedule="balanced")
         self.assertEqual(report["requests"], len(plan["queries"]))
         self.assertEqual([row["query_id"] for row in report["searches"]], [q["id"] for q in plan["queries"]])
         self.assertTrue(report["complete"])

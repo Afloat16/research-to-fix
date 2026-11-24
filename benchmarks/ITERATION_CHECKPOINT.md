@@ -25,3 +25,7 @@ Next: inspect fresh Checks and Retrieval performance runs, retrieve the existing
 ## Concurrent release handoff
 
 The release branch advanced during this run to `98a502434c05b79089272f800cecbb26b41df775` and opened [PR #9](https://github.com/Afloat16/research-to-fix/pull/9) for v1.3.0. The lease rejected our older-head update. Do not modify or reset that in-flight release PR. Preserve this nonoverlapping importer change on a single successor iteration branch based on the PR head, with no additional VERSION bump or release PR; reconcile against main once v1.3.0 is published. [V1.3 candidate results](V13_RESULTS.md) include the measured local repair and semantic audit outcomes and clearly label the planner simulations.
+
+## Additional artifact provenance iteration
+
+Add deterministic per-arm and protocol-bound aggregate digests of every byte consumed by the two offline importers; independent post-evaluation pin rejects changed usage, report removal, and even JSON whitespace changes, while relocation and ignored extras do not alter the digest. Unit tests exercise both importers. This does not authenticate model execution or certify the full directory contents. The successor branch is intentionally not released; retain the verified v1.3.0 release and accumulate meaningful next changes.

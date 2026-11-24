@@ -112,6 +112,36 @@ class AgentTrialTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Independent protocol digest mismatch"):
                 a.summarize(rewritten, base, skill, expected_protocol_sha256=lock["protocol_sha256"])
 
+    def test_consumed_artifacts_bind_usage_predictions_and_reports(self):
+        import shutil
+        lock = a.freeze(protocol())
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            base, skill = root / "baseline", root / "skill"
+            arm(base, lock, "baseline", False)
+            arm(skill, lock, "skill", True)
+            first = a.summarize(lock, base, skill)["consumed_artifacts"]
+            self.assertEqual(first["arms"]["baseline"]["files"], 9)
+            self.assertEqual(first["arms"]["skill"]["files"], 9)
+            pin = first["sha256"]
+            (skill / "ignored.txt").write_text("not consumed", encoding="utf-8")
+            relocated = root / "relocated"
+            shutil.copytree(skill, relocated)
+            verified = a.summarize(lock, base, relocated, expected_artifacts_sha256=pin)["consumed_artifacts"]
+            self.assertTrue(verified["expected_digest_checked"])
+            self.assertEqual(verified["sha256"], pin)
+            # Semantically identical JSON changes the exact consumed bytes.
+            usage = relocated / "seed-1" / "usage.json"
+            raw = usage.read_bytes()
+            usage.write_bytes(raw + b" ")
+            with self.assertRaisesRegex(ValueError, "Independent artifact digest mismatch"):
+                a.summarize(lock, base, relocated, expected_artifacts_sha256=pin)
+            usage.write_bytes(raw)
+            # A structurally valid removed report must change the artifact set.
+            (relocated / "seed-1/reports/repo__a-1/report.json").unlink()
+            with self.assertRaisesRegex(ValueError, "Independent artifact digest mismatch"):
+                a.summarize(lock, base, relocated, expected_artifacts_sha256=pin)
+
     def test_protocol_tamper(self):
         lock = a.freeze(protocol())
         lock["protocol"]["max_tokens"] = 999

@@ -32,6 +32,10 @@ Keep the frozen `protocol_sha256` in an independently controlled record before g
 
 The importer reports separate prediction, evaluator and budget statuses for every replicate, plus counts per arm. These are diagnostic axes, not extra successes: the budget-gated resolved rate and existing primary status retain their original meanings. For example, a reported evaluator success with missing usage is not a valid success, and a missing prediction can still have measured over-budget cost. Empty predictions receive a digest. The paired importer also exposes usage coverage.
 
+## Post-evaluation input digest
+
+Both importers now return `consumed_artifacts.sha256` and per-arm file counts, bytes and SHA-256 summaries of the exact relative-path/size/digest inventory. This includes each consumed manifest, prediction, usage, report and evaluator patch file. Retain the post-evaluation digest independently and pass `--expected-artifacts-sha256 DIGEST` on re-import to detect even a semantically equivalent byte rewrite or added/removed consumed report. It is stable under relocating the same arm directories and does not scan unconsumed extras. This is separate from the pre-generation protocol pin; neither authenticates the run nor proves that unconsumed files do not exist. The operator must control the inputs during import.
+
 ## Interpretation
 
 Report all arm rates, status counts, usage coverage and paired task-level deltas with pointwise bootstrap 95% intervals. Multiple seeds are clustered by task. The exact two-sided sign test ignores task-level ties; Holm-adjusted p-values cover all predeclared target-vs-arm tests (including baseline). The mean interval and sign test address different quantities. Incomplete usage sums are lower bounds, not evidence of lower cost. Report losses, inconclusive outcomes and blocked cases, not only wins.

@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 import statistics
 
-from agent_trials import (canonical, check_expected_digest, collect_arm, commit, fail, normalize_protocol,
+from agent_trials import (ArtifactLedger, artifact_summary, canonical, check_expected_digest, collect_arm, commit, fail, normalize_protocol,
                           outcome_breakdown, paired_interval, read_json, sha256)
 
 
@@ -87,18 +87,19 @@ def holm(values):
     return adjusted
 
 
-def summarize(lock, root, *, expected_protocol_sha256=None):
+def summarize(lock, root, *, expected_protocol_sha256=None, expected_artifacts_sha256=None):
     protocol = validate_lock(lock, expected_protocol_sha256)
     shared = protocol["base_protocol"]
     tasks = [r["instance_id"] for r in shared["instances"]]
     seeds = shared["seeds"]
     expected = [(task, seed) for task in tasks for seed in seeds]
     all_ids, all_rows, all_values, summaries = set(), {}, {}, {}
+    ledgers = {arm["id"]: ArtifactLedger(root / arm["id"]) for arm in protocol["arms"]}
     for arm in protocol["arms"]:
         name = arm["id"]
         ids, rows = collect_arm(shared, lock["protocol_sha256"], root / name, name,
                                 arm["commit"], intervention_digest=arm["intervention_sha256"],
-                                require_digest=True)
+                                require_digest=True, ledger=ledgers[name])
         if ids & all_ids:
             fail("Evaluator run IDs reused across arms")
         all_ids.update(ids)
@@ -115,6 +116,7 @@ def summarize(lock, root, *, expected_protocol_sha256=None):
                            "usage_records": len(measured), "usage_coverage": len(measured) / len(expected),
                            "recorded_usage_sum": {key: sum(row[key] for row in measured)
                                                   for key in ("tokens", "tool_calls", "seconds")}}
+    artifacts = artifact_summary(lock["protocol_sha256"], ledgers, expected_artifacts_sha256)
     comparisons = {}
     for name in sorted(all_values):
         if name != "skill":
@@ -129,6 +131,7 @@ def summarize(lock, root, *, expected_protocol_sha256=None):
             "protocol_sha256": lock["protocol_sha256"], "tasks": len(tasks),
             "expected_protocol_digest_checked": expected_protocol_sha256 is not None,
             "seeds": len(seeds), "trials_per_arm": len(expected), "arms": summaries,
+            "consumed_artifacts": artifacts,
             "skill_vs_predeclared_arms": comparisons,
             "pairs": [{"instance_id": task, "seed": seed,
                        "arms": {name: rows[(task, seed)] for name, rows in all_rows.items()}}
@@ -148,14 +151,16 @@ def main():
     parser.add_argument("--arms-root", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-protocol-sha256", help="Independently retained pre-generation protocol digest")
+    parser.add_argument("--expected-artifacts-sha256", help="Independently retained post-evaluation consumed artifact digest")
     args = parser.parse_args()
     if args.freeze:
-        if args.expected_protocol_sha256 is not None:
-            parser.error("Expected protocol digest applies only when importing")
+        if args.expected_protocol_sha256 is not None or args.expected_artifacts_sha256 is not None:
+            parser.error("Expected digests apply only when importing")
         result = freeze(read_json(args.freeze))
     elif args.arms_root:
         result = summarize(read_json(args.lock), args.arms_root,
-                           expected_protocol_sha256=args.expected_protocol_sha256)
+                           expected_protocol_sha256=args.expected_protocol_sha256,
+                           expected_artifacts_sha256=args.expected_artifacts_sha256)
     else:
         parser.error("Supply all predeclared arm artifacts")
     with args.output.open("x", encoding="utf-8") as handle:

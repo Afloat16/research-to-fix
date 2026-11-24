@@ -57,6 +57,26 @@ class ComparisonTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 c.summarize(lock, root)
 
+    def test_multi_arm_consumed_artifact_pin_detects_cost_edit(self):
+        lock = c.freeze(design())
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            for spec in lock["protocol"]["arms"]:
+                fixture(root, lock, spec, spec["id"] == "skill")
+            result = c.summarize(lock, root)
+            artifact = result["consumed_artifacts"]
+            self.assertEqual(set(artifact["arms"]), {"baseline", "skill", "competitor"})
+            self.assertTrue(c.summarize(lock, root, expected_artifacts_sha256=artifact["sha256"])
+                            ["consumed_artifacts"]["expected_digest_checked"])
+            path = root / "competitor/seed-1/usage.json"
+            usage = json.loads(path.read_text(encoding="utf-8"))
+            usage["repo__a-1"]["tokens"] += 1
+            write(path, usage)
+            self.assertEqual(c.summarize(lock, root)["arms"]["skill"]["resolved_rate"],
+                             result["arms"]["skill"]["resolved_rate"])
+            with self.assertRaisesRegex(ValueError, "Independent artifact digest mismatch"):
+                c.summarize(lock, root, expected_artifacts_sha256=artifact["sha256"])
+
     def test_freeze_and_invalid_interventions(self):
         value = design()
         self.assertEqual(c.freeze(value), c.freeze({**value, "arms": value["arms"][::-1]}))

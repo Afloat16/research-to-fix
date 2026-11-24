@@ -50,6 +50,45 @@ def sha256(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+class ArtifactLedger:
+    """Digest exact bytes consumed by one importer arm, without reading extras.
+
+    Caller controls the artifact directory during import. The digest is not a
+    signature, authenticity check, or proof of absent unconsumed files.
+    """
+
+    def __init__(self, root):
+        self.root = Path(root)
+        self.files = {}
+
+    def read(self, path):
+        key = Path(path).relative_to(self.root).as_posix()
+        raw = read(path)
+        row = {"bytes": len(raw), "sha256": sha256(raw)}
+        if key in self.files and self.files[key] != row:
+            fail("Evaluation input changed while reading")
+        self.files[key] = row
+        return raw
+
+    def read_json(self, path):
+        return rc.decode_case_bytes(self.read(path))[0]
+
+    def summary(self):
+        return {"sha256": sha256(canonical(self.files)), "files": len(self.files),
+                "bytes": sum(row["bytes"] for row in self.files.values())}
+
+
+def artifact_summary(protocol_digest, ledgers, expected=None):
+    arms = {name: ledger.summary() for name, ledger in sorted(ledgers.items())}
+    digest = sha256(canonical({"scope": "consumed_agent_evaluation_artifacts_v1",
+                               "protocol_sha256": protocol_digest, "arms": arms}))
+    if expected is not None and (not isinstance(expected, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected) or digest != expected):
+        fail("Independent artifact digest mismatch")
+    return {"scope": "consumed_agent_evaluation_artifacts_v1", "sha256": digest,
+            "arms": arms, "expected_digest_checked": expected is not None}
+
+
 def identifier(value):
     if not isinstance(value, str) or not ID.fullmatch(value):
         fail("Invalid identifier")
@@ -132,8 +171,8 @@ def validate_lock(lock, expected_protocol_sha256=None):
     return lock["protocol"]
 
 
-def parse_predictions(path, expected):
-    value = read_json(path)
+def parse_predictions(path, expected, *, ledger=None):
+    value = (ledger.read_json if ledger is not None else read_json)(path)
     if not isinstance(value, list) or len(value) > len(expected):
         fail("Invalid official predictions")
     predictions = {}
@@ -159,15 +198,17 @@ def usage_record(value, protocol):
             and seconds <= protocol["max_seconds"])
 
 
-def collect(lock, root, arm):
+def collect(lock, root, arm, *, ledger=None):
     p = validate_lock(lock)
     return collect_arm(p, lock["protocol_sha256"], root, arm,
-                       p["skill_commit"] if arm == "skill" else None)
+                       p["skill_commit"] if arm == "skill" else None, ledger=ledger)
 
 
-def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_digest=None, require_digest=False):
+def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_digest=None, require_digest=False, ledger=None):
     """Shared artifact checks for paired and multi-arm trials."""
-    manifest = read_json(root / "manifest.json")
+    reader = ledger.read if ledger is not None else read
+    json_reader = ledger.read_json if ledger is not None else read_json
+    manifest = json_reader(root / "manifest.json")
     fields = {"protocol_sha256", "arm", "applied_skill_commit", "run_ids"}
     if require_digest:
         fields.add("intervention_sha256")
@@ -187,8 +228,8 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
     rows = {}
     for seed in p["seeds"]:
         directory = root / ("seed-" + str(seed))
-        predictions = parse_predictions(directory / "predictions.json", expected)
-        usage = read_json(directory / "usage.json")
+        predictions = parse_predictions(directory / "predictions.json", expected, ledger=ledger)
+        usage = json_reader(directory / "usage.json")
         if not isinstance(usage, dict) or not set(usage) <= expected:
             fail("Invalid usage task IDs")
         for task, measurement in usage.items():
@@ -211,9 +252,9 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
                 location = directory / "reports" / task
                 report_path = location / "report.json"
                 if report_path.exists() or report_path.is_symlink():
-                    if read(location / "patch.diff") != patch:
+                    if reader(location / "patch.diff") != patch:
                         fail("Evaluator patch differs from prediction")
-                    raw = read(report_path)
+                    raw = reader(report_path)
                     report = rc.decode_case_bytes(raw)[0]
                     if not isinstance(report, dict) or set(report) != {task} or not isinstance(report[task], dict) or type(report[task].get("resolved")) is not bool:
                         fail("Invalid official per-instance evaluation report")
@@ -243,10 +284,12 @@ def outcome_breakdown(rows):
                 ("budget_status", ("usage_missing", "within_budget", "budget_exceeded")))}
 
 
-def summarize(lock, baseline_root, skill_root, *, expected_protocol_sha256=None):
+def summarize(lock, baseline_root, skill_root, *, expected_protocol_sha256=None, expected_artifacts_sha256=None):
     p = validate_lock(lock, expected_protocol_sha256)
-    base_ids, base = collect(lock, baseline_root, "baseline")
-    skill_ids, skill = collect(lock, skill_root, "skill")
+    ledgers = {"baseline": ArtifactLedger(baseline_root), "skill": ArtifactLedger(skill_root)}
+    base_ids, base = collect(lock, baseline_root, "baseline", ledger=ledgers["baseline"])
+    skill_ids, skill = collect(lock, skill_root, "skill", ledger=ledgers["skill"])
+    artifacts = artifact_summary(lock["protocol_sha256"], ledgers, expected_artifacts_sha256)
     if base_ids & skill_ids:
         fail("Evaluator run IDs reused between arms")
     expected = sorted(base)
@@ -262,6 +305,7 @@ def summarize(lock, baseline_root, skill_root, *, expected_protocol_sha256=None)
     return {"scope": "matched_external_agent_evaluation",
             "protocol_sha256": lock["protocol_sha256"], "tasks": len(tasks), "seeds": len(p["seeds"]),
             "trials_per_arm": len(expected), "expected_protocol_digest_checked": expected_protocol_sha256 is not None,
+            "consumed_artifacts": artifacts,
             "baseline": {"resolved_rate": statistics.mean(base_values),
                 "statuses": status(base), "recorded_usage_sum": usage(base), "outcome_breakdown": outcome_breakdown(base),
                 "usage_coverage": sum("usage" in row for row in base.values()) / len(expected)},
@@ -285,14 +329,16 @@ def main():
     parser.add_argument("--skill", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-protocol-sha256", help="Independently retained pre-generation protocol digest")
+    parser.add_argument("--expected-artifacts-sha256", help="Independently retained post-evaluation consumed artifact digest")
     args = parser.parse_args()
     if args.freeze:
-        if args.expected_protocol_sha256 is not None:
-            parser.error("Expected protocol digest applies only when importing")
+        if args.expected_protocol_sha256 is not None or args.expected_artifacts_sha256 is not None:
+            parser.error("Expected digests apply only when importing")
         result = freeze(read_json(args.freeze))
     elif args.baseline and args.skill:
         result = summarize(read_json(args.lock), args.baseline, args.skill,
-                           expected_protocol_sha256=args.expected_protocol_sha256)
+                           expected_protocol_sha256=args.expected_protocol_sha256,
+                           expected_artifacts_sha256=args.expected_artifacts_sha256)
     else:
         parser.error("Both actual evaluation artifact roots are required")
     with args.output.open("x", encoding="utf-8") as handle:

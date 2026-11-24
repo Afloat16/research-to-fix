@@ -192,7 +192,7 @@ def make_plan(problem, budget=12, sources=None):
 
     def implementation():
         add("github_repositories", "implementation", joined("site:github.com", mechanism_text, "implementation"),
-            joined(mechanism_text, "in:name,description,readme", "archived:false"),
+            joined(mechanism_text, "in:name,description,readme"),
             "Find reusable implementations; inspect license, tests and revisions.")
 
     if p["focus"] == "bug":
@@ -219,7 +219,7 @@ def make_plan(problem, budget=12, sources=None):
     # Reorder at most the first alternative here; later alternatives use extra budget.
     if p["alternative_concepts"]:
         add("github_repositories", "alternatives", joined("site:github.com", alternate_text, "implementation"),
-            joined(alternate_text, "in:name,description,readme", "archived:false"),
+            joined(alternate_text, "in:name,description,readme"),
             "Find code for a distinct alternative mechanism.")
         add("crossref", "alternatives", joined(alternate_text, "method paper comparison"),
             alternate_text, "Find a distinct research approach.")
@@ -237,7 +237,7 @@ def make_plan(problem, budget=12, sources=None):
     # Use remaining capacity on genuine alternative mechanisms, not duplicate queries.
     for alternative in p["alternative_concepts"][1:]:
         add("github_repositories", "alternatives", joined("site:github.com", p["task"], alternative, "implementation"),
-            joined(p["task"], alternative, "in:name,description,readme", "archived:false"),
+            joined(p["task"], alternative, "in:name,description,readme"),
             "Investigate a distinct implementation route.")
         add("crossref", "alternatives", joined(p["task"], alternative, "paper comparison"),
             joined(p["task"], alternative), "Find a distinct research approach.")
@@ -389,7 +389,8 @@ def normalize_result(row, queries):
             "access": access, "origin": origin, "keys": keys, "links": links,
             "revision": _safe_excerpt(row.get("revision"), 100),
             "publication_hint": _safe_excerpt(row.get("publication_hint"), 120),
-            "license_hint": _safe_excerpt(row.get("license_hint"), 120)}
+            "license_hint": _safe_excerpt(row.get("license_hint"), 120),
+            "maintenance_hint": _safe_excerpt(row.get("maintenance_hint"), 120)}
 
 
 def tokens(value):
@@ -550,7 +551,7 @@ def rank_results(plan, inputs, limit=12):
                        "access": winner["access"], "relevance": round(value, 6),
                        "matched_terms": terms, "facet_coverage": {k: round(v, 6) for k, v in cover.items()},
                        "revision": winner["revision"], "publication_hint": winner["publication_hint"],
-                       "license_hint": winner["license_hint"], "identities": ids,
+                       "license_hint": winner["license_hint"], "maintenance_hint": winner["maintenance_hint"], "identities": ids,
                        "observations": len(group), "provenance": sources,
                        "provenance_truncated": len(provenance) > len(sources),
                        "review_required": True})

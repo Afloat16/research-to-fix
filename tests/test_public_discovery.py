@@ -102,6 +102,16 @@ class DiscoveryTests(unittest.TestCase):
         with self.assertRaises(d.ProviderError):
             d.request_metadata("https://example.org/?q=x", "crossref")
 
+    def test_archived_public_author_code_is_not_silently_lost(self):
+        row = next(row for row in w.make_plan(PROBLEM)["queries"] if row["provider"] == "github_repositories")
+        self.assertNotIn("archived:false", row["native_query"])
+        result, _ = d.parse_github(row, {"items": [{"html_url": "https://github.com/google-research/simclr",
+                                                    "full_name": "google-research/simclr",
+                                                    "description": "Visual representations",
+                                                    "private": False, "archived": True}]}, 1)
+        self.assertEqual(len(result), 1)
+        self.assertIn("archived", result[0]["maintenance_hint"])
+
     def test_public_credential_like_excerpts_are_not_retained(self):
         row = next(row for row in w.make_plan(PROBLEM)["queries"] if row["provider"] == "github_issues")
         result, _ = d.parse_github(row, {"items": [{"html_url": "https://github.com/a/b/issues/1",

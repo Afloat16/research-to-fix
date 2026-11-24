@@ -137,13 +137,14 @@ def parse_github(query, payload, limit):
         if not isinstance(item, dict):
             continue
         if query["provider"] == "github_repositories":
-            if item.get("private") is not False or item.get("archived") is True:
+            if item.get("private") is not False:
                 continue
             license_ = item.get("license")
             license_hint = license_.get("spdx_id", "") if isinstance(license_, dict) else ""
             row = base_row(query, item.get("html_url"), item.get("full_name"),
                            item.get("description"), revision=excerpt(item.get("default_branch"), 100),
-                           license_hint=excerpt(license_hint, 120))
+                           license_hint=excerpt(license_hint, 120),
+                           maintenance_hint="archived; historical implementation only" if item.get("archived") is True else "")
         else:
             is_pr = isinstance(item.get("pull_request"), dict)
             if is_pr != (query["provider"] == "github_prs"):

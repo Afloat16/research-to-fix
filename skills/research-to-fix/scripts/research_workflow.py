@@ -281,7 +281,8 @@ def make_plan(problem, budget=12, sources=None, strategy="legacy"):
 
 def plan_fingerprint(plan):
     """Bind observations to an exact reviewed query plan (not a signature)."""
-    return hashlib.sha256(json.dumps(plan, ensure_ascii=True, sort_keys=True,
+    unsigned = {key: value for key, value in plan.items() if key != "plan_id"}
+    return hashlib.sha256(json.dumps(unsigned, ensure_ascii=True, sort_keys=True,
                                      separators=(",", ":"), allow_nan=False).encode("ascii")).hexdigest()
 
 
@@ -399,11 +400,13 @@ def comprehensive_plan(p, budget, sources):
     if not rows:
         fail("empty_plan")
     queries = [{"id": f"Q{i:02d}", **row} for i, row in enumerate(rows[:budget], 1)]
-    return {"schema_version": 2, "scope": "public_research_plan", "strategy": "comprehensive",
+    plan = {"schema_version": 2, "scope": "public_research_plan", "strategy": "comprehensive",
             "problem": p, "budget": budget, "requested_sources": [source for source in SOURCE_SPECS if source in selected],
             "queries": queries, "omitted_sources": [source for source in SOURCE_SPECS if source in selected
                                                      and source not in {row["source"] for row in queries}],
             "review_required": True, "notice": NOTICE}
+    plan["plan_id"] = plan_fingerprint(plan)
+    return plan
 
 
 def validate_plan(value):

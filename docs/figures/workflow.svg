@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="652" viewBox="0 0 1180 652" role="img" aria-labelledby="title description">
+<title id="title">From uncertain failures to evidence-backed repairs</title>
+<desc id="description">Problem fingerprint branches into local recall and external research, then evidence mapping, local repair and tests, review and evidence packaging. Failed checks feed back into research.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#526579"/></marker><marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#007F83"/></marker></defs>
+<rect x="0" y="0" width="1180" height="652" rx="0" fill="#F8FAFC" stroke="none"/>
+<rect x="1" y="1" width="1178" height="650" rx="13" fill="none" stroke="#D6E0E9"/>
+<rect x="30" y="25" width="7" height="62" rx="3" fill="#007F83" stroke="none"/>
+<text x="52" y="49" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="31" font-weight="700" fill="#18334D" text-anchor="start">From uncertain failures to evidence-backed repairs</text>
+<text x="52" y="78" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" font-weight="400" fill="#526579" text-anchor="start">Agent-led research and execution · deterministic local evidence helpers</text>
+<text x="1149" y="43" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="end">FIG. 01</text>
+<text x="40" y="123" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#718399" text-anchor="start">INPUT</text>
+<text x="306" y="123" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#718399" text-anchor="start">PARALLEL EVIDENCE PATHS</text>
+<text x="607" y="123" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#718399" text-anchor="start">DECISION</text>
+<text x="886" y="123" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#718399" text-anchor="start">EXPERIMENT</text>
+<path d="M275 270 H290 V200 H306" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M290 270 V331 H306" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M576 200 H592 V270 H607" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M576 331 H592 V270" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M855 270 H886" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1013 353 V447" fill="none" stroke="#007F83" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<path d="M1140 270 H1154 V413 H441 V390" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect x="40" y="191" width="235" height="162" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<rect x="40" y="191" width="5" height="162" rx="3" fill="#315B9A" stroke="none"/>
+<text x="57" y="216" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#315B9A" text-anchor="start">01</text>
+<text x="57" y="244" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Fingerprint</text>
+<text x="57" y="270" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Symptom + environment</text>
+<text x="57" y="293" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Minimal reproduction</text>
+<text x="57" y="316" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Acceptance criteria</text>
+<rect x="306" y="145" width="270" height="111" rx="10" fill="#F2FBFA" stroke="#D9E3EC"/>
+<rect x="306" y="145" width="5" height="111" rx="3" fill="#007F83" stroke="none"/>
+<text x="323" y="170" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="start">02a</text>
+<text x="323" y="198" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Local case recall</text>
+<text x="323" y="224" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Validated history · ranked leads</text>
+<rect x="306" y="266" width="270" height="124" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<rect x="306" y="266" width="5" height="124" rx="3" fill="#315B9A" stroke="none"/>
+<text x="323" y="291" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#315B9A" text-anchor="start">02b</text>
+<text x="323" y="319" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">External research</text>
+<text x="323" y="345" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Issues · docs · papers</text>
+<text x="323" y="368" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Source + applicability</text>
+<rect x="607" y="191" width="248" height="162" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<rect x="607" y="191" width="5" height="162" rx="3" fill="#315B9A" stroke="none"/>
+<text x="624" y="216" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#315B9A" text-anchor="start">03</text>
+<text x="624" y="244" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Evidence mapping</text>
+<text x="624" y="270" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Local code + conditions</text>
+<text x="624" y="293" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Compare candidate fixes</text>
+<text x="624" y="316" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Falsifiable hypothesis</text>
+<rect x="886" y="191" width="254" height="162" rx="10" fill="#FFFAF1" stroke="#D9E3EC"/>
+<rect x="886" y="191" width="5" height="162" rx="3" fill="#A8661C" stroke="none"/>
+<text x="903" y="216" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#A8661C" text-anchor="start">04</text>
+<text x="903" y="244" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Repair &amp; validate</text>
+<text x="903" y="270" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Same before / after checks</text>
+<text x="903" y="293" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Regression + test IDs</text>
+<text x="903" y="316" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Measure cost / limits</text>
+<rect x="585" y="397" width="360" height="28" rx="4" fill="#F8FAFC" stroke="none"/>
+<text x="765" y="416" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="500" fill="#526579" text-anchor="middle">Failed check → refine hypothesis / research again</text>
+<rect x="40" y="447" width="536" height="157" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<text x="58" y="475" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#718399" text-anchor="start">TRUST BOUNDARY</text>
+<rect x="59" y="488" width="498" height="40" rx="6" fill="#EDF2F9" stroke="none"/>
+<text x="72" y="514" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#315B9A" text-anchor="start">Host agent: research + authorized code / test execution</text>
+<rect x="59" y="539" width="498" height="40" rx="6" fill="#E6F3F3" stroke="none"/>
+<text x="72" y="565" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#007F83" text-anchor="start">Offline helpers: plan, recall, validate, review, seal</text>
+<rect x="607" y="447" width="533" height="157" rx="10" fill="#E6F3F3" stroke="#B6D9DA"/>
+<text x="625" y="475" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="start">05–06</text>
+<text x="625" y="503" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="22" font-weight="700" fill="#18334D" text-anchor="start">Reviewable evidence &amp; reusable case</text>
+<text x="625" y="531" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">case.json · logs · source snapshots · SHA-256 manifest</text>
+<rect x="625" y="549" width="99" height="31" rx="5" fill="#FFFFFF" stroke="#C9D9DF"/>
+<text x="674.5" y="570" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#007F83" text-anchor="middle">solved</text>
+<rect x="737" y="549" width="99" height="31" rx="5" fill="#FFFFFF" stroke="#C9D9DF"/>
+<text x="786.5" y="570" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#A8661C" text-anchor="middle">partial</text>
+<rect x="849" y="549" width="99" height="31" rx="5" fill="#FFFFFF" stroke="#C9D9DF"/>
+<text x="898.5" y="570" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#526579" text-anchor="middle">blocked</text>
+<line x1="32" y1="609" x2="1148" y2="609" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="33" y="634" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">Solid arrows: evidence flow. Dashed arrow: iteration. Validation and hashes check consistency, not truth or causality.</text>
+</svg>

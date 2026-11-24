@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="506" viewBox="0 0 1180 506" role="img" aria-labelledby="title description">
+<title id="title">Retrieval throughput and memory efficiency</title>
+<desc id="description">Batch 683.454 ms versus 25.266 ms; warm queries 848.813 ms versus 7.763 ms; retained allocation 22.01 MB versus 5.18 MB.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#526579"/></marker><marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#007F83"/></marker></defs>
+<rect x="0" y="0" width="1180" height="506" rx="0" fill="#F8FAFC" stroke="none"/>
+<rect x="1" y="1" width="1178" height="504" rx="13" fill="none" stroke="#D6E0E9"/>
+<rect x="30" y="25" width="7" height="62" rx="3" fill="#007F83" stroke="none"/>
+<text x="52" y="49" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="31" font-weight="700" fill="#18334D" text-anchor="start">Retrieval throughput and memory efficiency</text>
+<text x="52" y="78" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" font-weight="400" fill="#526579" text-anchor="start">Paired comparisons on generated workloads · lower measured time / allocations are better</text>
+<text x="1149" y="43" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="end">FIG. 05</text>
+<rect x="31" y="113" width="360" height="330" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<text x="48" y="144" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" font-weight="700" fill="#18334D" text-anchor="start">A  End-to-end batch</text>
+<text x="48" y="168" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="15" font-weight="400" fill="#526579" text-anchor="start">120 cases · 32 queries</text>
+<text x="48" y="220" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="43" font-weight="700" fill="#007F83" text-anchor="start">27.05×</text>
+<text x="48" y="243" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#007F83" text-anchor="start">faster</text>
+<text x="48" y="273" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">Repeated one-shot</text>
+<text x="374" y="273" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="end">683.45 ms</text>
+<rect x="48" y="284" width="326" height="17" rx="3" fill="#EDF2F6" stroke="none"/>
+<rect x="48" y="284" width="326" height="17" rx="3" fill="#8290A1" stroke="none"/>
+<text x="48" y="339" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">Batch snapshot</text>
+<text x="374" y="339" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="end">25.27 ms</text>
+<rect x="48" y="350" width="326" height="17" rx="3" fill="#EDF2F6" stroke="none"/>
+<rect x="48" y="350" width="12.0516" height="17" rx="3" fill="#007F83" stroke="none"/>
+<text x="48" y="422" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">Includes file reads &amp; validation</text>
+<rect x="410" y="113" width="360" height="330" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<text x="427" y="144" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" font-weight="700" fill="#18334D" text-anchor="start">B  Warm index queries</text>
+<text x="427" y="168" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="15" font-weight="400" fill="#526579" text-anchor="start">5,000 docs · 64 sparse queries</text>
+<text x="427" y="220" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="43" font-weight="700" fill="#007F83" text-anchor="start">109.34×</text>
+<text x="427" y="243" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#007F83" text-anchor="start">faster</text>
+<text x="427" y="273" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">Full scan</text>
+<text x="753" y="273" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="end">848.81 ms</text>
+<rect x="427" y="284" width="326" height="17" rx="3" fill="#EDF2F6" stroke="none"/>
+<rect x="427" y="284" width="326" height="17" rx="3" fill="#8290A1" stroke="none"/>
+<text x="427" y="339" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">Packed index</text>
+<text x="753" y="339" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="end">7.76 ms</text>
+<rect x="427" y="350" width="326" height="17" rx="3" fill="#EDF2F6" stroke="none"/>
+<rect x="427" y="350" width="2.9815" height="17" rx="3" fill="#007F83" stroke="none"/>
+<text x="427" y="422" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">Excludes index construction</text>
+<rect x="789" y="113" width="360" height="330" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<text x="806" y="144" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="20" font-weight="700" fill="#18334D" text-anchor="start">C  Retained index memory</text>
+<text x="806" y="168" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="15" font-weight="400" fill="#526579" text-anchor="start">5,000 generated documents</text>
+<text x="806" y="220" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="43" font-weight="700" fill="#007F83" text-anchor="start">76.4%</text>
+<text x="806" y="243" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#007F83" text-anchor="start">less</text>
+<text x="806" y="273" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">Tuple postings</text>
+<text x="1132" y="273" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="end">22.01 MB</text>
+<rect x="806" y="284" width="326" height="17" rx="3" fill="#EDF2F6" stroke="none"/>
+<rect x="806" y="284" width="326" height="17" rx="3" fill="#8290A1" stroke="none"/>
+<text x="806" y="339" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">Packed arrays</text>
+<text x="1132" y="339" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="end">5.18 MB</text>
+<rect x="806" y="350" width="326" height="17" rx="3" fill="#EDF2F6" stroke="none"/>
+<rect x="806" y="350" width="76.7798" height="17" rx="3" fill="#007F83" stroke="none"/>
+<text x="806" y="422" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">Python allocations; excludes input</text>
+<line x1="32" y1="463" x2="1148" y2="463" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="33" y="488" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">Source: GitHub Actions run 45339912941 · exact batch reports and Top-10 scores matched; timing is workload-specific.</text>
+</svg>

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="638" viewBox="0 0 1180 638" role="img" aria-labelledby="title description">
+<title id="title">真实公开 Issue：重复问题检索对比</title>
+<desc id="description">八种方法的 MRR、召回率和中位检索延迟；SQLite Porter 的 MRR 最高，Stemmed 召回率相同。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#526579"/></marker><marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#007F83"/></marker></defs>
+<rect x="0" y="0" width="1180" height="638" rx="0" fill="#F8FAFC" stroke="none"/>
+<rect x="1" y="1" width="1178" height="636" rx="13" fill="none" stroke="#D6E0E9"/>
+<rect x="30" y="25" width="7" height="62" rx="3" fill="#007F83" stroke="none"/>
+<text x="52" y="49" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="31" font-weight="700" fill="#18334D" text-anchor="start">真实公开 Issue：重复问题检索对比</text>
+<text x="52" y="78" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" font-weight="400" fill="#526579" text-anchor="start">44 个公开 Issue 标题 · 18 条有标签查询 · 同一 Top-5 评测</text>
+<text x="1149" y="43" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="end">FIG. 04</text>
+<text x="39" y="126" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="15" font-weight="700" fill="#526579" text-anchor="start">方法</text>
+<text x="263" y="126" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">MRR@5 ↑</text>
+<line x1="263" y1="151" x2="263" y2="527" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="263" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">0%</text>
+<line x1="314.75" y1="151" x2="314.75" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="314.75" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">25%</text>
+<line x1="366.5" y1="151" x2="366.5" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="366.5" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">50%</text>
+<line x1="418.25" y1="151" x2="418.25" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="418.25" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">75%</text>
+<line x1="470" y1="151" x2="470" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="470" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">100%</text>
+<text x="548" y="126" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Recall@5 ↑</text>
+<line x1="548" y1="151" x2="548" y2="527" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="548" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">0%</text>
+<line x1="599.75" y1="151" x2="599.75" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="599.75" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">25%</text>
+<line x1="651.5" y1="151" x2="651.5" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="651.5" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">50%</text>
+<line x1="703.25" y1="151" x2="703.25" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="703.25" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">75%</text>
+<line x1="755" y1="151" x2="755" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="755" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">100%</text>
+<text x="830" y="126" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">P50 延迟 ↓</text>
+<line x1="830" y1="151" x2="830" y2="527" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="830" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">0</text>
+<line x1="883" y1="151" x2="883" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="883" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">15</text>
+<line x1="936" y1="151" x2="936" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="936" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">30</text>
+<line x1="989" y1="151" x2="989" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="989" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">45</text>
+<line x1="1042" y1="151" x2="1042" y2="527" stroke="#D9E3EC" stroke-width="1.2" stroke-dasharray="3 5"/>
+<text x="1042" y="145" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="12" font-weight="400" fill="#718399" text-anchor="middle">60</text>
+<rect x="40" y="169" width="6" height="21" rx="2" fill="#A8661C" stroke="none"/>
+<text x="54" y="186" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="500" fill="#18334D" text-anchor="start">SQLite FTS5 Porter</text>
+<rect x="263" y="169" width="153.3334" height="19" rx="3" fill="#A8661C" stroke="none" data-method="sqlite_fts5_porter" data-metric="mrr@5" data-value="0.740741"/>
+<text x="486" y="185" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">74.07%</text>
+<rect x="548" y="169" width="172.4999" height="19" rx="3" fill="#A8661C" stroke="none" data-method="sqlite_fts5_porter" data-metric="recall@5" data-value="0.833333"/>
+<text x="771" y="185" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">83.33%</text>
+<rect x="830" y="169" width="138.0933" height="19" rx="3" fill="#A8661C" stroke="none" data-method="sqlite_fts5_porter" data-metric="query_p50_ms" data-value="0.039083"/>
+<text x="1059" y="185" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">39.1 µs</text>
+<rect x="27" y="203" width="1126" height="40" rx="5" fill="#E8F5F3" stroke="none"/>
+<rect x="40" y="214" width="6" height="21" rx="2" fill="#007F83" stroke="none"/>
+<text x="54" y="231" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="700" fill="#18334D" text-anchor="start">R2F Stemmed</text>
+<rect x="263" y="214" width="149.5" height="19" rx="3" fill="#007F83" stroke="none" data-method="stemmed" data-metric="mrr@5" data-value="0.722222"/>
+<text x="486" y="230" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">72.22%</text>
+<rect x="548" y="214" width="172.4999" height="19" rx="3" fill="#007F83" stroke="none" data-method="stemmed" data-metric="recall@5" data-value="0.833333"/>
+<text x="771" y="230" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">83.33%</text>
+<rect x="830" y="214" width="94.4495" height="19" rx="3" fill="#007F83" stroke="none" data-method="stemmed" data-metric="query_p50_ms" data-value="0.026731"/>
+<text x="1059" y="230" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">26.7 µs</text>
+<rect x="40" y="259" width="6" height="21" rx="2" fill="#007F83" stroke="none"/>
+<text x="54" y="276" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="500" fill="#18334D" text-anchor="start">R2F Contextual</text>
+<rect x="263" y="259" width="147.5833" height="19" rx="3" fill="#007F83" stroke="none" data-method="contextual" data-metric="mrr@5" data-value="0.712963"/>
+<text x="486" y="275" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">71.30%</text>
+<rect x="548" y="259" width="172.4999" height="19" rx="3" fill="#007F83" stroke="none" data-method="contextual" data-metric="recall@5" data-value="0.833333"/>
+<text x="771" y="275" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">83.33%</text>
+<rect x="830" y="259" width="127.3025" height="19" rx="3" fill="#007F83" stroke="none" data-method="contextual" data-metric="query_p50_ms" data-value="0.036029"/>
+<text x="1059" y="275" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">36.0 µs</text>
+<rect x="40" y="304" width="6" height="21" rx="2" fill="#007F83" stroke="none"/>
+<text x="54" y="321" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="700" fill="#18334D" text-anchor="start">R2F Hybrid</text>
+<rect x="263" y="304" width="122.6668" height="19" rx="3" fill="#007F83" stroke="none" data-method="hybrid" data-metric="mrr@5" data-value="0.592593"/>
+<text x="486" y="320" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">59.26%</text>
+<rect x="548" y="304" width="149.5" height="19" rx="3" fill="#007F83" stroke="none" data-method="hybrid" data-metric="recall@5" data-value="0.722222"/>
+<text x="771" y="320" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">72.22%</text>
+<rect x="830" y="304" width="79.9346" height="19" rx="3" fill="#007F83" stroke="none" data-method="hybrid" data-metric="query_p50_ms" data-value="0.022623"/>
+<text x="1059" y="320" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">22.6 µs</text>
+<rect x="40" y="349" width="6" height="21" rx="2" fill="#315B9A" stroke="none"/>
+<text x="54" y="366" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="500" fill="#18334D" text-anchor="start">倒排 BM25</text>
+<rect x="263" y="349" width="105.4166" height="19" rx="3" fill="#315B9A" stroke="none" data-method="indexed_bm25" data-metric="mrr@5" data-value="0.509259"/>
+<text x="486" y="365" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">50.93%</text>
+<rect x="548" y="349" width="126.5" height="19" rx="3" fill="#315B9A" stroke="none" data-method="indexed_bm25" data-metric="recall@5" data-value="0.611111"/>
+<text x="771" y="365" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">61.11%</text>
+<rect x="830" y="349" width="55.1129" height="19" rx="3" fill="#315B9A" stroke="none" data-method="indexed_bm25" data-metric="query_p50_ms" data-value="0.015598"/>
+<text x="1059" y="365" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">15.6 µs</text>
+<rect x="40" y="394" width="6" height="21" rx="2" fill="#007F83" stroke="none"/>
+<text x="54" y="411" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="500" fill="#18334D" text-anchor="start">R2F Technical</text>
+<rect x="263" y="394" width="105.4166" height="19" rx="3" fill="#007F83" stroke="none" data-method="technical" data-metric="mrr@5" data-value="0.509259"/>
+<text x="486" y="410" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">50.93%</text>
+<rect x="548" y="394" width="126.5" height="19" rx="3" fill="#007F83" stroke="none" data-method="technical" data-metric="recall@5" data-value="0.611111"/>
+<text x="771" y="410" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">61.11%</text>
+<rect x="830" y="394" width="63.6601" height="19" rx="3" fill="#007F83" stroke="none" data-method="technical" data-metric="query_p50_ms" data-value="0.018017"/>
+<text x="1059" y="410" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">18.0 µs</text>
+<rect x="40" y="439" width="6" height="21" rx="2" fill="#8290A1" stroke="none"/>
+<text x="54" y="456" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="500" fill="#18334D" text-anchor="start">旧版 BM25</text>
+<rect x="263" y="439" width="105.4166" height="19" rx="3" fill="#8290A1" stroke="none" data-method="legacy_scan" data-metric="mrr@5" data-value="0.509259"/>
+<text x="486" y="455" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">50.93%</text>
+<rect x="548" y="439" width="126.5" height="19" rx="3" fill="#8290A1" stroke="none" data-method="legacy_scan" data-metric="recall@5" data-value="0.611111"/>
+<text x="771" y="455" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">61.11%</text>
+<rect x="830" y="439" width="198.4108" height="19" rx="3" fill="#8290A1" stroke="none" data-method="legacy_scan" data-metric="query_p50_ms" data-value="0.056154"/>
+<text x="1059" y="455" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">56.2 µs</text>
+<rect x="40" y="484" width="6" height="21" rx="2" fill="#A8661C" stroke="none"/>
+<text x="54" y="501" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="19" font-weight="500" fill="#18334D" text-anchor="start">SQLite FTS5</text>
+<rect x="263" y="484" width="105.4166" height="19" rx="3" fill="#A8661C" stroke="none" data-method="sqlite_fts5" data-metric="mrr@5" data-value="0.509259"/>
+<text x="486" y="500" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">50.93%</text>
+<rect x="548" y="484" width="126.5" height="19" rx="3" fill="#A8661C" stroke="none" data-method="sqlite_fts5" data-metric="recall@5" data-value="0.611111"/>
+<text x="771" y="500" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">61.11%</text>
+<rect x="830" y="484" width="130.7157" height="19" rx="3" fill="#A8661C" stroke="none" data-method="sqlite_fts5" data-metric="query_p50_ms" data-value="0.036995"/>
+<text x="1059" y="500" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="600" fill="#18334D" text-anchor="start">37.0 µs</text>
+<rect x="40" y="542" width="16" height="13" rx="2" fill="#007F83" stroke="none"/>
+<text x="64" y="554" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="500" fill="#526579" text-anchor="start">R2F 增强排序</text>
+<rect x="284" y="542" width="16" height="13" rx="2" fill="#315B9A" stroke="none"/>
+<text x="308" y="554" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="500" fill="#526579" text-anchor="start">倒排默认排序</text>
+<rect x="528" y="542" width="16" height="13" rx="2" fill="#8290A1" stroke="none"/>
+<text x="552" y="554" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="500" fill="#526579" text-anchor="start">旧版</text>
+<rect x="772" y="542" width="16" height="13" rx="2" fill="#A8661C" stroke="none"/>
+<text x="796" y="554" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="500" fill="#526579" text-anchor="start">SQLite 基线</text>
+<text x="40" y="585" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="15" font-weight="500" fill="#526579" text-anchor="start">Stemmed 与 Porter 的 Recall@5 均为 83.33%；Porter 的 MRR 更高。未标注干扰项；开发样本。</text>
+<line x1="32" y1="595" x2="1148" y2="595" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="33" y="620" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">来源：GitHub Actions 45339912941 · Linux / Python 3.13.18 · 固定开发数据集，非独立盲测。</text>
+</svg>

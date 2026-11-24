@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="535" viewBox="0 0 1180 535" role="img" aria-labelledby="title description">
+<title id="title">Two paths, one consistent retrieval contract</title>
+<desc id="description">Single query scan and batch snapshot compact index share deterministic ranking and evidence summaries.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#526579"/></marker><marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="6.5" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#007F83"/></marker></defs>
+<rect x="0" y="0" width="1180" height="535" rx="0" fill="#F8FAFC" stroke="none"/>
+<rect x="1" y="1" width="1178" height="533" rx="13" fill="none" stroke="#D6E0E9"/>
+<rect x="30" y="25" width="7" height="62" rx="3" fill="#007F83" stroke="none"/>
+<text x="52" y="49" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="31" font-weight="700" fill="#18334D" text-anchor="start">Two paths, one consistent retrieval contract</text>
+<text x="52" y="78" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="18" font-weight="400" fill="#526579" text-anchor="start">Low-startup single recall · validated in-memory index for repeated queries</text>
+<text x="1149" y="43" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="end">FIG. 02</text>
+<path d="M275 255 H296 V177 H316" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M296 255 V330 H316" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M565 177 H596" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M565 330 H596" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M840 177 H859 V255 H880" fill="none" stroke="#526579" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M840 330 H859 V255" fill="none" stroke="#007F83" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<rect x="40" y="176" width="235" height="157" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<rect x="40" y="176" width="5" height="157" rx="3" fill="#315B9A" stroke="none"/>
+<text x="57" y="201" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#315B9A" text-anchor="start">CASE CORPUS</text>
+<text x="57" y="229" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Read &amp; validate</text>
+<text x="57" y="255" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Explicit local directory</text>
+<text x="57" y="278" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Solved records only</text>
+<text x="57" y="301" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Deduplication + tokenization</text>
+<rect x="316" y="116" width="249" height="121" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<rect x="316" y="116" width="5" height="121" rx="3" fill="#315B9A" stroke="none"/>
+<text x="333" y="141" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#315B9A" text-anchor="start">SINGLE QUERY</text>
+<text x="333" y="169" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">One-shot scan</text>
+<text x="333" y="195" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Avoid full index startup</text>
+<text x="333" y="218" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Calculate needed scores</text>
+<rect x="596" y="116" width="244" height="121" rx="10" fill="#FFFFFF" stroke="#D9E3EC"/>
+<rect x="596" y="116" width="5" height="121" rx="3" fill="#315B9A" stroke="none"/>
+<text x="613" y="141" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#315B9A" text-anchor="start">COLD PATH</text>
+<text x="613" y="169" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Rank candidates</text>
+<text x="613" y="195" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Same BM25 formula</text>
+<text x="613" y="218" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Stable tie-breaking</text>
+<rect x="316" y="269" width="249" height="122" rx="10" fill="#F2FBFA" stroke="#D9E3EC"/>
+<rect x="316" y="269" width="5" height="122" rx="3" fill="#007F83" stroke="none"/>
+<text x="333" y="294" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="start">BATCH QUERIES</text>
+<text x="333" y="322" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Reusable snapshot</text>
+<text x="333" y="348" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Validate corpus once</text>
+<text x="333" y="371" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">1–128 local queries</text>
+<rect x="596" y="269" width="244" height="122" rx="10" fill="#F2FBFA" stroke="#D9E3EC"/>
+<rect x="596" y="269" width="5" height="122" rx="3" fill="#007F83" stroke="none"/>
+<text x="613" y="294" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#007F83" text-anchor="start">WARM PATH</text>
+<text x="613" y="322" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Packed postings</text>
+<text x="613" y="348" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Precomputed contributions</text>
+<text x="613" y="371" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Compact arrays · Top-K</text>
+<rect x="880" y="176" width="260" height="157" rx="10" fill="#FFFAF1" stroke="#D9E3EC"/>
+<rect x="880" y="176" width="5" height="157" rx="3" fill="#A8661C" stroke="none"/>
+<text x="897" y="201" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#A8661C" text-anchor="start">SHARED OUTPUT</text>
+<text x="897" y="229" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="21" font-weight="700" fill="#18334D" text-anchor="start">Ranked case leads</text>
+<text x="897" y="255" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Matching terms + scores</text>
+<text x="897" y="278" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">Version facts + limits</text>
+<text x="897" y="301" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="16" font-weight="400" fill="#526579" text-anchor="start">No forced weak matches</text>
+<rect x="40" y="424" width="1100" height="66" rx="8" fill="#FFFFFF" stroke="#D9E3EC"/>
+<text x="57" y="449" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="700" fill="#718399" text-anchor="start">RANKING OPTIONS</text>
+<rect x="235" y="438" width="162" height="36" rx="5" fill="#E6F3F3" stroke="#D7E4E9"/>
+<text x="316" y="461" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#007F83" text-anchor="middle">BM25 (default)</text>
+<rect x="410" y="438" width="162" height="36" rx="5" fill="#F5F8FB" stroke="#D7E4E9"/>
+<text x="491" y="461" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#18334D" text-anchor="middle">Technical</text>
+<rect x="585" y="438" width="162" height="36" rx="5" fill="#F5F8FB" stroke="#D7E4E9"/>
+<text x="666" y="461" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#18334D" text-anchor="middle">Stemmed</text>
+<rect x="760" y="438" width="162" height="36" rx="5" fill="#F5F8FB" stroke="#D7E4E9"/>
+<text x="841" y="461" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#18334D" text-anchor="middle">Hybrid</text>
+<rect x="935" y="438" width="162" height="36" rx="5" fill="#F5F8FB" stroke="#D7E4E9"/>
+<text x="1016" y="461" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="17" font-weight="600" fill="#18334D" text-anchor="middle">Contextual</text>
+<line x1="32" y1="492" x2="1148" y2="492" stroke="#D9E3EC" stroke-width="1.2"/>
+<text x="33" y="517" font-family="Inter, Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif" font-size="14" font-weight="400" fill="#526579" text-anchor="start">All paths remain local and lexical; snapshots are rebuilt after changes. Ranking is not repair success.</text>
+</svg>

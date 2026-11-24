@@ -150,6 +150,19 @@ class TriageTests(unittest.TestCase):
         self.assertIn("crossref", {row["source"] for row in rows})
         self.assertTrue(any("block sparse attention" in row["query"] for row in rows))
 
+    def test_rank_modes_and_graph_nodes(self):
+        code = self.row("github_repositories", "https://github.com/Dao-AILab/flash-attention",
+                        "FlashAttention efficient attention", access="read",
+                        links=[{"url": "https://arxiv.org/abs/2205.14135", "relation": "implements", "basis": "read"}])
+        paper = self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention efficient attention")
+        for mode in ("bm25", "facet"):
+            report = w.rank_results(self.plan, [{"results": [code, paper]}], 2, mode)
+            self.assertEqual(report["ranking"], mode)
+            self.assertEqual(len(report["evidence_graph"]["nodes"]), 2)
+            self.assertTrue(all(row["bm25_score"] > 0 for row in report["shortlist"]))
+        with self.assertRaises(w.WorkflowError):
+            w.rank_results(self.plan, [{"results": []}], 2, "unknown")
+
     def test_no_search_claim_without_explicit_status_and_stable_order(self):
         rows = [self.row("arxiv", "https://arxiv.org/abs/2205.14135", "FlashAttention attention"),
                 self.row("github_repositories", "https://github.com/dao-ailab/flash-attention",

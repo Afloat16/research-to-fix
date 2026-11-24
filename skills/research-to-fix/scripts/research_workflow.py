@@ -435,7 +435,9 @@ def group_results(rows):
     return list(groups.values())
 
 
-def rank_results(plan, inputs, limit=12):
+def rank_results(plan, inputs, limit=12, ranking="bm25"):
+    if ranking not in ("bm25", "facet"):
+        fail("invalid_ranking")
     plan = validate_plan(plan)
     integer(limit, 1, MAX_SHORTLIST)
     if not isinstance(inputs, list) or not 1 <= len(inputs) <= 12:
@@ -521,7 +523,7 @@ def rank_results(plan, inputs, limit=12):
         return relevance, sorted(matched, key=lambda t: (-idf[t], t))[:20], cover
 
     access_order = {name: i for i, name in enumerate(("read", "snippet_only", "metadata", "access_blocked", "unavailable"))}
-    ranked, graph_observations = [], []
+    ranked, graph_observations, lexical_documents = [], [], []
     for group in groups:
         scored = [(score(row), row) for row in group]
         # Never sum duplicated pages into artificial evidence strength.
@@ -546,6 +548,14 @@ def rank_results(plan, inputs, limit=12):
                     "access": access, "revision": revision}
                    for qid, src, origin, url, access, revision in provenance[:12]]
         graph_observations.append((stable_id, group))
+        # Maximum per-term count across versions/mirrors, not summed counts.
+        merged_counts = Counter()
+        for observation in group:
+            if observation["access"] not in ("access_blocked", "unavailable"):
+                merged_counts |= core.ranking_counts(observation["title"], observation["title"] + "\n" + observation["snippet"], "stemmed")
+        if not merged_counts:
+            merged_counts = core.ranking_counts(winner["title"], winner["title"] + "\n" + winner["snippet"], "stemmed")
+        lexical_documents.append((stable_id, merged_counts))
         ranked.append({"id": stable_id, "url": winner["url"], "title": winner["title"],
                        "snippet": winner["snippet"], "kind": winner["kind"], "family": winner["family"],
                        "access": winner["access"], "relevance": round(value, 6),
@@ -555,24 +565,25 @@ def rank_results(plan, inputs, limit=12):
                        "observations": len(group), "provenance": sources,
                        "provenance_truncated": len(provenance) > len(sources),
                        "review_required": True})
-    ranked.sort(key=lambda row: (-row["relevance"], row["id"]))
-    # Relevance floor prevents forcing irrelevant family coverage. Reserve one
-    # good result per requested family, then fill by relevance (deterministic).
-    best = ranked[0]["relevance"] if ranked else 0.0
-    eligible = [row for row in ranked if row["relevance"] >= max(.08, .30 * best)]
+    full_query = " ".join([plan["problem"]["symptom"], plan["problem"]["task"],
+                           plan["problem"]["component"], *plan["problem"]["concepts"],
+                           *plan["problem"]["alternative_concepts"], *plan["problem"]["aliases"]])
+    lexical = {identifier: score for score, identifier, _ in core.scan_rank(
+        lexical_documents, core.ranking_tokens(full_query, "stemmed"))}
+    for row in ranked:
+        row["bm25_score"] = round(lexical.get(row["id"], 0), 6)
+    def ordering(row):
+        primary = row["bm25_score"] if ranking == "bm25" else row["relevance"]
+        return (-primary, -row["relevance"], row["id"])
+    ranked.sort(key=ordering)
+    # Do not displace relevant code/paper candidates simply to fill all
+    # source-family slots. Keep lexical top-k and expose other coverage gaps
+    # for targeted searches. A missing code or paper may fill an unused slot.
+    best = max((row["relevance"] for row in ranked), default=0)
+    eligible = [row for row in ranked if row["relevance"] >= max(.08, .30 * best)
+                and row["access"] not in ("unavailable", "access_blocked")]
     wanted = [family for family in FAMILIES if any(q["family"] == family for q in queries.values())]
-    chosen = []
-    for family in wanted:
-        match = next((row for row in eligible if row["family"] == family and
-                      row["access"] not in ("unavailable", "access_blocked")), None)
-        if match and len(chosen) < limit:
-            chosen.append(match)
-    for row in eligible:
-        if len(chosen) == limit:
-            break
-        if row not in chosen and row["access"] not in ("unavailable", "access_blocked"):
-            chosen.append(row)
-    chosen.sort(key=lambda row: (-row["relevance"], row["id"]))
+    chosen = eligible[:limit]
     # Match only explicit links to known URL identities. Do not infer
     # official implementation, equivalence, or support from title similarity.
     nodes = {row["id"]: row for row in ranked}
@@ -614,8 +625,10 @@ def rank_results(plan, inputs, limit=12):
             "input_observations": len(raw_rows), "valid_observations": len(normalized),
             "unique_identities": len(groups), "duplicates_collapsed": len(normalized) - len(groups),
             "skipped": dict(sorted(skipped.items())), "ranked_count": len(ranked),
-            "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
-            "evidence_graph": {"edges": graph_edges[:100], "edge_count": len(graph_edges),
+            "ranking": ranking, "ranked": ranked[:MAX_SHORTLIST], "shortlist": chosen, "coverage": coverage_rows,
+            "evidence_graph": {"nodes": [{k: row[k] for k in ("id", "url", "title", "kind", "access")} for row in ranked
+                                         if row["id"] in {key for edge in graph_edges[:100] for key in (edge["from"], edge["to"])}],
+                               "edges": graph_edges[:100], "edge_count": len(graph_edges),
                                "paper_code_pairs": pairs[:50], "pair_count": len(pairs),
                                "unresolved_links": [{"from": a, "url": b, "relation": c, "basis": d}
                                                     for a, b, c, d in sorted(unresolved)[:50]],
@@ -643,13 +656,14 @@ def main(argv=None):
     triage.add_argument("--plan", required=True, type=Path)
     triage.add_argument("--results", action="append", required=True, type=Path)
     triage.add_argument("--limit", type=int, default=12)
+    triage.add_argument("--ranking", choices=("bm25", "facet"), default="bm25")
     triage.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
             report = make_plan(read_json(args.problem), args.budget, args.source)
         else:
-            report = rank_results(read_json(args.plan), [read_json(path) for path in args.results], args.limit)
+            report = rank_results(read_json(args.plan), [read_json(path) for path in args.results], args.limit, args.ranking)
         write_json(report, args.output)
         return 0
     except (WorkflowError, OSError, ValueError, TypeError, RecursionError) as error:

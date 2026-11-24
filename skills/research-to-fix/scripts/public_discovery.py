@@ -283,15 +283,14 @@ def discover(plan, approve_public=False, max_requests=6, per_query=8, query_ids=
             host_pending.append(query["id"])
             continue
         group = GROUPS[provider]
-        record = {"query_id": query["id"], "provider": provider,
-                  "searched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                  "returned": 0}
+        record = {"query_id": query["id"], "provider": provider, "returned": 0}
         if group in stopped:
             searches.append(dict(record, status="skipped_budget", reason="provider_stopped_after_" + stopped[group]))
             continue
         if requests >= max_requests or provider_counts.get(group, 0) >= GROUP_LIMITS[group]:
             searches.append(dict(record, status="skipped_budget", reason="request_or_provider_limit"))
             continue
+        record["searched_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         requests += 1
         provider_counts[group] = provider_counts.get(group, 0) + 1
         try:

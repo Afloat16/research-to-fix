@@ -51,7 +51,7 @@ def benchmark():
     family = {key: w.KIND_FAMILY[row["kind"]] for key, row in originals.items()}
     canonical_to_id = {w.canonical_url(row["url"]): row["id"] for row in documents}
     all_metrics, per_query, timings = {}, [], []
-    names = ("fixed_order", "stemmed_bm25", "sqlite_porter", "facet_rank", "diversified_shortlist")
+    names = ("fixed_order", "stemmed_bm25", "sqlite_porter", "facet_rank", "evidence_shortlist")
     for task in dataset["tasks"]:
         relevant = set(task["relevant"])
         if not relevant <= set(originals):
@@ -71,6 +71,7 @@ def benchmark():
                              "query_id": qids[row["kind"]], "origin": "host"})
             start = perf_counter_ns()
             report = w.rank_results(plan, [{"results": rows}], K)
+            facet = w.rank_results(plan, [{"results": rows}], K, "facet")
             timings.append((perf_counter_ns() - start) / 1e6)
             if report["duplicates_collapsed"] != 12 or report["unique_identities"] != 32:
                 raise RuntimeError("Identity grouping regression")
@@ -89,7 +90,7 @@ def benchmark():
             bm25 = [identifier for _, identifier, _ in index.rank(core.ranking_tokens(text, "stemmed"), K, False)]
             ranked = {"fixed_order": order, "stemmed_bm25": bm25,
                       "sqlite_porter": sqlite.search(text, K),
-                      "facet_rank": [original_id(row) for row in report["ranked"][:K]],
+                      "facet_rank": [original_id(row) for row in facet["ranked"][:K]],
                       "diversified_shortlist": [original_id(row) for row in report["shortlist"]]}
             values = {name: metrics(ranked[name], relevant, task["pairs"], family) for name in names}
             for name in names:

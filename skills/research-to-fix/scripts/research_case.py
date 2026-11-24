@@ -13,7 +13,7 @@ import sys
 import unicodedata
 from collections import Counter
 from pathlib import Path
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 
 NOTICE = ("仅供人工复核；敏感信息检测不是完整保证。离线公开检索词策略仅允许无凭据的公网 HTTP(S) URI。"
@@ -66,6 +66,11 @@ def contains_credentials(value):
                for match in pattern.finditer(value))
 
 
+def public_ip(address):
+    # ipaddress.is_global alone can include multicast on supported Python versions.
+    return address.is_global and not address.is_multicast and not address.is_reserved
+
+
 def public_url(value):
     """只接受无凭据的公网 HTTP(S) URL；不发起 DNS 或网络请求。"""
     if not isinstance(value, str) or re.search(r"\s|[\\\x00-\x1f\x7f]", value):
@@ -79,6 +84,10 @@ def public_url(value):
             return False
         if parsed.password is not None or parsed.port == 0:
             return False
+        # Check decoded credential markers as well as raw URL text. This is a
+        # heuristic, not a DNS or redirect policy and not a disclosure guarantee.
+        if any(contains_credentials(unquote(part)) for part in (parsed.path, parsed.query, parsed.fragment)):
+            return False
         fields = (parsed.query, parsed.fragment, parsed.fragment.partition("?")[2])
         if any(sensitive_field(key) for field in fields
                for key, _value in parse_qsl(field, keep_blank_values=True)):
@@ -87,7 +96,7 @@ def public_url(value):
         if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".lan")):
             return False
         try:
-            return ipaddress.ip_address(host).is_global
+            return public_ip(ipaddress.ip_address(host))
         except ValueError:
             # 全数字、旧式十六进制 IP 或单标签主机不视为可信公网域名。
             if re.fullmatch(r"[0-9.]+|0x[0-9a-f]+", host):
@@ -110,7 +119,7 @@ def safe_search_input(values):
         addresses += re.findall(r"(?<!\w)(?:[0-9a-fA-F]{0,4}:){2,}[0-9a-fA-F:.]*", value)
         for address in addresses:
             try:
-                if not ipaddress.ip_address(address).is_global:
+                if not public_ip(ipaddress.ip_address(address)):
                     return False
             except ValueError:
                 pass
@@ -546,6 +555,18 @@ def reject_json_constant(_value):
     raise ValueError("JSON 不能包含非有限数值")
 
 
+VALIDATE_MAX_FILE_BYTES = 4 * 1024 * 1024
+
+
+def decode_case_bytes(data):
+    """Strict UTF-8 JSON; reject duplicate keys, non-finite numbers and lone surrogates."""
+    case = json.loads(data.decode("utf-8"), object_pairs_hook=unique_json_object,
+                      parse_constant=reject_json_constant)
+    canonical = json.dumps(case, sort_keys=True, ensure_ascii=False,
+                           allow_nan=False).encode("utf-8")
+    return case, canonical
+
+
 def emit_validation(errors, output_format, input_error=False):
     if output_format == "json":
         print(json.dumps({"valid": not errors, "scope": "record_consistency", "errors": errors,
@@ -607,7 +628,10 @@ def _recall_document(case):
     return "\n".join(_recall_excerpt(field, 1000) for field in fields)[:10000]
 
 
-def _recall_read(path):
+def _read_regular_file(path, maximum):
+    # Preflight also rejects symlinks on platforms without O_NOFOLLOW.
+    if not stat.S_ISREG(os.lstat(path).st_mode):
+        return None, "non_regular"
     # O_NOFOLLOW protects the final path component where supported; the directory
     # walk also excludes links. Nonblocking open avoids a raced-in FIFO on POSIX.
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
@@ -615,10 +639,14 @@ def _recall_read(path):
         metadata = os.fstat(handle.fileno())
         if not stat.S_ISREG(metadata.st_mode):
             return None, "non_regular"
-        if metadata.st_size > RECALL_MAX_FILE_BYTES:
+        if metadata.st_size > maximum:
             return None, "oversized"
-        data = handle.read(RECALL_MAX_FILE_BYTES + 1)
-    return (None, "oversized") if len(data) > RECALL_MAX_FILE_BYTES else (data, None)
+        data = handle.read(maximum + 1)
+    return (None, "oversized") if len(data) > maximum else (data, None)
+
+
+def _recall_read(path):
+    return _read_regular_file(path, RECALL_MAX_FILE_BYTES)
 
 
 def _recall_summary(case, filename, requested_version):
@@ -700,8 +728,7 @@ def recall_cases(cases_dir, error, component="", version="", limit=5):
             skipped[issue] += 1
             continue
         try:
-            case = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_json_object, parse_constant=reject_json_constant)
-            canonical = json.dumps(case, sort_keys=True, ensure_ascii=False, allow_nan=False).encode("utf-8")
+            case, canonical = decode_case_bytes(raw)
         except (ValueError, RecursionError):
             skipped["invalid_json"] += 1
             continue
@@ -815,7 +842,7 @@ def main(argv=None):
     init_parser = commands.add_parser("init", help="创建 blocked 案例模板，不覆盖已有文件")
     init_parser.add_argument("--output", required=True, type=Path)
     validate_parser = commands.add_parser("validate", help="检查记录结构，不证明实际修复")
-    validate_parser.add_argument("file", type=Path)
+    validate_parser.add_argument("file", type=Path, help="普通 UTF-8 JSON 文件（非符号链接，最多 4 MiB）")
     validate_parser.add_argument("--format", choices=("text", "json"), default="text", help="文本诊断或供 CI 使用的 JSON 结果")
     args = parser.parse_args(argv)
     try:
@@ -851,8 +878,11 @@ def main(argv=None):
                 handle.write("\n")
             print("已创建案例模板；初始状态为 blocked。")
         else:
-            with args.file.open(encoding="utf-8") as handle:
-                case = json.load(handle, object_pairs_hook=unique_json_object, parse_constant=reject_json_constant)
+            data, issue = _read_regular_file(args.file, VALIDATE_MAX_FILE_BYTES)
+            if issue:
+                emit_validation(["案例必须是普通文件且不超过 4 MiB；未回显路径。"], args.format, input_error=True)
+                return 2
+            case, _canonical = decode_case_bytes(data)
             errors = validate_case(case)
             emit_validation(errors, args.format)
             return 1 if errors else 0

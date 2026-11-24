@@ -180,11 +180,31 @@ def parse_predictions(path, expected, *, ledger=None):
         if not isinstance(row, dict) or not isinstance(row.get("instance_id"), str):
             fail("Invalid prediction")
         task = identifier(row["instance_id"])
-        if task not in expected or task in predictions or not isinstance(row.get("model_patch"), str):
+        if (task not in expected or task in predictions or "model_patch" not in row
+                or (row["model_patch"] is not None and not isinstance(row["model_patch"], str))):
             fail("Unexpected prediction or patch")
         label(row.get("model_name_or_path"))
-        predictions[task] = row["model_patch"].encode("utf-8")
+        patch = row["model_patch"]
+        predictions[task] = None if patch is None else patch.encode("utf-8")
     return predictions
+
+
+def report_outcome(value, task):
+    """Accept legacy minimal reports; cross-check official flags when supplied."""
+    if (not isinstance(value, dict) or set(value) != {task}
+            or not isinstance(value[task], dict) or type(value[task].get("resolved")) is not bool):
+        fail("Invalid official per-instance evaluation report")
+    row = value[task]
+    names = ("patch_is_None", "patch_exists", "patch_successfully_applied", "infra_failure")
+    flags = {name: row[name] for name in names if name in row}
+    if any(type(flag) is not bool for flag in flags.values()):
+        fail("Invalid official evaluation flag")
+    # This function only receives reports for submitted nonempty patches.
+    if (flags.get("patch_is_None") is True or flags.get("patch_exists") is False
+            or (row["resolved"] and (flags.get("patch_successfully_applied") is False
+                                    or flags.get("infra_failure") is True))):
+        fail("Contradictory official evaluation flags")
+    return row["resolved"], flags
 
 
 def usage_record(value, protocol):
@@ -235,19 +255,22 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
         for task, measurement in usage.items():
             usage_record(measurement, p)
         for task in sorted(expected):
+            submitted = task in predictions
             patch = predictions.get(task)
             record = {"instance_id": task, "seed": seed, "resolved": False,
-                      "prediction_status": ("missing" if patch is None else
-                                            "empty" if not patch.strip() else "nonempty"),
+                      "prediction_status": ("missing" if not submitted else
+                                            "empty" if patch is None or not patch.strip() else "nonempty"),
                       "evaluation_status": "not_applicable",
                       "budget_status": ("usage_missing" if task not in usage else
                                         "within_budget" if usage_record(usage[task], p) else "budget_exceeded")}
             if patch is not None:
                 record["prediction_sha256"] = sha256(patch)
-            if patch is None:
+            if not submitted:
                 record["status"] = "not_submitted"
-            elif not patch.strip():
+            elif patch is None or not patch.strip():
                 record["status"] = "empty_patch"
+                if patch is None:
+                    record["prediction_is_null"] = True
             else:
                 location = directory / "reports" / task
                 report_path = location / "report.json"
@@ -256,15 +279,16 @@ def collect_arm(p, protocol_digest, root, arm, skill_commit, *, intervention_dig
                         fail("Evaluator patch differs from prediction")
                     raw = reader(report_path)
                     report = rc.decode_case_bytes(raw)[0]
-                    if not isinstance(report, dict) or set(report) != {task} or not isinstance(report[task], dict) or type(report[task].get("resolved")) is not bool:
-                        fail("Invalid official per-instance evaluation report")
+                    resolved, flags = report_outcome(report, task)
                     record["report_sha256"] = sha256(raw)
-                    record["status"] = "resolved" if report[task]["resolved"] else "unresolved"
-                    record["resolved"] = report[task]["resolved"]
+                    record["status"] = "resolved" if resolved else "unresolved"
+                    record["resolved"] = resolved
+                    if flags:
+                        record["evaluation_flags"] = flags
                 else:
                     record["status"] = "evaluation_missing_or_error"
                 record["evaluation_status"] = record["status"]
-            if patch is not None:
+            if submitted:
                 if task not in usage:
                     record.update(status="usage_missing", resolved=False)
                 elif not usage_record(usage[task], p):

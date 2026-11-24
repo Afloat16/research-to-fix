@@ -77,6 +77,24 @@ class ComparisonTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Independent artifact digest mismatch"):
                 c.summarize(lock, root, expected_artifacts_sha256=artifact["sha256"])
 
+    def test_multi_arm_official_report_flags_and_null_patch(self):
+        lock = c.freeze(design())
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            for spec in lock["protocol"]["arms"]:
+                fixture(root, lock, spec, spec["id"] == "skill")
+            write(root / "competitor/seed-1/predictions.json", [
+                {"instance_id": "repo__a-1", "model_patch": None,
+                 "model_name_or_path": "competitor"}])
+            result = c.summarize(lock, root)
+            self.assertEqual(result["trials_per_arm"], 4)
+            self.assertEqual(result["arms"]["competitor"]["statuses"]["empty_patch"], 1)
+            self.assertTrue(result["pairs"][0]["arms"]["competitor"]["prediction_is_null"])
+            write(root / "skill/seed-1/reports/repo__a-1/report.json",
+                  {"repo__a-1": {"resolved": True, "infra_failure": True}})
+            with self.assertRaisesRegex(ValueError, "Contradictory official evaluation flags"):
+                c.summarize(lock, root)
+
     def test_freeze_and_invalid_interventions(self):
         value = design()
         self.assertEqual(c.freeze(value), c.freeze({**value, "arms": value["arms"][::-1]}))

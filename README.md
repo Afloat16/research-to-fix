@@ -15,7 +15,7 @@
 
 *Figure 1. The host agent handles research and authorized execution; deterministic local helpers handle case retrieval, record checks and evidence packaging. Failed checks feed back into research.*
 
-Concept and workflow design: [Afloat16](https://github.com/Afloat16). MIT licensed. **No mandatory Python third-party packages, hosted search service, or embedding model.**
+MIT licensed. **No mandatory Python third-party packages, hosted search service, or embedding model.**
 
 
 ## v1.3.0 — Executed repairs, frozen evidence and coverage-first research
